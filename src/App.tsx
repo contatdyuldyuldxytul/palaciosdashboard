@@ -3,8 +3,18 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Index from "./pages/Index.tsx";
-import NotFound from "./pages/NotFound.tsx";
+import { AppLayout } from "@/layouts/AppLayout";
+import Dashboard from "@/pages/Dashboard";
+import Leads from "@/pages/Leads";
+import Funil from "@/pages/Funil";
+import Metas from "@/pages/Metas";
+import Scripts from "@/pages/Scripts";
+import AssistenteVendas from "@/pages/AssistenteVendas";
+import ClientesAtivos from "@/pages/ClientesAtivos";
+import Financeiro from "@/pages/Financeiro";
+import Login from "@/pages/Login";
+import Placeholder from "@/pages/Placeholder";
+import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
 
@@ -15,8 +25,27 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/login" element={<Login />} />
+          <Route element={<AppLayout />}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/leads" element={<Leads />} />
+            <Route path="/funil" element={<Funil />} />
+            <Route path="/metas" element={<Metas />} />
+            <Route path="/scripts" element={<Scripts />} />
+            <Route path="/ligacoes" element={<Placeholder title="Ligações" />} />
+            <Route path="/assistente-vendas" element={<AssistenteVendas />} />
+            <Route path="/visao-estrategica" element={<Placeholder title="Visão Estratégica" />} />
+            <Route path="/financeiro" element={<Financeiro />} />
+            <Route path="/metas-forecast" element={<Placeholder title="Metas & Forecast" />} />
+            <Route path="/documentos" element={<Placeholder title="Documentos & Reuniões" />} />
+            <Route path="/assistente-fundador" element={<Placeholder title="Assistente do Fundador" />} />
+            <Route path="/integracoes" element={<Placeholder title="Integrações" />} />
+            <Route path="/clientes-ativos" element={<ClientesAtivos />} />
+            <Route path="/clientes-anteriores" element={<Placeholder title="Clientes Anteriores" />} />
+            <Route path="/assistente" element={<Placeholder title="Assistente Geral" />} />
+            <Route path="/perfil" element={<Placeholder title="Perfil" />} />
+            <Route path="/configuracoes" element={<Placeholder title="Configurações" />} />
+          </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
