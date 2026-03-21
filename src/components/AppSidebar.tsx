@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation, Link } from "react-router-dom";
 import {
-  LayoutDashboard, Users, Funnel, Target, FileText, Phone,
+  LayoutDashboard, Users, Filter, Target, FileText, Phone,
   Bot, Eye, DollarSign, TrendingUp, FileUp, Puzzle,
   UserCheck, UserX, MessageSquare, User, Settings,
   ChevronLeft, ChevronRight, ChevronDown
@@ -19,7 +19,7 @@ const navGroups = [
     role: "vendedor",
     items: [
       { title: "Meus Leads", url: "/leads", icon: Users },
-      { title: "Funil de Vendas", url: "/funil", icon: Funnel },
+      { title: "Funil de Vendas", url: "/funil", icon: Filter },
       { title: "Metas", url: "/metas", icon: Target },
       { title: "Scripts", url: "/scripts", icon: FileText },
       { title: "Ligações", url: "/ligacoes", icon: Phone },
