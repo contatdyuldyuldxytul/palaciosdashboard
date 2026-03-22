@@ -7,7 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/layouts/AppLayout";
 import { VendasLayout } from "@/layouts/VendasLayout";
-import { GestaoLayout } from "@/layouts/GestaoLayout";
+
 import { ClientesLayout } from "@/layouts/ClientesLayout";
 import { CeoLayout } from "@/layouts/CeoLayout";
 import Dashboard from "@/pages/Dashboard";
@@ -16,10 +16,10 @@ import Funil from "@/pages/Funil";
 import Metas from "@/pages/Metas";
 import Scripts from "@/pages/Scripts";
 import AssistenteVendas from "@/pages/AssistenteVendas";
-import AssistenteFundador from "@/pages/AssistenteFundador";
+
 import AssistenteGeral from "@/pages/AssistenteGeral";
 import ClientesAtivos from "@/pages/ClientesAtivos";
-import Financeiro from "@/pages/Financeiro";
+
 import Login from "@/pages/Login";
 import Placeholder from "@/pages/Placeholder";
 import NotFound from "@/pages/NotFound";
@@ -55,14 +55,6 @@ const App = () => (
                 <Route path="assistente" element={<AssistenteVendas />} />
               </Route>
 
-              {/* Gestão — Fundador only */}
-              <Route path="/gestao" element={<ProtectedRoute requireRole="fundador"><GestaoLayout /></ProtectedRoute>}>
-                <Route index element={<Placeholder title="Visão Estratégica" />} />
-                <Route path="financeiro" element={<Financeiro />} />
-                <Route path="metas-forecast" element={<Placeholder title="Metas & Forecast" />} />
-                <Route path="documentos" element={<Placeholder title="Documentos & Reuniões" />} />
-                <Route path="assistente" element={<AssistenteFundador />} />
-              </Route>
 
               {/* Clientes */}
               <Route path="/clientes" element={<ClientesLayout />}>
@@ -89,7 +81,7 @@ const App = () => (
               <Route path="/funil" element={<Navigate to="/vendas/funil" replace />} />
               <Route path="/metas" element={<Navigate to="/vendas/metas" replace />} />
               <Route path="/scripts" element={<Navigate to="/vendas/scripts" replace />} />
-              <Route path="/financeiro" element={<Navigate to="/gestao/financeiro" replace />} />
+              
               <Route path="/clientes-ativos" element={<Navigate to="/clientes" replace />} />
             </Route>
             <Route path="*" element={<NotFound />} />
