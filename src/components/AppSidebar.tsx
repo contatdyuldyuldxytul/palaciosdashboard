@@ -1,7 +1,7 @@
 import { useLocation, Link } from "react-router-dom";
 import {
   LayoutDashboard, TrendingUp, Briefcase, Users, MessageSquare,
-  ChevronLeft, ChevronRight, LogOut
+  ChevronLeft, ChevronRight, LogOut, Crown
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,6 +12,7 @@ const navItems = [
   { title: "Vendas", url: "/vendas", icon: TrendingUp },
   { title: "Gestão", url: "/gestao", icon: Briefcase, requireRole: "fundador" as const },
   { title: "Clientes", url: "/clientes", icon: Users },
+  { title: "CEO", url: "/ceo", icon: Crown, requireRole: "fundador" as const, isCeo: true },
   { title: "Assistente IA", url: "/assistente", icon: MessageSquare },
 ];
 
@@ -57,10 +58,15 @@ export function AppSidebar() {
                   to={item.url}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-300 ${
                     active
-                      ? "glass-button text-primary font-medium shadow-[0_0_20px_hsla(160,100%,39%,0.1)]"
+                      ? (item as any).isCeo
+                        ? "glass-button font-medium shadow-[0_0_20px_hsla(45,100%,55%,0.1)]"
+                        : "glass-button text-primary font-medium shadow-[0_0_20px_hsla(160,100%,39%,0.1)]"
                       : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"
                   }`}
-                  style={active ? { background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(0,200,150,0.2)' } : undefined}
+                  style={active ? (item as any).isCeo
+                    ? { background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(245,158,11,0.3)', color: 'hsl(45,100%,55%)' }
+                    : { background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(0,200,150,0.2)' }
+                    : (item as any).isCeo ? { color: 'hsl(45,100%,65%)' } : undefined}
                   title={collapsed ? item.title : undefined}
                 >
                   <item.icon className="w-[18px] h-[18px] flex-shrink-0" />

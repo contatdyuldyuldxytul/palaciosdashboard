@@ -9,6 +9,7 @@ import { AppLayout } from "@/layouts/AppLayout";
 import { VendasLayout } from "@/layouts/VendasLayout";
 import { GestaoLayout } from "@/layouts/GestaoLayout";
 import { ClientesLayout } from "@/layouts/ClientesLayout";
+import { CeoLayout } from "@/layouts/CeoLayout";
 import Dashboard from "@/pages/Dashboard";
 import Leads from "@/pages/Leads";
 import Funil from "@/pages/Funil";
@@ -22,6 +23,13 @@ import Financeiro from "@/pages/Financeiro";
 import Login from "@/pages/Login";
 import Placeholder from "@/pages/Placeholder";
 import NotFound from "@/pages/NotFound";
+import CeoFinanceiro from "@/pages/ceo/CeoFinanceiro";
+import CeoMetas from "@/pages/ceo/CeoMetas";
+import CeoSaude from "@/pages/ceo/CeoSaude";
+import CeoPipeline from "@/pages/ceo/CeoPipeline";
+import CeoJuridico from "@/pages/ceo/CeoJuridico";
+import CeoProcessos from "@/pages/ceo/CeoProcessos";
+import CeoMemoria from "@/pages/ceo/CeoMemoria";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +68,17 @@ const App = () => (
               <Route path="/clientes" element={<ClientesLayout />}>
                 <Route index element={<ClientesAtivos />} />
                 <Route path="anteriores" element={<Placeholder title="Clientes Anteriores" />} />
+              </Route>
+
+              {/* CEO — Fundador only */}
+              <Route path="/ceo" element={<ProtectedRoute requireRole="fundador"><CeoLayout /></ProtectedRoute>}>
+                <Route index element={<CeoFinanceiro />} />
+                <Route path="metas" element={<CeoMetas />} />
+                <Route path="saude" element={<CeoSaude />} />
+                <Route path="pipeline" element={<CeoPipeline />} />
+                <Route path="juridico" element={<CeoJuridico />} />
+                <Route path="processos" element={<CeoProcessos />} />
+                <Route path="memoria" element={<CeoMemoria />} />
               </Route>
 
               {/* Assistente IA */}
