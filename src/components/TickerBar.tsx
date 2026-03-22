@@ -29,19 +29,29 @@ export function TickerBar() {
         </div>
       ))}
 
-      <div className="ml-auto flex items-center gap-2 flex-shrink-0">
+      <div className="ml-auto flex items-center gap-3 flex-shrink-0">
         {lastSync && (
           <span className="text-[10px] text-muted-foreground">
             Sync: {format(new Date(lastSync), "dd/MM HH:mm")}
           </span>
         )}
         <button
+          onClick={() => toggleAutoSync(!autoSync)}
+          className={`text-[10px] px-2 py-0.5 rounded-md transition-all ${
+            autoSync
+              ? "bg-primary/15 text-primary"
+              : "bg-muted text-muted-foreground"
+          }`}
+        >
+          Auto {autoSync ? "ON" : "OFF"}
+        </button>
+        <button
           onClick={() => sync()}
           disabled={isSyncing}
           className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 text-primary text-[11px] font-medium hover:bg-primary/20 active:scale-[0.96] transition-all disabled:opacity-50"
         >
           <RefreshCw className={`w-3 h-3 ${isSyncing ? "animate-spin" : ""}`} />
-          {isSyncing ? "Sincronizando..." : "Sync Sheets"}
+          {isSyncing ? "Sincronizando..." : "Sync"}
         </button>
       </div>
     </div>
