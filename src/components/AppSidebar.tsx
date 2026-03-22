@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import logoPalacios from "@/assets/logo-palacios.png";
 
 const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -35,14 +36,13 @@ export function AppSidebar() {
       }`}
     >
       {/* Logo */}
-      <div className="flex items-center gap-3 px-4 h-14" style={{ borderBottom: '1px solid var(--glass-border)' }}>
-        <div className="w-8 h-8 rounded-lg bg-primary/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0" style={{ border: '1px solid var(--glass-border)' }}>
-          <span className="text-primary font-bold text-sm">P3</span>
-        </div>
-        {!collapsed && (
-          <span className="font-semibold text-sm text-foreground truncate">
-            RenderOS
-          </span>
+      <div className="flex items-center px-3 h-14" style={{ borderBottom: '1px solid var(--glass-border)' }}>
+        {collapsed ? (
+          <div className="w-10 h-10 rounded-lg bg-primary/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0" style={{ border: '1px solid var(--glass-border)' }}>
+            <span className="text-primary font-bold text-sm">P3</span>
+          </div>
+        ) : (
+          <img src={logoPalacios} alt="Palacios 3D Studio" className="h-7 w-auto object-contain opacity-90" />
         )}
       </div>
 
