@@ -11,6 +11,7 @@ import { VendasLayout } from "@/layouts/VendasLayout";
 import { ClientesLayout } from "@/layouts/ClientesLayout";
 import { CeoLayout } from "@/layouts/CeoLayout";
 import Dashboard from "@/pages/Dashboard";
+import Leads from "@/pages/Leads";
 import TeamMemberDashboard from "@/pages/TeamMemberDashboard";
 import Funil from "@/pages/Funil";
 import Metas from "@/pages/Metas";
@@ -47,15 +48,16 @@ const App = () => (
 
               {/* Vendas */}
               <Route path="/vendas" element={<VendasLayout />}>
-                <Route index element={<TeamMemberDashboard memberName="Aline" initials="AL" />} />
-                {/* Add more team members here: */}
-                {/* <Route path="carlos" element={<TeamMemberDashboard memberName="Carlos" initials="CA" />} /> */}
+                <Route index element={<Leads />} />
                 <Route path="funil" element={<Funil />} />
                 <Route path="metas" element={<Metas />} />
                 <Route path="scripts" element={<Scripts />} />
                 <Route path="ligacoes" element={<Placeholder title="Ligações" />} />
                 <Route path="assistente" element={<AssistenteVendas />} />
               </Route>
+
+              {/* Team member dashboards */}
+              <Route path="/equipe/aline" element={<TeamMemberDashboard memberName="Aline" initials="AL" />} />
 
 
               {/* Clientes */}
