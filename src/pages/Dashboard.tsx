@@ -1,6 +1,7 @@
 import { DollarSign, Users, Calendar, TrendingUp, Target } from "lucide-react";
 import { MetricCard } from "@/components/MetricCard";
 import { StatusBadge } from "@/components/StatusBadge";
+import { SyncIndicator } from "@/components/SyncIndicator";
 import { useLeads, getStatusDisplay, LeadStatus } from "@/hooks/useLeads";
 import { format } from "date-fns";
 
@@ -45,7 +46,7 @@ export default function Dashboard() {
     <div className="p-6 space-y-6 max-w-7xl">
       <div>
         <h1 className="text-2xl font-bold tracking-tight" style={{ lineHeight: "1.1" }}>Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-1">Visão geral</p>
+        <p className="text-sm text-muted-foreground mt-1">Visão geral <SyncIndicator className="ml-2" /></p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

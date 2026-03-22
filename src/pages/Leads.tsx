@@ -71,7 +71,7 @@ export default function Leads() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight" style={{ lineHeight: "1.1" }}>Meus Leads</h1>
-          <p className="text-sm text-muted-foreground mt-1">{filtered.length} leads encontrados</p>
+          <p className="text-sm text-muted-foreground mt-1">{filtered.length} leads encontrados <SyncIndicator className="ml-2" /></p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
