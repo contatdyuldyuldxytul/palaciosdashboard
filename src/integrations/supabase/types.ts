@@ -51,15 +51,7 @@ export type Database = {
           responsavel?: string | null
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "checklist_projetos_cliente_id_fkey"
-            columns: ["cliente_id"]
-            isOneToOne: false
-            referencedRelation: "clientes_ativos"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       clientes_ativos: {
         Row: {
@@ -209,15 +201,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["payment_status"]
           valor?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "financeiro_clientes_cliente_id_fkey"
-            columns: ["cliente_id"]
-            isOneToOne: false
-            referencedRelation: "clientes_ativos"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       financeiro_empresa: {
         Row: {
