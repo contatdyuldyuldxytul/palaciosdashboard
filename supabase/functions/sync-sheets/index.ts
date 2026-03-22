@@ -282,6 +282,7 @@ Deno.serve(async (req) => {
 
     const accessToken = await getAccessToken(serviceAccountJson);
 
+    const results: Record<string, { success: boolean; count: number; error?: string }> = {};
     const debugData: Record<string, { headers?: string[]; sample?: Record<string, string> }> = {};
 
     for (const tabName of tabsToSync) {
