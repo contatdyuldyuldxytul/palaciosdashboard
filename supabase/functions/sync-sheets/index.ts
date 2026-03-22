@@ -282,12 +282,20 @@ Deno.serve(async (req) => {
 
     const accessToken = await getAccessToken(serviceAccountJson);
 
-    const results: Record<string, { success: boolean; count: number; error?: string }> = {};
+    const debugData: Record<string, { headers?: string[]; sample?: Record<string, string> }> = {};
 
     for (const tabName of tabsToSync) {
       const config = TAB_CONFIG[tabName];
       try {
         const rows = await readSheet(accessToken, sheetsId, tabName);
+        
+        if (debugMode && rows.length > 0) {
+          debugData[tabName] = { 
+            headers: rows[0],
+            sample: rows.length > 1 ? Object.fromEntries(rows[0].map((h: string, i: number) => [h, rows[1][i] || ""])) : undefined
+          };
+        }
+        
         const objects = rowsToObjects(rows);
 
         if (objects.length === 0) {
@@ -295,19 +303,23 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        const mapped = config.mapper(objects);
+        if (!debugMode) {
+          const mapped = config.mapper(objects);
 
-        // Clear existing data and insert fresh (full sync)
-        const { error: deleteError } = await supabase.from(config.table).delete().neq("id", "00000000-0000-0000-0000-000000000000");
-        if (deleteError) {
-          console.error(`Delete error for ${tabName}:`, deleteError);
-        }
+          // Clear existing data and insert fresh (full sync)
+          const { error: deleteError } = await supabase.from(config.table).delete().neq("id", "00000000-0000-0000-0000-000000000000");
+          if (deleteError) {
+            console.error(`Delete error for ${tabName}:`, deleteError);
+          }
 
-        const { error: insertError } = await supabase.from(config.table).insert(mapped);
-        if (insertError) {
-          results[tabName] = { success: false, count: 0, error: insertError.message };
+          const { error: insertError } = await supabase.from(config.table).insert(mapped);
+          if (insertError) {
+            results[tabName] = { success: false, count: 0, error: insertError.message };
+          } else {
+            results[tabName] = { success: true, count: mapped.length };
+          }
         } else {
-          results[tabName] = { success: true, count: mapped.length };
+          results[tabName] = { success: true, count: objects.length };
         }
       } catch (err) {
         results[tabName] = { success: false, count: 0, error: err instanceof Error ? err.message : String(err) };
