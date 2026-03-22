@@ -3,6 +3,8 @@ import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/layouts/AppLayout";
 import { VendasLayout } from "@/layouts/VendasLayout";
 import { GestaoLayout } from "@/layouts/GestaoLayout";
@@ -27,49 +29,51 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route element={<AppLayout />}>
-            <Route path="/" element={<Dashboard />} />
+        <AuthProvider>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+              <Route path="/" element={<Dashboard />} />
 
-            {/* Vendas */}
-            <Route path="/vendas" element={<VendasLayout />}>
-              <Route index element={<Leads />} />
-              <Route path="funil" element={<Funil />} />
-              <Route path="metas" element={<Metas />} />
-              <Route path="scripts" element={<Scripts />} />
-              <Route path="ligacoes" element={<Placeholder title="Ligações" />} />
-              <Route path="assistente" element={<AssistenteVendas />} />
+              {/* Vendas */}
+              <Route path="/vendas" element={<VendasLayout />}>
+                <Route index element={<Leads />} />
+                <Route path="funil" element={<Funil />} />
+                <Route path="metas" element={<Metas />} />
+                <Route path="scripts" element={<Scripts />} />
+                <Route path="ligacoes" element={<Placeholder title="Ligações" />} />
+                <Route path="assistente" element={<AssistenteVendas />} />
+              </Route>
+
+              {/* Gestão — Fundador only */}
+              <Route path="/gestao" element={<ProtectedRoute requireRole="fundador"><GestaoLayout /></ProtectedRoute>}>
+                <Route index element={<Placeholder title="Visão Estratégica" />} />
+                <Route path="financeiro" element={<Financeiro />} />
+                <Route path="metas-forecast" element={<Placeholder title="Metas & Forecast" />} />
+                <Route path="documentos" element={<Placeholder title="Documentos & Reuniões" />} />
+                <Route path="assistente" element={<Placeholder title="Assistente do Fundador" />} />
+              </Route>
+
+              {/* Clientes */}
+              <Route path="/clientes" element={<ClientesLayout />}>
+                <Route index element={<ClientesAtivos />} />
+                <Route path="anteriores" element={<Placeholder title="Clientes Anteriores" />} />
+              </Route>
+
+              {/* Assistente IA */}
+              <Route path="/assistente" element={<Placeholder title="Assistente Geral" />} />
+
+              {/* Redirects */}
+              <Route path="/leads" element={<Navigate to="/vendas" replace />} />
+              <Route path="/funil" element={<Navigate to="/vendas/funil" replace />} />
+              <Route path="/metas" element={<Navigate to="/vendas/metas" replace />} />
+              <Route path="/scripts" element={<Navigate to="/vendas/scripts" replace />} />
+              <Route path="/financeiro" element={<Navigate to="/gestao/financeiro" replace />} />
+              <Route path="/clientes-ativos" element={<Navigate to="/clientes" replace />} />
             </Route>
-
-            {/* Gestão */}
-            <Route path="/gestao" element={<GestaoLayout />}>
-              <Route index element={<Placeholder title="Visão Estratégica" />} />
-              <Route path="financeiro" element={<Financeiro />} />
-              <Route path="metas-forecast" element={<Placeholder title="Metas & Forecast" />} />
-              <Route path="documentos" element={<Placeholder title="Documentos & Reuniões" />} />
-              <Route path="assistente" element={<Placeholder title="Assistente do Fundador" />} />
-            </Route>
-
-            {/* Clientes */}
-            <Route path="/clientes" element={<ClientesLayout />}>
-              <Route index element={<ClientesAtivos />} />
-              <Route path="anteriores" element={<Placeholder title="Clientes Anteriores" />} />
-            </Route>
-
-            {/* Assistente IA */}
-            <Route path="/assistente" element={<Placeholder title="Assistente Geral" />} />
-
-            {/* Redirects for old routes */}
-            <Route path="/leads" element={<Navigate to="/vendas" replace />} />
-            <Route path="/funil" element={<Navigate to="/vendas/funil" replace />} />
-            <Route path="/metas" element={<Navigate to="/vendas/metas" replace />} />
-            <Route path="/scripts" element={<Navigate to="/vendas/scripts" replace />} />
-            <Route path="/financeiro" element={<Navigate to="/gestao/financeiro" replace />} />
-            <Route path="/clientes-ativos" element={<Navigate to="/clientes" replace />} />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

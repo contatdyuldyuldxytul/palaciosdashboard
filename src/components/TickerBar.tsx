@@ -1,13 +1,21 @@
 import { TrendingUp, Users, Calendar, Target } from "lucide-react";
-
-const metrics = [
-  { label: "Leads do mês", value: "127", icon: Users, trend: "+12%" },
-  { label: "Reuniões realizadas", value: "18", icon: Calendar, trend: "+5%" },
-  { label: "Meta atingida", value: "64%", icon: Target, trend: null },
-  { label: "Pipeline", value: "R$ 45.000", icon: TrendingUp, trend: "+8%" },
-];
+import { useLeads } from "@/hooks/useLeads";
 
 export function TickerBar() {
+  const { data: leads = [] } = useLeads();
+
+  const leadsCount = leads.length;
+  const reunioes = leads.filter((l) => ["reuniao_realizada", "proposta", "fechado"].includes(l.status)).length;
+  const fechados = leads.filter((l) => l.status === "fechado");
+  const receita = fechados.reduce((sum, l) => sum + (l.valor_estimado || 0), 0);
+
+  const metrics = [
+    { label: "Leads do mês", value: String(leadsCount), icon: Users },
+    { label: "Reuniões realizadas", value: String(reunioes), icon: Calendar },
+    { label: "Contratos fechados", value: String(fechados.length), icon: Target },
+    { label: "Pipeline", value: `R$ ${receita.toLocaleString("pt-BR")}`, icon: TrendingUp },
+  ];
+
   return (
     <div className="ticker-bar h-10 flex items-center px-4 gap-6 overflow-x-auto text-xs">
       {metrics.map((m) => (
@@ -15,14 +23,8 @@ export function TickerBar() {
           <m.icon className="w-3.5 h-3.5 text-muted-foreground" />
           <span className="text-muted-foreground">{m.label}:</span>
           <span className="font-semibold text-foreground">{m.value}</span>
-          {m.trend && (
-            <span className="text-success text-[10px] font-medium">{m.trend}</span>
-          )}
         </div>
       ))}
-      <div className="ml-auto text-muted-foreground flex-shrink-0">
-        Última sync: agora
-      </div>
     </div>
   );
 }

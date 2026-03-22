@@ -1,14 +1,15 @@
 import { useLocation, Link } from "react-router-dom";
 import {
   LayoutDashboard, TrendingUp, Briefcase, Users, MessageSquare,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, LogOut
 } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Vendas", url: "/vendas", icon: TrendingUp },
-  { title: "Gestão", url: "/gestao", icon: Briefcase },
+  { title: "Gestão", url: "/gestao", icon: Briefcase, requireRole: "fundador" as const },
   { title: "Clientes", url: "/clientes", icon: Users },
   { title: "Assistente IA", url: "/assistente", icon: MessageSquare },
 ];
@@ -16,11 +17,16 @@ const navItems = [
 export function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const { signOut, profile, hasRole } = useAuth();
 
   const isActive = (url: string) => {
     if (url === "/") return location.pathname === "/";
     return location.pathname.startsWith(url);
   };
+
+  const visibleItems = navItems.filter(
+    (item) => !item.requireRole || hasRole(item.requireRole)
+  );
 
   return (
     <aside
@@ -43,7 +49,7 @@ export function AppSidebar() {
       {/* Nav */}
       <nav className="flex-1 py-4 px-2">
         <ul className="space-y-1">
-          {navItems.map((item) => {
+          {visibleItems.map((item) => {
             const active = isActive(item.url);
             return (
               <li key={item.url}>
@@ -64,6 +70,22 @@ export function AppSidebar() {
           })}
         </ul>
       </nav>
+
+      {/* User & Logout */}
+      {!collapsed && profile && (
+        <div className="px-3 py-2 border-t border-sidebar-border">
+          <p className="text-xs text-foreground font-medium truncate">{profile.full_name || profile.email}</p>
+          <p className="text-[10px] text-muted-foreground truncate">{profile.email}</p>
+        </div>
+      )}
+      <button
+        onClick={signOut}
+        className="flex items-center gap-2 px-3 py-2 mx-2 mb-1 rounded-xl text-sm text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+        title="Sair"
+      >
+        <LogOut className="w-4 h-4" />
+        {!collapsed && <span>Sair</span>}
+      </button>
 
       {/* Collapse toggle */}
       <button
