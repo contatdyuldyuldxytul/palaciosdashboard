@@ -3,13 +3,13 @@ import { useLeads, getStatusDisplay, LeadStatus } from "@/hooks/useLeads";
 
 const stageOrder: LeadStatus[] = ["lead", "contatado", "reuniao_agendada", "reuniao_realizada", "proposta", "fechado"];
 const stageColors: Record<LeadStatus, string> = {
-  lead: "bg-muted-foreground",
-  contatado: "bg-blue-500",
-  reuniao_agendada: "bg-yellow-500",
-  reuniao_realizada: "bg-orange-500",
-  proposta: "bg-purple-500",
-  fechado: "bg-primary",
-  perdido: "bg-destructive",
+  lead: "from-blue-400/80 to-blue-500/80",
+  contatado: "from-sky-400/80 to-sky-500/80",
+  reuniao_agendada: "from-yellow-400/80 to-yellow-500/80",
+  reuniao_realizada: "from-orange-400/80 to-orange-500/80",
+  proposta: "from-purple-400/80 to-purple-500/80",
+  fechado: "from-emerald-400/80 to-emerald-500/80",
+  perdido: "from-red-400/80 to-red-500/80",
 };
 
 export default function Funil() {
@@ -19,7 +19,7 @@ export default function Funil() {
     status,
     name: getStatusDisplay(status),
     count: leads.filter((l) => l.status === status).length,
-    color: stageColors[status],
+    gradient: stageColors[status],
   }));
 
   const total = stageCounts[0]?.count || 1;
@@ -34,50 +34,75 @@ export default function Funil() {
 
   if (isLoading) {
     return (
-      <div className="p-6 space-y-6 max-w-4xl">
+      <div className="p-6 space-y-6 max-w-4xl mx-auto">
         <div className="h-8 w-48 bg-muted/30 rounded animate-pulse" />
-        <div className="glass-card p-6 space-y-4">
+        <div className="glass-card p-8 space-y-3">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-12 bg-muted/30 rounded-lg animate-pulse" />
+            <div key={i} className="h-14 bg-muted/30 rounded-lg animate-pulse mx-auto" style={{ width: `${100 - i * 12}%` }} />
           ))}
         </div>
       </div>
     );
   }
 
+  const maxWidth = 100;
+  const minWidth = 28;
+  const stepDecrease = (maxWidth - minWidth) / Math.max(stages.length - 1, 1);
+
   return (
-    <div className="p-6 space-y-6 max-w-4xl">
+    <div className="p-6 space-y-6 max-w-4xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold tracking-tight" style={{ lineHeight: "1.1" }}>Funil de Vendas</h1>
         <p className="text-sm text-muted-foreground mt-1">{leads.length} leads no pipeline</p>
       </div>
 
-      <div className="glass-card p-6 space-y-4 animate-slide-up">
-        {stages.map((stage) => (
-          <div key={stage.status}>
-            {stage.dropoff && (
-              <div className="flex items-center gap-2 mb-1 ml-2">
-                <div className="w-px h-4 bg-border" />
-                <span className="text-xs text-destructive font-medium">{stage.dropoff} drop-off</span>
-              </div>
-            )}
-            <div className="flex items-center gap-4">
-              <div className="w-40 text-sm text-muted-foreground flex-shrink-0">{stage.name}</div>
-              <div className="flex-1 h-10 bg-muted rounded-xl overflow-hidden relative">
+      <div className="glass-card p-8 animate-slide-up">
+        <div className="flex flex-col items-center gap-0">
+          {stages.map((stage, i) => {
+            const widthPct = maxWidth - i * stepDecrease;
+            const nextWidthPct = i < stages.length - 1 ? maxWidth - (i + 1) * stepDecrease : widthPct - stepDecrease;
+
+            return (
+              <div key={stage.status} className="w-full flex flex-col items-center">
+                {/* Dropoff indicator */}
+                {stage.dropoff && (
+                  <div className="flex items-center gap-2 py-1">
+                    <span className="text-[10px] text-destructive font-medium tracking-wide">{stage.dropoff} drop-off</span>
+                  </div>
+                )}
+
+                {/* Funnel segment — trapezoid shape */}
                 <div
-                  className={`h-full ${stage.color} rounded-xl transition-all duration-1000`}
-                  style={{ width: `${Math.max(stage.pct, 2)}%` }}
-                />
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-foreground">
-                  {stage.count}
-                </span>
+                  className="relative group transition-all duration-500 ease-out"
+                  style={{ width: '100%', display: 'flex', justifyContent: 'center' }}
+                >
+                  <div
+                    className="relative overflow-hidden transition-all duration-700 ease-out"
+                    style={{
+                      width: `${widthPct}%`,
+                      minHeight: '56px',
+                      clipPath: `polygon(0 0, 100% 0, ${50 + (nextWidthPct / widthPct) * 50}% 100%, ${50 - (nextWidthPct / widthPct) * 50}% 100%)`,
+                    }}
+                  >
+                    <div className={`absolute inset-0 bg-gradient-to-r ${stage.gradient} opacity-90 group-hover:opacity-100 transition-opacity duration-300`} />
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
+                    <div className="relative z-10 flex items-center justify-center h-full min-h-[56px] px-4">
+                      <div className="flex items-center gap-3 text-white">
+                        <span className="text-sm font-semibold tracking-wide">{stage.name}</span>
+                        <span className="text-xs font-bold bg-black/20 backdrop-blur-sm rounded-full px-2.5 py-0.5">
+                          {stage.count}
+                        </span>
+                        <span className="text-[10px] font-medium opacity-75">
+                          {stage.pct.toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="w-16 text-right text-sm font-medium text-foreground">
-                {stage.pct.toFixed(1)}%
-              </div>
-            </div>
-          </div>
-        ))}
+            );
+          })}
+        </div>
       </div>
 
       {leads.length === 0 && (
