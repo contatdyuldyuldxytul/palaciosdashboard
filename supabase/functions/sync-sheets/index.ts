@@ -302,9 +302,10 @@ Deno.serve(async (req) => {
         const rows = await readSheet(accessToken, sheetsId, tabName);
         
         if (debugMode && rows.length > 0) {
+          const hIdx = rows.findIndex(r => r.length > 1);
           debugData[tabName] = { 
-            headers: rows[0],
-            sample: rows.length > 1 ? Object.fromEntries(rows[0].map((h: string, i: number) => [h, rows[1][i] || ""])) : undefined
+            headers: hIdx >= 0 ? rows[hIdx] : rows[0],
+            sample: (hIdx >= 0 && rows.length > hIdx + 1) ? Object.fromEntries(rows[hIdx].map((h: string, i: number) => [h, rows[hIdx+1]?.[i] || ""])) : undefined
           };
         }
         
