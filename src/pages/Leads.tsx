@@ -184,7 +184,7 @@ export default function Leads() {
                     <td className="p-4">
                       <select
                         value={lead.status}
-                        onChange={(e) => handleStatusChange(lead.id, e.target.value as LeadStatus)}
+                        onChange={(e) => handleStatusChange(lead, e.target.value as LeadStatus)}
                         className="bg-transparent text-xs border-0 focus:outline-none cursor-pointer"
                       >
                         {(["lead", "contatado", "reuniao_agendada", "reuniao_realizada", "proposta", "fechado", "perdido"] as LeadStatus[]).map((s) => (
