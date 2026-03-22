@@ -481,6 +481,48 @@ export type Database = {
         }
         Relationships: []
       }
+      strategic_decisions: {
+        Row: {
+          arquivado: boolean | null
+          created_at: string
+          data: string
+          descricao: string
+          id: string
+          resultado_esperado: string | null
+          tags: string[] | null
+          tipo: string
+          titulo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          arquivado?: boolean | null
+          created_at?: string
+          data?: string
+          descricao: string
+          id?: string
+          resultado_esperado?: string | null
+          tags?: string[] | null
+          tipo: string
+          titulo: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          arquivado?: boolean | null
+          created_at?: string
+          data?: string
+          descricao?: string
+          id?: string
+          resultado_esperado?: string | null
+          tags?: string[] | null
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
