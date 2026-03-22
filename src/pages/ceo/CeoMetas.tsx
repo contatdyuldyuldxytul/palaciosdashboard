@@ -64,7 +64,7 @@ export default function CeoMetas() {
   const forecastData = useMemo(() => {
     if (!metas?.length) return [];
     return metas.filter(m => m.periodo === "mensal").slice(0, 6).reverse().map(m => ({
-      mes: m.mes || m.trimestre || "",
+      mes: m.mes || "",
       meta: m.meta_receita,
       realizado: m.realizado_receita,
     }));
