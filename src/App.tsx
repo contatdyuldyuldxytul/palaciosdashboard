@@ -53,7 +53,7 @@ const App = () => (
                 <Route path="financeiro" element={<Financeiro />} />
                 <Route path="metas-forecast" element={<Placeholder title="Metas & Forecast" />} />
                 <Route path="documentos" element={<Placeholder title="Documentos & Reuniões" />} />
-                <Route path="assistente" element={<Placeholder title="Assistente do Fundador" />} />
+                <Route path="assistente" element={<AssistenteFundador />} />
               </Route>
 
               {/* Clientes */}
@@ -63,7 +63,7 @@ const App = () => (
               </Route>
 
               {/* Assistente IA */}
-              <Route path="/assistente" element={<Placeholder title="Assistente Geral" />} />
+              <Route path="/assistente" element={<AssistenteGeral />} />
 
               {/* Redirects */}
               <Route path="/leads" element={<Navigate to="/vendas" replace />} />
