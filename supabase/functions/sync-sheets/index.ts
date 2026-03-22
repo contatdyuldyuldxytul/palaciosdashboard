@@ -264,15 +264,19 @@ function mapFinanceiroEmpresa(rows: Record<string, string>[]) {
 }
 
 function mapChecklist(rows: Record<string, string>[]) {
-  return rows.map((r) => ({
-    cliente_id: r.cliente_id || r.id_cliente || crypto.randomUUID(),
-    etapa: parseInt(r.etapa) || 1,
-    nome_etapa: r.nome_etapa || r.etapa || "",
-    concluida: (r.concluido || r.concluida || "").toLowerCase() === "sim" || r.concluida === "true" || r.concluida === "1",
-    data_conclusao: r.data_conclusao || null,
-    responsavel: r.responsavel || null,
-    notas: r.notas || null,
-  }));
+  let stepCounter = 0;
+  return rows.map((r) => {
+    stepCounter++;
+    return {
+      cliente_id: r.cliente_id || r.id_cliente || crypto.randomUUID(),
+      etapa: stepCounter,
+      nome_etapa: r.etapa || r.nome_etapa || "",
+      concluida: (r.concluido || r.concluida || "").toLowerCase() === "sim" || r.concluida === "true" || r.concluida === "1",
+      data_conclusao: parseBrDate(r.data_conclusao) || null,
+      responsavel: r.responsavel || null,
+      notas: r.observacao || r.notas || null,
+    };
+  });
 }
 
 const TAB_CONFIG: Record<string, { table: string; mapper: (rows: Record<string, string>[]) => any[] }> = {
