@@ -14,16 +14,532 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      checklist_projetos: {
+        Row: {
+          cliente_id: string
+          concluida: boolean | null
+          created_at: string
+          data_conclusao: string | null
+          etapa: number
+          id: string
+          nome_etapa: string
+          notas: string | null
+          responsavel: string | null
+          updated_at: string
+        }
+        Insert: {
+          cliente_id: string
+          concluida?: boolean | null
+          created_at?: string
+          data_conclusao?: string | null
+          etapa: number
+          id?: string
+          nome_etapa: string
+          notas?: string | null
+          responsavel?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cliente_id?: string
+          concluida?: boolean | null
+          created_at?: string
+          data_conclusao?: string | null
+          etapa?: number
+          id?: string
+          nome_etapa?: string
+          notas?: string | null
+          responsavel?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_projetos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes_ativos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clientes_ativos: {
+        Row: {
+          contato: string | null
+          created_at: string
+          data_inicio: string | null
+          data_previsao: string | null
+          email: string | null
+          empresa: string
+          id: string
+          inclui_modelagem: boolean | null
+          notas: string | null
+          progresso: number | null
+          projeto: string
+          qtd_imagens: number | null
+          segundos_animacao: number | null
+          status: string
+          telefone: string | null
+          updated_at: string
+          valor_total: number | null
+        }
+        Insert: {
+          contato?: string | null
+          created_at?: string
+          data_inicio?: string | null
+          data_previsao?: string | null
+          email?: string | null
+          empresa: string
+          id?: string
+          inclui_modelagem?: boolean | null
+          notas?: string | null
+          progresso?: number | null
+          projeto: string
+          qtd_imagens?: number | null
+          segundos_animacao?: number | null
+          status?: string
+          telefone?: string | null
+          updated_at?: string
+          valor_total?: number | null
+        }
+        Update: {
+          contato?: string | null
+          created_at?: string
+          data_inicio?: string | null
+          data_previsao?: string | null
+          email?: string | null
+          empresa?: string
+          id?: string
+          inclui_modelagem?: boolean | null
+          notas?: string | null
+          progresso?: number | null
+          projeto?: string
+          qtd_imagens?: number | null
+          segundos_animacao?: number | null
+          status?: string
+          telefone?: string | null
+          updated_at?: string
+          valor_total?: number | null
+        }
+        Relationships: []
+      }
+      comissoes: {
+        Row: {
+          comissao_contratos: number | null
+          contratos_indicados: number | null
+          created_at: string
+          id: string
+          leads_gerados: number | null
+          mes_referencia: string
+          reunioes_realizadas: number | null
+          salario_fixo: number | null
+          total_comissao: number | null
+          valor_contratos: number | null
+          valor_leads: number | null
+          valor_reunioes: number | null
+          vendedor_id: string
+          vendedor_nome: string | null
+        }
+        Insert: {
+          comissao_contratos?: number | null
+          contratos_indicados?: number | null
+          created_at?: string
+          id?: string
+          leads_gerados?: number | null
+          mes_referencia: string
+          reunioes_realizadas?: number | null
+          salario_fixo?: number | null
+          total_comissao?: number | null
+          valor_contratos?: number | null
+          valor_leads?: number | null
+          valor_reunioes?: number | null
+          vendedor_id: string
+          vendedor_nome?: string | null
+        }
+        Update: {
+          comissao_contratos?: number | null
+          contratos_indicados?: number | null
+          created_at?: string
+          id?: string
+          leads_gerados?: number | null
+          mes_referencia?: string
+          reunioes_realizadas?: number | null
+          salario_fixo?: number | null
+          total_comissao?: number | null
+          valor_contratos?: number | null
+          valor_leads?: number | null
+          valor_reunioes?: number | null
+          vendedor_id?: string
+          vendedor_nome?: string | null
+        }
+        Relationships: []
+      }
+      financeiro_clientes: {
+        Row: {
+          cliente_id: string
+          created_at: string
+          data_pagamento: string | null
+          data_vencimento: string | null
+          descricao: string
+          forma_pagamento: string | null
+          id: string
+          notas: string | null
+          status: Database["public"]["Enums"]["payment_status"]
+          valor: number
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string
+          data_pagamento?: string | null
+          data_vencimento?: string | null
+          descricao: string
+          forma_pagamento?: string | null
+          id?: string
+          notas?: string | null
+          status?: Database["public"]["Enums"]["payment_status"]
+          valor?: number
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string
+          data_pagamento?: string | null
+          data_vencimento?: string | null
+          descricao?: string
+          forma_pagamento?: string | null
+          id?: string
+          notas?: string | null
+          status?: Database["public"]["Enums"]["payment_status"]
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financeiro_clientes_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes_ativos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financeiro_empresa: {
+        Row: {
+          categoria: string
+          created_at: string
+          data: string
+          descricao: string
+          id: string
+          notas: string | null
+          recorrente: boolean | null
+          subcategoria: string | null
+          tipo: string
+          valor: number
+        }
+        Insert: {
+          categoria: string
+          created_at?: string
+          data?: string
+          descricao: string
+          id?: string
+          notas?: string | null
+          recorrente?: boolean | null
+          subcategoria?: string | null
+          tipo: string
+          valor?: number
+        }
+        Update: {
+          categoria?: string
+          created_at?: string
+          data?: string
+          descricao?: string
+          id?: string
+          notas?: string | null
+          recorrente?: boolean | null
+          subcategoria?: string | null
+          tipo?: string
+          valor?: number
+        }
+        Relationships: []
+      }
+      leads: {
+        Row: {
+          cargo: string | null
+          cidade: string | null
+          contato: string | null
+          created_by: string | null
+          data_atualizacao: string
+          data_criacao: string
+          data_fechamento: string | null
+          email: string | null
+          empresa: string
+          estado: string | null
+          id: string
+          motivo_perda: string | null
+          notas: string | null
+          origem: string | null
+          responsavel_id: string | null
+          responsavel_nome: string | null
+          status: Database["public"]["Enums"]["lead_status"]
+          telefone: string | null
+          valor_estimado: number | null
+        }
+        Insert: {
+          cargo?: string | null
+          cidade?: string | null
+          contato?: string | null
+          created_by?: string | null
+          data_atualizacao?: string
+          data_criacao?: string
+          data_fechamento?: string | null
+          email?: string | null
+          empresa: string
+          estado?: string | null
+          id?: string
+          motivo_perda?: string | null
+          notas?: string | null
+          origem?: string | null
+          responsavel_id?: string | null
+          responsavel_nome?: string | null
+          status?: Database["public"]["Enums"]["lead_status"]
+          telefone?: string | null
+          valor_estimado?: number | null
+        }
+        Update: {
+          cargo?: string | null
+          cidade?: string | null
+          contato?: string | null
+          created_by?: string | null
+          data_atualizacao?: string
+          data_criacao?: string
+          data_fechamento?: string | null
+          email?: string | null
+          empresa?: string
+          estado?: string | null
+          id?: string
+          motivo_perda?: string | null
+          notas?: string | null
+          origem?: string | null
+          responsavel_id?: string | null
+          responsavel_nome?: string | null
+          status?: Database["public"]["Enums"]["lead_status"]
+          telefone?: string | null
+          valor_estimado?: number | null
+        }
+        Relationships: []
+      }
+      metas: {
+        Row: {
+          ano: number
+          created_at: string
+          id: string
+          mes: string | null
+          meta_contratos: number | null
+          meta_leads: number | null
+          meta_receita: number | null
+          meta_reunioes: number | null
+          periodo: string
+          realizado_contratos: number | null
+          realizado_leads: number | null
+          realizado_receita: number | null
+          realizado_reunioes: number | null
+          trimestre: string | null
+          updated_at: string
+        }
+        Insert: {
+          ano?: number
+          created_at?: string
+          id?: string
+          mes?: string | null
+          meta_contratos?: number | null
+          meta_leads?: number | null
+          meta_receita?: number | null
+          meta_reunioes?: number | null
+          periodo: string
+          realizado_contratos?: number | null
+          realizado_leads?: number | null
+          realizado_receita?: number | null
+          realizado_reunioes?: number | null
+          trimestre?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ano?: number
+          created_at?: string
+          id?: string
+          mes?: string | null
+          meta_contratos?: number | null
+          meta_leads?: number | null
+          meta_receita?: number | null
+          meta_reunioes?: number | null
+          periodo?: string
+          realizado_contratos?: number | null
+          realizado_leads?: number | null
+          realizado_receita?: number | null
+          realizado_reunioes?: number | null
+          trimestre?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          founder_pin: string | null
+          full_name: string
+          id: string
+          updated_at: string
+          vendedor_sub_role:
+            | Database["public"]["Enums"]["vendedor_sub_role"]
+            | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          founder_pin?: string | null
+          full_name?: string
+          id: string
+          updated_at?: string
+          vendedor_sub_role?:
+            | Database["public"]["Enums"]["vendedor_sub_role"]
+            | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          founder_pin?: string | null
+          full_name?: string
+          id?: string
+          updated_at?: string
+          vendedor_sub_role?:
+            | Database["public"]["Enums"]["vendedor_sub_role"]
+            | null
+        }
+        Relationships: []
+      }
+      reunioes_realizadas: {
+        Row: {
+          created_at: string
+          data_reuniao: string
+          duracao_minutos: number | null
+          gerou_proposta: boolean | null
+          id: string
+          lead_id: string | null
+          notas: string | null
+          resultado: string | null
+          valor_proposta: number | null
+          vendedor_id: string | null
+          vendedor_nome: string | null
+        }
+        Insert: {
+          created_at?: string
+          data_reuniao?: string
+          duracao_minutos?: number | null
+          gerou_proposta?: boolean | null
+          id?: string
+          lead_id?: string | null
+          notas?: string | null
+          resultado?: string | null
+          valor_proposta?: number | null
+          vendedor_id?: string | null
+          vendedor_nome?: string | null
+        }
+        Update: {
+          created_at?: string
+          data_reuniao?: string
+          duracao_minutos?: number | null
+          gerou_proposta?: boolean | null
+          id?: string
+          lead_id?: string | null
+          notas?: string | null
+          resultado?: string | null
+          valor_proposta?: number | null
+          vendedor_id?: string | null
+          vendedor_nome?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reunioes_realizadas_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scripts: {
+        Row: {
+          categoria: string
+          conteudo: string
+          created_at: string
+          favorito: boolean | null
+          id: string
+          ordem: number | null
+          titulo: string
+        }
+        Insert: {
+          categoria: string
+          conteudo: string
+          created_at?: string
+          favorito?: boolean | null
+          id?: string
+          ordem?: number | null
+          titulo: string
+        }
+        Update: {
+          categoria?: string
+          conteudo?: string
+          created_at?: string
+          favorito?: boolean | null
+          id?: string
+          ordem?: number | null
+          titulo?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "fundador" | "vendedor"
+      lead_status:
+        | "lead"
+        | "contatado"
+        | "reuniao_agendada"
+        | "reuniao_realizada"
+        | "proposta"
+        | "fechado"
+        | "perdido"
+      payment_status: "pendente" | "pago" | "atrasado" | "cancelado"
+      vendedor_sub_role: "sdr" | "ldr"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +666,19 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["fundador", "vendedor"],
+      lead_status: [
+        "lead",
+        "contatado",
+        "reuniao_agendada",
+        "reuniao_realizada",
+        "proposta",
+        "fechado",
+        "perdido",
+      ],
+      payment_status: ["pendente", "pago", "atrasado", "cancelado"],
+      vendedor_sub_role: ["sdr", "ldr"],
+    },
   },
 } as const
