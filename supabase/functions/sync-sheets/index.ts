@@ -267,13 +267,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Parse request body for optional tab filter
+    // Parse request body for optional tab filter and debug mode
     let tabsToSync: string[] = Object.keys(TAB_CONFIG);
+    let debugMode = false;
     try {
       const body = await req.json();
       if (body.tabs && Array.isArray(body.tabs)) {
         tabsToSync = body.tabs.filter((t: string) => TAB_CONFIG[t]);
       }
+      if (body.debug) debugMode = true;
     } catch {
       // No body or invalid JSON — sync all tabs
     }
