@@ -11,7 +11,13 @@ interface SectionTabsProps {
 
 export function SectionTabs({ tabs }: SectionTabsProps) {
   return (
-    <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm">
+    <div
+      className="backdrop-blur-xl"
+      style={{
+        background: 'rgba(255, 255, 255, 0.02)',
+        borderBottom: '1px solid var(--glass-border)',
+      }}
+    >
       <div className="flex items-center gap-1 px-6 overflow-x-auto scrollbar-thin">
         {tabs.map((tab) => (
           <NavLink
@@ -19,10 +25,10 @@ export function SectionTabs({ tabs }: SectionTabsProps) {
             to={tab.path}
             end
             className={({ isActive }) =>
-              `px-4 py-3 text-sm font-medium whitespace-nowrap transition-all duration-150 border-b-2 ${
+              `px-4 py-3 text-sm font-medium whitespace-nowrap transition-all duration-300 border-b-2 ${
                 isActive
                   ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-white/10"
               }`
             }
           >
