@@ -1,7 +1,7 @@
 import { useLocation, Link } from "react-router-dom";
 import {
   LayoutDashboard, TrendingUp, Users, MessageSquare,
-  ChevronLeft, ChevronRight, LogOut, Crown
+  ChevronLeft, ChevronRight, LogOut, Crown, User
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,10 +10,13 @@ import logoPalacios from "@/assets/logo-palacios.png";
 const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Pré-Vendas", url: "/vendas", icon: TrendingUp },
-  
   { title: "Clientes", url: "/clientes", icon: Users },
   { title: "CEO", url: "/ceo", icon: Crown, requireRole: "fundador" as const, isCeo: true },
   { title: "Assistente IA", url: "/assistente", icon: MessageSquare },
+];
+
+const subItems = [
+  { title: "Aline", url: "/equipe/aline", parentUrl: "/vendas", initials: "AL" },
 ];
 
 export function AppSidebar() {
