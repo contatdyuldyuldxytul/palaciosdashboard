@@ -1,8 +1,11 @@
-import { TrendingUp, Users, Calendar, Target } from "lucide-react";
+import { TrendingUp, Users, Calendar, Target, RefreshCw } from "lucide-react";
 import { useLeads } from "@/hooks/useLeads";
+import { useSyncSheets } from "@/hooks/useSyncSheets";
+import { format } from "date-fns";
 
 export function TickerBar() {
   const { data: leads = [] } = useLeads();
+  const { sync, isSyncing, lastSync } = useSyncSheets();
 
   const leadsCount = leads.length;
   const reunioes = leads.filter((l) => ["reuniao_realizada", "proposta", "fechado"].includes(l.status)).length;
@@ -25,6 +28,22 @@ export function TickerBar() {
           <span className="font-semibold text-foreground">{m.value}</span>
         </div>
       ))}
+
+      <div className="ml-auto flex items-center gap-2 flex-shrink-0">
+        {lastSync && (
+          <span className="text-[10px] text-muted-foreground">
+            Sync: {format(new Date(lastSync), "dd/MM HH:mm")}
+          </span>
+        )}
+        <button
+          onClick={() => sync()}
+          disabled={isSyncing}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 text-primary text-[11px] font-medium hover:bg-primary/20 active:scale-[0.96] transition-all disabled:opacity-50"
+        >
+          <RefreshCw className={`w-3 h-3 ${isSyncing ? "animate-spin" : ""}`} />
+          {isSyncing ? "Sincronizando..." : "Sync Sheets"}
+        </button>
+      </div>
     </div>
   );
 }
