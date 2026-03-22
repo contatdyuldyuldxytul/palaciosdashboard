@@ -15,6 +15,8 @@ import Funil from "@/pages/Funil";
 import Metas from "@/pages/Metas";
 import Scripts from "@/pages/Scripts";
 import AssistenteVendas from "@/pages/AssistenteVendas";
+import AssistenteFundador from "@/pages/AssistenteFundador";
+import AssistenteGeral from "@/pages/AssistenteGeral";
 import ClientesAtivos from "@/pages/ClientesAtivos";
 import Financeiro from "@/pages/Financeiro";
 import Login from "@/pages/Login";
