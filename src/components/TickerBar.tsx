@@ -5,7 +5,7 @@ import { format } from "date-fns";
 
 export function TickerBar() {
   const { data: leads = [] } = useLeads();
-  const { sync, isSyncing, lastSync } = useSyncSheets();
+  const { sync, isSyncing, lastSync, autoSync, toggleAutoSync } = useSyncSheets();
 
   const leadsCount = leads.length;
   const reunioes = leads.filter((l) => ["reuniao_realizada", "proposta", "fechado"].includes(l.status)).length;
