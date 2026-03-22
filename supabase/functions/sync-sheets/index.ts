@@ -326,13 +326,17 @@ Deno.serve(async (req) => {
       }
     }
 
+    const responseBody: any = {
+      success: true,
+      synced_at: new Date().toISOString(),
+      results,
+    };
+    if (debugMode) responseBody.debug = debugData;
+
     return new Response(
-      JSON.stringify({
-        success: true,
-        synced_at: new Date().toISOString(),
-        results,
-      }),
+      JSON.stringify(responseBody),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
     );
   } catch (error) {
     console.error("Sync error:", error);
