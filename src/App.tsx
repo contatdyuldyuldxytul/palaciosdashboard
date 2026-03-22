@@ -15,6 +15,8 @@ import Funil from "@/pages/Funil";
 import Metas from "@/pages/Metas";
 import Scripts from "@/pages/Scripts";
 import AssistenteVendas from "@/pages/AssistenteVendas";
+import AssistenteFundador from "@/pages/AssistenteFundador";
+import AssistenteGeral from "@/pages/AssistenteGeral";
 import ClientesAtivos from "@/pages/ClientesAtivos";
 import Financeiro from "@/pages/Financeiro";
 import Login from "@/pages/Login";
@@ -51,7 +53,7 @@ const App = () => (
                 <Route path="financeiro" element={<Financeiro />} />
                 <Route path="metas-forecast" element={<Placeholder title="Metas & Forecast" />} />
                 <Route path="documentos" element={<Placeholder title="Documentos & Reuniões" />} />
-                <Route path="assistente" element={<Placeholder title="Assistente do Fundador" />} />
+                <Route path="assistente" element={<AssistenteFundador />} />
               </Route>
 
               {/* Clientes */}
@@ -61,7 +63,7 @@ const App = () => (
               </Route>
 
               {/* Assistente IA */}
-              <Route path="/assistente" element={<Placeholder title="Assistente Geral" />} />
+              <Route path="/assistente" element={<AssistenteGeral />} />
 
               {/* Redirects */}
               <Route path="/leads" element={<Navigate to="/vendas" replace />} />

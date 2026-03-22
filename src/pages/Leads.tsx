@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Plus, Search } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
+import { SyncIndicator } from "@/components/SyncIndicator";
 import { useLeads, useAddLead, useUpdateLead, getStatusDisplay, LeadStatus } from "@/hooks/useLeads";
+import { writeToSheets } from "@/hooks/useWriteSheets";
 import { format } from "date-fns";
 
 const statusOptions: Array<"Todos" | LeadStatus> = ["Todos", "lead", "contatado", "reuniao_agendada", "reuniao_realizada", "proposta", "fechado", "perdido"];
@@ -36,21 +38,32 @@ export default function Leads() {
 
   const handleAddLead = () => {
     if (!newLead.empresa) return;
-    addLead.mutate({
+    const leadData = {
       empresa: newLead.empresa,
       contato: newLead.contato || null,
       cargo: newLead.cargo || null,
       cidade: newLead.cidade || null,
       telefone: newLead.telefone || null,
       email: newLead.email || null,
-      status: "lead",
-    });
+      status: "lead" as const,
+    };
+    addLead.mutate(leadData);
+    // Write back to Google Sheets
+    writeToSheets({ tab: "leads", action: "append", record: leadData }).catch(() => {});
     setNewLead({ empresa: "", contato: "", cargo: "", cidade: "", telefone: "", email: "" });
     setShowForm(false);
   };
 
-  const handleStatusChange = (id: string, status: LeadStatus) => {
-    updateLead.mutate({ id, status });
+  const handleStatusChange = (lead: typeof leads[0], status: LeadStatus) => {
+    updateLead.mutate({ id: lead.id, status });
+    // Write back status change to Sheets
+    writeToSheets({
+      tab: "leads",
+      action: "find_and_update",
+      match_field: "empresa",
+      match_value: lead.empresa,
+      record: { ...lead, status },
+    }).catch(() => {});
   };
 
   return (
@@ -58,7 +71,7 @@ export default function Leads() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight" style={{ lineHeight: "1.1" }}>Meus Leads</h1>
-          <p className="text-sm text-muted-foreground mt-1">{filtered.length} leads encontrados</p>
+          <p className="text-sm text-muted-foreground mt-1">{filtered.length} leads encontrados <SyncIndicator className="ml-2" /></p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
@@ -171,7 +184,7 @@ export default function Leads() {
                     <td className="p-4">
                       <select
                         value={lead.status}
-                        onChange={(e) => handleStatusChange(lead.id, e.target.value as LeadStatus)}
+                        onChange={(e) => handleStatusChange(lead, e.target.value as LeadStatus)}
                         className="bg-transparent text-xs border-0 focus:outline-none cursor-pointer"
                       >
                         {(["lead", "contatado", "reuniao_agendada", "reuniao_realizada", "proposta", "fechado", "perdido"] as LeadStatus[]).map((s) => (
