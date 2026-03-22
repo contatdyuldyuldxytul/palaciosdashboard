@@ -107,21 +107,39 @@ function rowsToObjects(rows: string[][]): Record<string, string>[] {
 }
 
 // Tab-specific mappers
+// Normalize status text to enum values
+function normalizeLeadStatus(status: string): string {
+  const map: Record<string, string> = {
+    "lead": "lead",
+    "contatado": "contatado",
+    "reunião agendada": "reuniao_agendada",
+    "reuniao agendada": "reuniao_agendada",
+    "reunião realizada": "reuniao_realizada",
+    "reuniao realizada": "reuniao_realizada",
+    "proposta": "proposta",
+    "proposta enviada": "proposta",
+    "fechado": "fechado",
+    "ganho": "fechado",
+    "perdido": "perdido",
+  };
+  return map[status.toLowerCase().trim()] || "lead";
+}
+
 function mapLeads(rows: Record<string, string>[]) {
   return rows.map((r) => ({
     empresa: r.empresa || "Sem nome",
-    contato: r.contato || null,
+    contato: r.contato_nome || r.contato || null,
     cargo: r.cargo || null,
     telefone: r.telefone || null,
     email: r.email || null,
     cidade: r.cidade || null,
     estado: r.estado || null,
-    status: r.status || "lead",
+    status: normalizeLeadStatus(r.status || "lead"),
     responsavel_nome: r.responsavel_nome || r.responsavel || null,
-    origem: r.origem || null,
-    notas: r.notas || null,
-    valor_estimado: parseFloat(r.valor_estimado) || 0,
-    motivo_perda: r.motivo_perda || null,
+    origem: r.origem_lead || r.origem || null,
+    notas: r.observacoes || r.notas || null,
+    valor_estimado: parseFloat(r.valor_contrato || r.valor_estimado) || 0,
+    motivo_perda: r.perdido_motivo || r.motivo_perda || null,
   }));
 }
 
