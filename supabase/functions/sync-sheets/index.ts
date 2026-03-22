@@ -85,8 +85,19 @@ async function readSheet(
 
 function rowsToObjects(rows: string[][]): Record<string, string>[] {
   if (rows.length < 2) return [];
-  const headers = rows[0].map((h) => h.trim().toLowerCase().replace(/\s+/g, "_"));
-  return rows.slice(1).map((row) => {
+  
+  // Find the actual header row — skip decorative title rows
+  // Header row is the first row that has more than 1 column
+  let headerIdx = 0;
+  for (let i = 0; i < rows.length; i++) {
+    if (rows[i].length > 1) {
+      headerIdx = i;
+      break;
+    }
+  }
+  
+  const headers = rows[headerIdx].map((h) => h.trim().toLowerCase().replace(/\s+/g, "_"));
+  return rows.slice(headerIdx + 1).map((row) => {
     const obj: Record<string, string> = {};
     headers.forEach((h, i) => {
       obj[h] = row[i] || "";
