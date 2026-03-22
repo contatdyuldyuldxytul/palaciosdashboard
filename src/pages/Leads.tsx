@@ -38,21 +38,32 @@ export default function Leads() {
 
   const handleAddLead = () => {
     if (!newLead.empresa) return;
-    addLead.mutate({
+    const leadData = {
       empresa: newLead.empresa,
       contato: newLead.contato || null,
       cargo: newLead.cargo || null,
       cidade: newLead.cidade || null,
       telefone: newLead.telefone || null,
       email: newLead.email || null,
-      status: "lead",
-    });
+      status: "lead" as const,
+    };
+    addLead.mutate(leadData);
+    // Write back to Google Sheets
+    writeToSheets({ tab: "leads", action: "append", record: leadData }).catch(() => {});
     setNewLead({ empresa: "", contato: "", cargo: "", cidade: "", telefone: "", email: "" });
     setShowForm(false);
   };
 
-  const handleStatusChange = (id: string, status: LeadStatus) => {
-    updateLead.mutate({ id, status });
+  const handleStatusChange = (lead: typeof leads[0], status: LeadStatus) => {
+    updateLead.mutate({ id: lead.id, status });
+    // Write back status change to Sheets
+    writeToSheets({
+      tab: "leads",
+      action: "find_and_update",
+      match_field: "empresa",
+      match_value: lead.empresa,
+      record: { ...lead, status },
+    }).catch(() => {});
   };
 
   return (
