@@ -38,7 +38,7 @@ export function useAddCliente() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (cliente: Partial<Cliente>) => {
-      const { data, error } = await supabase.from("clientes_ativos").insert(cliente).select().single();
+      const { data, error } = await supabase.from("clientes_ativos").insert([cliente as any]).select().single();
       if (error) throw error;
       return data;
     },

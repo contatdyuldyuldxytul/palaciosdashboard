@@ -54,7 +54,7 @@ export function useAddLead() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (lead: Partial<Lead>) => {
-      const { data, error } = await supabase.from("leads").insert(lead).select().single();
+      const { data, error } = await supabase.from("leads").insert([lead as any]).select().single();
       if (error) throw error;
       return data;
     },
