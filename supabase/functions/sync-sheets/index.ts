@@ -251,16 +251,30 @@ function mapFinanceiroClientes(rows: Record<string, string>[]) {
 }
 
 function mapFinanceiroEmpresa(rows: Record<string, string>[]) {
-  return rows.map((r) => ({
-    tipo: (r.tipo || "despesa").toLowerCase() === "receita" ? "receita" : "despesa",
-    categoria: r.categoria || "Outros",
-    subcategoria: r.subcategoria || null,
-    descricao: r.descricao || "",
-    valor: parseBrNumber(r.valor) || 0,
-    data: parseBrDate(r.data) || new Date().toISOString().split("T")[0],
-    recorrente: (r.recorrente || "").toLowerCase() === "sim" || r.recorrente === "true" || r.recorrente === "1",
-    notas: r.notas || r.mes_referencia || null,
-  }));
+  // Filter out summary/total rows that are not real transactions
+  const summaryKeywords = ["total", "resultado", "saldo", "subtotal"];
+  return rows
+    .filter((r) => {
+      const desc = (r.descricao || "").toLowerCase().trim();
+      const cat = (r.categoria || "").toLowerCase().trim();
+      const tipo = (r.tipo || "").toLowerCase().trim();
+      // Skip rows that are summaries or have no meaningful data
+      if (!desc && !cat && !tipo) return false;
+      if (summaryKeywords.some(kw => desc.startsWith(kw))) return false;
+      // Skip rows with empty valor
+      if (!r.valor || parseBrNumber(r.valor) === 0) return false;
+      return true;
+    })
+    .map((r) => ({
+      tipo: (r.tipo || "despesa").toLowerCase() === "receita" ? "receita" : "despesa",
+      categoria: r.categoria || "Outros",
+      subcategoria: r.subcategoria || null,
+      descricao: r.descricao || "",
+      valor: parseBrNumber(r.valor) || 0,
+      data: parseBrDate(r.data) || new Date().toISOString().split("T")[0],
+      recorrente: (r.recorrente || "").toLowerCase() === "sim" || r.recorrente === "true" || r.recorrente === "1",
+      notas: r.notas || r.mes_referencia || null,
+    }));
 }
 
 function mapChecklist(rows: Record<string, string>[]) {
