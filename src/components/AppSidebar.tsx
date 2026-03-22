@@ -1,7 +1,7 @@
 import { useLocation, Link } from "react-router-dom";
 import {
   LayoutDashboard, TrendingUp, Users, MessageSquare,
-  ChevronLeft, ChevronRight, LogOut, Crown
+  ChevronLeft, ChevronRight, LogOut, Crown, User
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,10 +10,13 @@ import logoPalacios from "@/assets/logo-palacios.png";
 const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Pré-Vendas", url: "/vendas", icon: TrendingUp },
-  
   { title: "Clientes", url: "/clientes", icon: Users },
   { title: "CEO", url: "/ceo", icon: Crown, requireRole: "fundador" as const, isCeo: true },
   { title: "Assistente IA", url: "/assistente", icon: MessageSquare },
+];
+
+const subItems = [
+  { title: "Aline", url: "/equipe/aline", parentUrl: "/vendas", initials: "AL" },
 ];
 
 export function AppSidebar() {
@@ -52,8 +55,9 @@ export function AppSidebar() {
         <ul className="space-y-1">
           {visibleItems.map((item) => {
             const active = isActive(item.url);
+            const children = subItems.filter((s) => s.parentUrl === item.url);
             return (
-              <li key={item.url}>
+              <li key={item.url} className="space-y-0.5">
                 <Link
                   to={item.url}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-300 ${
@@ -72,6 +76,34 @@ export function AppSidebar() {
                   <item.icon className="w-[18px] h-[18px] flex-shrink-0" />
                   {!collapsed && <span>{item.title}</span>}
                 </Link>
+                {/* Sub-items (team members) */}
+                {!collapsed && active && children.length > 0 && (
+                  <ul className="ml-5 pl-3 space-y-0.5" style={{ borderLeft: '1px solid var(--glass-border)' }}>
+                    {children.map((sub) => {
+                      const subActive = location.pathname === sub.url;
+                      return (
+                        <li key={sub.url}>
+                          <Link
+                            to={sub.url}
+                            className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs transition-all duration-300 ${
+                              subActive
+                                ? "text-primary font-medium bg-white/[0.06]"
+                                : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"
+                            }`}
+                          >
+                            <span
+                              className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0"
+                              style={{ background: "hsl(160,60%,38%)" }}
+                            >
+                              {sub.initials}
+                            </span>
+                            <span>{sub.title}</span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </li>
             );
           })}
