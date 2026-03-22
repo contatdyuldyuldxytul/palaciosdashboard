@@ -1,20 +1,38 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
+  const { signIn, signUp } = useAuth();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Mock login — will connect to Supabase auth
-    setTimeout(() => {
+
+    if (isSignUp) {
+      const { error } = await signUp(email, password, fullName);
       setLoading(false);
-      navigate("/");
-    }, 1000);
+      if (error) {
+        toast({ title: "Erro ao criar conta", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Conta criada!", description: "Verifique seu e-mail para confirmar." });
+      }
+    } else {
+      const { error } = await signIn(email, password);
+      setLoading(false);
+      if (error) {
+        toast({ title: "Erro ao entrar", description: error.message, variant: "destructive" });
+      } else {
+        navigate("/");
+      }
+    }
   };
 
   return (
@@ -28,7 +46,20 @@ export default function Login() {
           <p className="text-sm text-muted-foreground mt-1">Palacios 3D Studio</p>
         </div>
 
-        <form onSubmit={handleLogin} className="glass-card p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="glass-card p-6 space-y-4">
+          {isSignUp && (
+            <div>
+              <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Nome completo</label>
+              <input
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Seu nome"
+                className="w-full h-10 px-3 rounded-xl bg-muted text-sm text-foreground placeholder:text-muted-foreground border-0 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                required
+              />
+            </div>
+          )}
           <div>
             <label className="text-xs text-muted-foreground font-medium mb-1.5 block">E-mail</label>
             <input
@@ -49,6 +80,7 @@ export default function Login() {
               placeholder="••••••••"
               className="w-full h-10 px-3 rounded-xl bg-muted text-sm text-foreground placeholder:text-muted-foreground border-0 focus:outline-none focus:ring-2 focus:ring-primary/30"
               required
+              minLength={6}
             />
           </div>
           <button
@@ -56,7 +88,15 @@ export default function Login() {
             disabled={loading}
             className="w-full h-10 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 active:scale-[0.97] transition-all disabled:opacity-50"
           >
-            {loading ? "Entrando..." : "Entrar"}
+            {loading ? (isSignUp ? "Criando..." : "Entrando...") : (isSignUp ? "Criar conta" : "Entrar")}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsSignUp(!isSignUp)}
+            className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {isSignUp ? "Já tem conta? Entrar" : "Não tem conta? Criar agora"}
           </button>
         </form>
 

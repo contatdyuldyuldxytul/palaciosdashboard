@@ -1,25 +1,60 @@
 import { TrendingUp } from "lucide-react";
+import { useLeads, getStatusDisplay, LeadStatus } from "@/hooks/useLeads";
 
-const stages = [
-  { name: "Gerado", count: 127, color: "bg-muted-foreground", width: "100%" },
-  { name: "Contatado", count: 41, color: "bg-blue-500", width: "32%", dropoff: "-68%" },
-  { name: "Reunião Agendada", count: 22, color: "bg-yellow-500", width: "17%", dropoff: "-46%" },
-  { name: "Reunião Realizada", count: 18, color: "bg-orange-500", width: "14%", dropoff: "-18%" },
-  { name: "Proposta", count: 6, color: "bg-purple-500", width: "5%", dropoff: "-67%" },
-  { name: "Fechado", count: 1, color: "bg-primary", width: "2%", dropoff: "-83%" },
-];
+const stageOrder: LeadStatus[] = ["lead", "contatado", "reuniao_agendada", "reuniao_realizada", "proposta", "fechado"];
+const stageColors: Record<LeadStatus, string> = {
+  lead: "bg-muted-foreground",
+  contatado: "bg-blue-500",
+  reuniao_agendada: "bg-yellow-500",
+  reuniao_realizada: "bg-orange-500",
+  proposta: "bg-purple-500",
+  fechado: "bg-primary",
+  perdido: "bg-destructive",
+};
 
 export default function Funil() {
+  const { data: leads = [], isLoading } = useLeads();
+
+  const stageCounts = stageOrder.map((status) => ({
+    status,
+    name: getStatusDisplay(status),
+    count: leads.filter((l) => l.status === status).length,
+    color: stageColors[status],
+  }));
+
+  const total = stageCounts[0]?.count || 1;
+
+  const stages = stageCounts.map((s, i) => ({
+    ...s,
+    pct: total > 0 ? (s.count / total) * 100 : 0,
+    dropoff: i > 0 && stageCounts[i - 1].count > 0
+      ? `-${Math.round(((stageCounts[i - 1].count - s.count) / stageCounts[i - 1].count) * 100)}%`
+      : undefined,
+  }));
+
+  if (isLoading) {
+    return (
+      <div className="p-6 space-y-6 max-w-4xl">
+        <div className="h-8 w-48 bg-muted/30 rounded animate-pulse" />
+        <div className="glass-card p-6 space-y-4">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-12 bg-muted/30 rounded-lg animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6 max-w-4xl">
       <div>
         <h1 className="text-2xl font-bold tracking-tight" style={{ lineHeight: "1.1" }}>Funil de Vendas</h1>
-        <p className="text-sm text-muted-foreground mt-1">Março 2026 — Visão completa do pipeline</p>
+        <p className="text-sm text-muted-foreground mt-1">{leads.length} leads no pipeline</p>
       </div>
 
       <div className="glass-card p-6 space-y-4 animate-slide-up">
-        {stages.map((stage, i) => (
-          <div key={stage.name}>
+        {stages.map((stage) => (
+          <div key={stage.status}>
             {stage.dropoff && (
               <div className="flex items-center gap-2 mb-1 ml-2">
                 <div className="w-px h-4 bg-border" />
@@ -31,57 +66,43 @@ export default function Funil() {
               <div className="flex-1 h-10 bg-muted rounded-xl overflow-hidden relative">
                 <div
                   className={`h-full ${stage.color} rounded-xl transition-all duration-1000`}
-                  style={{ width: stage.width }}
+                  style={{ width: `${Math.max(stage.pct, 2)}%` }}
                 />
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-foreground">
                   {stage.count}
                 </span>
               </div>
               <div className="w-16 text-right text-sm font-medium text-foreground">
-                {((stage.count / 127) * 100).toFixed(1)}%
+                {stage.pct.toFixed(1)}%
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* AI Insight */}
-      <div className="glass-card p-5 animate-slide-up" style={{ animationDelay: "200ms", animationFillMode: "backwards" }}>
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <TrendingUp className="w-4 h-4 text-accent" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/15 text-destructive font-medium">🔴 Urgente</span>
-              <p className="text-sm font-medium text-foreground">Gargalo crítico identificado</p>
-            </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Você perde <span className="text-warning font-medium">68%</span> dos leads entre <span className="text-foreground font-medium">Gerado → Contatado</span>. 
-              Isso indica que o LDR pode estar gerando leads de baixa qualidade ou que os SDRs não estão fazendo contato 
-              rápido o suficiente. Ação: estabelecer SLA de <span className="text-primary font-medium">2 horas</span> para primeiro contato após geração.
-            </p>
-          </div>
+      {leads.length === 0 && (
+        <div className="glass-card p-8 text-center">
+          <p className="text-muted-foreground">Adicione leads para visualizar o funil</p>
         </div>
-      </div>
+      )}
 
-      {/* Conversion Matrix */}
-      <div className="glass-card p-5 animate-slide-up" style={{ animationDelay: "300ms", animationFillMode: "backwards" }}>
-        <h2 className="text-sm font-semibold mb-4">Calculadora de Pipeline Necessário</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { label: "Meta de receita", value: "R$ 20.000" },
-            { label: "Contratos necessários", value: "1,33" },
-            { label: "Leads necessários", value: "333" },
-            { label: "Contatos/dia", value: "~11" },
-          ].map((m) => (
-            <div key={m.label} className="text-center">
-              <p className="text-xl font-bold text-foreground">{m.value}</p>
-              <p className="text-xs text-muted-foreground mt-1">{m.label}</p>
+      {leads.length > 0 && (
+        <div className="glass-card p-5 animate-slide-up" style={{ animationDelay: "200ms", animationFillMode: "backwards" }}>
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <TrendingUp className="w-4 h-4 text-accent" />
             </div>
-          ))}
+            <div>
+              <p className="text-sm font-medium text-foreground mb-1">Conversão geral</p>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                De <span className="text-foreground font-medium">{stages[0]?.count || 0}</span> leads gerados,{" "}
+                <span className="text-primary font-medium">{stages[stages.length - 1]?.count || 0}</span> foram fechados
+                {" "}({total > 0 ? ((stages[stages.length - 1]?.count / total) * 100).toFixed(1) : 0}% de conversão).
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
