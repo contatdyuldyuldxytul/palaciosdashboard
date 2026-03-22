@@ -55,14 +55,6 @@ const App = () => (
                 <Route path="assistente" element={<AssistenteVendas />} />
               </Route>
 
-              {/* Gestão — Fundador only */}
-              <Route path="/gestao" element={<ProtectedRoute requireRole="fundador"><GestaoLayout /></ProtectedRoute>}>
-                <Route index element={<Placeholder title="Visão Estratégica" />} />
-                <Route path="financeiro" element={<Financeiro />} />
-                <Route path="metas-forecast" element={<Placeholder title="Metas & Forecast" />} />
-                <Route path="documentos" element={<Placeholder title="Documentos & Reuniões" />} />
-                <Route path="assistente" element={<AssistenteFundador />} />
-              </Route>
 
               {/* Clientes */}
               <Route path="/clientes" element={<ClientesLayout />}>
