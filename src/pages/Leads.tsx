@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Plus, Search } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
+import { SyncIndicator } from "@/components/SyncIndicator";
 import { useLeads, useAddLead, useUpdateLead, getStatusDisplay, LeadStatus } from "@/hooks/useLeads";
+import { writeToSheets } from "@/hooks/useWriteSheets";
 import { format } from "date-fns";
 
 const statusOptions: Array<"Todos" | LeadStatus> = ["Todos", "lead", "contatado", "reuniao_agendada", "reuniao_realizada", "proposta", "fechado", "perdido"];
