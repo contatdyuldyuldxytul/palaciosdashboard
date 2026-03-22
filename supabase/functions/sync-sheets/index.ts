@@ -143,64 +143,95 @@ function mapLeads(rows: Record<string, string>[]) {
   }));
 }
 
+// Helper to parse Brazilian date format "DD/MM/YYYY" to ISO
+function parseBrDate(d: string): string | null {
+  if (!d) return null;
+  const parts = d.split("/");
+  if (parts.length === 3) return `${parts[2]}-${parts[1].padStart(2,"0")}-${parts[0].padStart(2,"0")}`;
+  return d;
+}
+
+// Parse Brazilian number format "3.407,52" or "3407,52"
+function parseBrNumber(v: string): number {
+  if (!v) return 0;
+  return parseFloat(v.replace(/\./g, "").replace(",", ".")) || 0;
+}
+
+function normalizePaymentStatus(s: string): string {
+  const map: Record<string, string> = {
+    "pago": "pago", "pendente": "pendente", "atrasado": "atrasado", "cancelado": "cancelado",
+    "a receber": "pendente", "em aberto": "pendente",
+  };
+  return map[s.toLowerCase().trim()] || "pendente";
+}
+
 function mapReunioes(rows: Record<string, string>[]) {
   return rows.map((r) => ({
-    data_reuniao: r.data_reuniao || new Date().toISOString(),
-    vendedor_nome: r.vendedor_nome || r.vendedor || null,
+    data_reuniao: parseBrDate(r.data) || r.data_reuniao || new Date().toISOString(),
+    vendedor_nome: r.sdr_responsavel || r.vendedor_nome || r.vendedor || null,
     duracao_minutos: parseInt(r.duracao_minutos) || null,
     resultado: r.resultado || null,
-    gerou_proposta: r.gerou_proposta === "true" || r.gerou_proposta === "sim" || r.gerou_proposta === "1",
-    valor_proposta: parseFloat(r.valor_proposta) || null,
+    gerou_proposta: (r.contrato_fechado || "").toLowerCase() === "sim" || r.gerou_proposta === "true",
+    valor_proposta: parseBrNumber(r.valor_contrato || r.valor_proposta || "") || null,
     notas: r.notas || null,
   }));
 }
 
 function mapComissoes(rows: Record<string, string>[]) {
   return rows.map((r) => ({
-    vendedor_id: r.vendedor_id || crypto.randomUUID(),
-    vendedor_nome: r.vendedor_nome || r.vendedor || null,
+    vendedor_id: crypto.randomUUID(),
+    vendedor_nome: r.colaborador || r.vendedor_nome || r.vendedor || null,
     mes_referencia: r.mes_referencia || r.mes || "",
-    salario_fixo: parseFloat(r.salario_fixo) || 0,
+    salario_fixo: parseBrNumber(r.salario_fixo) || 0,
     leads_gerados: parseInt(r.leads_gerados) || 0,
-    valor_leads: parseFloat(r.valor_leads) || 0,
-    reunioes_realizadas: parseInt(r.reunioes_realizadas) || 0,
-    valor_reunioes: parseFloat(r.valor_reunioes) || 0,
+    valor_leads: parseBrNumber(r.valor_leads) || 0,
+    reunioes_realizadas: parseInt(r.qtd_reunioes || r.reunioes_realizadas) || 0,
+    valor_reunioes: parseBrNumber(r.bonus_reunioes || r.valor_reunioes) || 0,
     contratos_indicados: parseInt(r.contratos_indicados) || 0,
-    valor_contratos: parseFloat(r.valor_contratos) || 0,
-    comissao_contratos: parseFloat(r.comissao_contratos) || 0,
-    total_comissao: parseFloat(r.total_comissao) || 0,
+    valor_contratos: parseBrNumber(r.valor_contratos_indicados || r.valor_contratos) || 0,
+    comissao_contratos: parseBrNumber(r.comissao_contratos) || 0,
+    total_comissao: parseBrNumber(r.total_comissao) || 0,
   }));
 }
 
 function mapMetas(rows: Record<string, string>[]) {
-  return rows.map((r) => ({
-    periodo: r.periodo || "mensal",
-    mes: r.mes || null,
-    trimestre: r.trimestre || null,
-    ano: parseInt(r.ano) || new Date().getFullYear(),
-    meta_receita: parseFloat(r.meta_receita) || 0,
-    realizado_receita: parseFloat(r.realizado_receita) || 0,
-    meta_leads: parseInt(r.meta_leads) || 0,
-    realizado_leads: parseInt(r.realizado_leads) || 0,
-    meta_reunioes: parseInt(r.meta_reunioes) || 0,
-    realizado_reunioes: parseInt(r.realizado_reunioes) || 0,
-    meta_contratos: parseInt(r.meta_contratos) || 0,
-    realizado_contratos: parseInt(r.realizado_contratos) || 0,
-  }));
+  return rows.map((r) => {
+    // Extract year from mes_ano like "Janeiro/2025"
+    const mesAno = r.mes_ano || "";
+    const yearMatch = mesAno.match(/(\d{4})/);
+    const year = yearMatch ? parseInt(yearMatch[1]) : (parseInt(r.ano) || new Date().getFullYear());
+    
+    return {
+      periodo: (r.periodo || "mensal").toLowerCase(),
+      mes: r.mes_ano || r.mes || null,
+      trimestre: r.trimestre || null,
+      ano: year,
+      meta_receita: parseBrNumber(r.meta_receita) || 0,
+      realizado_receita: parseBrNumber(r.realizado_receita) || 0,
+      meta_leads: parseInt(r.meta_leads) || 0,
+      realizado_leads: parseInt(r.realizado_leads) || 0,
+      meta_reunioes: parseInt(r.meta_reunioes) || 0,
+      realizado_reunioes: parseInt(r.realizado_reunioes) || 0,
+      meta_contratos: parseInt(r.meta_contratos) || 0,
+      realizado_contratos: parseInt(r.realizado_contratos) || 0,
+    };
+  });
 }
 
 function mapClientesAtivos(rows: Record<string, string>[]) {
   return rows.map((r) => ({
     empresa: r.empresa || "Sem nome",
-    projeto: r.projeto || "Projeto",
-    contato: r.contato || null,
-    email: r.email || null,
-    telefone: r.telefone || null,
-    status: r.status || "ativo",
-    valor_total: parseFloat(r.valor_total) || 0,
+    projeto: r.nome_projeto || r.projeto || "Projeto",
+    contato: r.contato_nome || r.contato || null,
+    email: r.contato_email || r.email || null,
+    telefone: r.contato_telefone || r.telefone || null,
+    status: r.status_projeto || r.status || "ativo",
+    valor_total: parseBrNumber(r.valor_total_contrato || r.valor_total) || 0,
     qtd_imagens: parseInt(r.qtd_imagens) || 0,
-    inclui_modelagem: r.inclui_modelagem === "true" || r.inclui_modelagem === "sim" || r.inclui_modelagem === "1",
-    segundos_animacao: parseInt(r.segundos_animacao) || 0,
+    inclui_modelagem: parseBrNumber(r.valor_modelagem) > 0 || r.inclui_modelagem === "true" || r.inclui_modelagem === "sim",
+    segundos_animacao: parseInt(r.qtd_segundos_animacao || r.segundos_animacao) || 0,
+    data_inicio: parseBrDate(r.data_inicio) || null,
+    data_previsao: parseBrDate(r.data_entrega_prevista || r.data_previsao) || null,
     progresso: parseInt(r.progresso) || 0,
     notas: r.notas || null,
   }));
@@ -209,11 +240,11 @@ function mapClientesAtivos(rows: Record<string, string>[]) {
 function mapFinanceiroClientes(rows: Record<string, string>[]) {
   return rows.map((r) => ({
     cliente_id: r.cliente_id || r.id_cliente || crypto.randomUUID(),
-    descricao: r.descricao || "",
-    valor: parseFloat(r.valor) || 0,
-    data_vencimento: r.data_vencimento || null,
-    data_pagamento: r.data_pagamento || null,
-    status: r.status || "pendente",
+    descricao: r.descricao || r.parcela || "",
+    valor: parseBrNumber(r.valor) || 0,
+    data_vencimento: parseBrDate(r.data_prevista || r.data_vencimento) || null,
+    data_pagamento: parseBrDate(r.data_pagamento) || null,
+    status: normalizePaymentStatus(r.status || "pendente"),
     forma_pagamento: r.forma_pagamento || null,
     notas: r.notas || null,
   }));
@@ -221,14 +252,14 @@ function mapFinanceiroClientes(rows: Record<string, string>[]) {
 
 function mapFinanceiroEmpresa(rows: Record<string, string>[]) {
   return rows.map((r) => ({
-    tipo: r.tipo || "despesa",
+    tipo: (r.tipo || "despesa").toLowerCase() === "receita" ? "receita" : "despesa",
     categoria: r.categoria || "Outros",
     subcategoria: r.subcategoria || null,
     descricao: r.descricao || "",
-    valor: parseFloat(r.valor) || 0,
-    data: r.data || new Date().toISOString().split("T")[0],
-    recorrente: r.recorrente === "true" || r.recorrente === "sim" || r.recorrente === "1",
-    notas: r.notas || null,
+    valor: parseBrNumber(r.valor) || 0,
+    data: parseBrDate(r.data) || new Date().toISOString().split("T")[0],
+    recorrente: (r.recorrente || "").toLowerCase() === "sim" || r.recorrente === "true" || r.recorrente === "1",
+    notas: r.notas || r.mes_referencia || null,
   }));
 }
 
@@ -236,8 +267,8 @@ function mapChecklist(rows: Record<string, string>[]) {
   return rows.map((r) => ({
     cliente_id: r.cliente_id || r.id_cliente || crypto.randomUUID(),
     etapa: parseInt(r.etapa) || 1,
-    nome_etapa: r.nome_etapa || "",
-    concluida: r.concluida === "true" || r.concluida === "sim" || r.concluida === "1",
+    nome_etapa: r.nome_etapa || r.etapa || "",
+    concluida: (r.concluido || r.concluida || "").toLowerCase() === "sim" || r.concluida === "true" || r.concluida === "1",
     data_conclusao: r.data_conclusao || null,
     responsavel: r.responsavel || null,
     notas: r.notas || null,
