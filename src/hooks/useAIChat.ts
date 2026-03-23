@@ -6,12 +6,49 @@ type Msg = { role: "user" | "assistant"; content: string };
 export function useAIChat(assistant: "vendas" | "fundador" | "geral") {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const pendingSaveRef = useRef<Msg | null>(null);
+
+  // Load history on mount
+  useEffect(() => {
+    const loadHistory = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setHistoryLoaded(true); return; }
+
+      const { data } = await supabase
+        .from("chat_messages")
+        .select("role, content")
+        .eq("user_id", user.id)
+        .eq("assistant", assistant)
+        .order("created_at", { ascending: true });
+
+      if (data && data.length > 0) {
+        setMessages(data.map(m => ({ role: m.role as Msg["role"], content: m.content })));
+      }
+      setHistoryLoaded(true);
+    };
+    loadHistory();
+  }, [assistant]);
+
+  const saveMessage = useCallback(async (msg: Msg) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from("chat_messages").insert({
+      user_id: user.id,
+      assistant,
+      role: msg.role,
+      content: msg.content,
+    });
+  }, [assistant]);
 
   const send = useCallback(async (input: string) => {
     if (!input.trim() || isLoading) return;
     const userMsg: Msg = { role: "user", content: input.trim() };
     setMessages((prev) => [...prev, userMsg]);
     setIsLoading(true);
+
+    // Save user message
+    saveMessage(userMsg);
 
     let assistantSoFar = "";
 
@@ -91,15 +128,29 @@ export function useAIChat(assistant: "vendas" | "fundador" | "geral") {
           } catch { /* ignore */ }
         }
       }
+
+      // Save complete assistant message
+      if (assistantSoFar) {
+        saveMessage({ role: "assistant", content: assistantSoFar });
+      }
     } catch (err) {
       console.error("AI chat error:", err);
       upsert("⚠️ Erro ao conectar com a IA. Tente novamente.");
     } finally {
       setIsLoading(false);
     }
-  }, [messages, isLoading, assistant]);
+  }, [messages, isLoading, assistant, saveMessage]);
 
-  const clearMessages = useCallback(() => setMessages([]), []);
+  const clearMessages = useCallback(async () => {
+    setMessages([]);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase
+      .from("chat_messages")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("assistant", assistant);
+  }, [assistant]);
 
-  return { messages, isLoading, send, clearMessages };
+  return { messages, isLoading, send, clearMessages, historyLoaded };
 }
