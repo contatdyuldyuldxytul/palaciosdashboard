@@ -1,10 +1,11 @@
 import { AIChatPage } from "@/components/AIChatPage";
 
 const quickPrompts = [
-  "Como abordo construtora sem lançamento agora?",
-  "Gere 5 perguntas SPIN para incorporadora de médio porte",
+  "Como abordar construtora sem lançamento agora?",
+  "Gere 5 perguntas SPIN para incorporadora",
   "Me ajude com WhatsApp de follow-up",
-  "Como respondo 'já temos empresa de renders'?",
+  "Como responder já temos empresa de renders?",
+  "Script de cold call para gerente de marketing",
 ];
 
 export default function AssistenteVendas() {
