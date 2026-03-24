@@ -18,7 +18,7 @@ const navItems = [
 const subItems = [
   { title: "Aline", url: "/equipe/aline", parentUrl: "/vendas", initials: "AL" },
   { title: "Milena", url: "/equipe/milena", parentUrl: "/vendas", initials: "MI" },
-  { title: "Camila", url: "/equipe/camila", parentUrl: "/vendas", initials: "CA", color: "hsl(45,80%,45%)" },
+  { title: "Milena", url: "/equipe/milena", parentUrl: "/vendas", initials: "MI", color: "hsl(45,80%,45%)" },
 ];
 
 export function AppSidebar() {
