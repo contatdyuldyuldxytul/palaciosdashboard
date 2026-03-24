@@ -76,7 +76,10 @@ export function AppSidebar() {
                   title={collapsed ? item.title : undefined}
                 >
                   <item.icon className="w-[18px] h-[18px] flex-shrink-0" />
-                  {!collapsed && <span>{item.title}</span>}
+                  {!collapsed && <span className="flex-1">{item.title}</span>}
+                  {!collapsed && (item as any).hasChildren && (
+                    <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                  )}
                 </Link>
                 {/* Sub-items (team members) */}
                 {!collapsed && active && children.length > 0 && (
