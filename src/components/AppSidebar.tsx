@@ -28,7 +28,7 @@ export function AppSidebar() {
 
   const isActive = (url: string) => {
     if (url === "/") return location.pathname === "/";
-    if (url === "/vendas") return location.pathname.startsWith("/vendas") || location.pathname.startsWith("/equipe/");
+    if (url === "/vendas/funil") return location.pathname.startsWith("/vendas") || location.pathname.startsWith("/equipe/");
     return location.pathname.startsWith(url);
   };
 
