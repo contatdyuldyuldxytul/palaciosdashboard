@@ -25,10 +25,10 @@ export interface Lead {
 }
 
 const statusDisplayMap: Record<LeadStatus, string> = {
-  lead: "Lead",
-  contatado: "Contatado",
-  reuniao_agendada: "Reunião Agendada",
-  reuniao_realizada: "Reunião Realizada",
+  lead: "Entrada de Leads",
+  contatado: "Tentando Contato",
+  reuniao_agendada: "Demo Agendada",
+  reuniao_realizada: "Porta Aberta",
   proposta: "Proposta",
   fechado: "Fechado",
   perdido: "Perdido",
