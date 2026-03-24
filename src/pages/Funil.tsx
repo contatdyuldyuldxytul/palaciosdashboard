@@ -174,7 +174,7 @@ export default function Funil() {
         {funnel.map((s, i) => {
           const w = maxW - i * stp;
           const isFinal = (s as any).isFinal;
-          const convBetween = i < convs.length ? convs[i] : null;
+          const convBetween = i > 0 && (i - 1) < convs.length ? convs[i - 1] : null;
 
           return (
             <div key={s.key} className="flex-1 flex flex-col justify-center">
