@@ -59,7 +59,7 @@ const App = () => (
 
               {/* Team member dashboards */}
               <Route path="/equipe/aline" element={<TeamMemberDashboard memberName="Aline" initials="AL" />} />
-              <Route path="/equipe/milena" element={<TeamMemberDashboard memberName="Milena" initials="MI" />} />
+              
               <Route path="/equipe/camila" element={<LdrMemberDashboard memberName="Camila" initials="CA" avatarColor="hsl(45,80%,45%)" />} />
 
 

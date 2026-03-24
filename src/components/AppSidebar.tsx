@@ -1,7 +1,7 @@
 import { useLocation, Link } from "react-router-dom";
 import {
   LayoutDashboard, TrendingUp, Users, MessageSquare,
-  ChevronLeft, ChevronRight, LogOut, Crown, User
+  ChevronLeft, ChevronRight, ChevronDown, LogOut, Crown, User
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,7 +9,7 @@ import logoPalacios from "@/assets/logo-palacios.png";
 
 const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Pré-Vendas", url: "/vendas", icon: TrendingUp },
+  { title: "Pré-Vendas", url: "/vendas", icon: TrendingUp, hasChildren: true },
   { title: "Clientes", url: "/clientes", icon: Users },
   { title: "CEO", url: "/ceo", icon: Crown, requireRole: "fundador" as const, isCeo: true },
   { title: "Assistente IA", url: "/assistente", icon: MessageSquare },
@@ -17,8 +17,7 @@ const navItems = [
 
 const subItems = [
   { title: "Aline", url: "/equipe/aline", parentUrl: "/vendas", initials: "AL" },
-  { title: "Milena", url: "/equipe/milena", parentUrl: "/vendas", initials: "MI" },
-  { title: "Milena", url: "/equipe/milena", parentUrl: "/vendas", initials: "MI", color: "hsl(45,80%,45%)" },
+  { title: "Camila", url: "/equipe/camila", parentUrl: "/vendas", initials: "CA", color: "hsl(45,80%,45%)" },
 ];
 
 export function AppSidebar() {
@@ -28,6 +27,7 @@ export function AppSidebar() {
 
   const isActive = (url: string) => {
     if (url === "/") return location.pathname === "/";
+    if (url === "/vendas") return location.pathname.startsWith("/vendas") || location.pathname.startsWith("/equipe/");
     return location.pathname.startsWith(url);
   };
 
@@ -76,7 +76,10 @@ export function AppSidebar() {
                   title={collapsed ? item.title : undefined}
                 >
                   <item.icon className="w-[18px] h-[18px] flex-shrink-0" />
-                  {!collapsed && <span>{item.title}</span>}
+                  {!collapsed && <span className="flex-1">{item.title}</span>}
+                  {!collapsed && (item as any).hasChildren && (
+                    <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                  )}
                 </Link>
                 {/* Sub-items (team members) */}
                 {!collapsed && active && children.length > 0 && (
