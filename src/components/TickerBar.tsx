@@ -1,11 +1,13 @@
 import { TrendingUp, Users, Calendar, Target, RefreshCw } from "lucide-react";
 import { useLeads } from "@/hooks/useLeads";
 import { useSyncSheets } from "@/hooks/useSyncSheets";
+import { usePipedrive } from "@/hooks/usePipedrive";
 import { format } from "date-fns";
 
 export function TickerBar() {
   const { data: leads = [] } = useLeads();
   const { sync, isSyncing, lastSync, autoSync, toggleAutoSync } = useSyncSheets();
+  const { minutesAgo: pipedriveMinAgo, isSyncing: pipedriveSyncing } = usePipedrive();
 
   const leadsCount = leads.length;
   const reunioes = leads.filter((l) => ["reuniao_realizada", "proposta", "fechado"].includes(l.status)).length;
@@ -30,9 +32,21 @@ export function TickerBar() {
       ))}
 
       <div className="ml-auto flex items-center gap-3 flex-shrink-0">
+        {/* Pipedrive status */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <span
+            className={`w-1.5 h-1.5 rounded-full ${pipedriveSyncing ? "bg-amber-400 animate-pulse" : "bg-emerald-400"}`}
+          />
+          <span className="text-[10px] text-muted-foreground">
+            Pipedrive — {pipedriveSyncing ? "Sincronizando..." : pipedriveMinAgo !== null ? `Sincronizado há ${pipedriveMinAgo} min` : "Aguardando sync"}
+          </span>
+        </div>
+
+        <span className="text-muted-foreground/30">|</span>
+
         {lastSync && (
           <span className="text-[10px] text-muted-foreground">
-            Sync: {format(new Date(lastSync), "dd/MM HH:mm")}
+            Sheets: {format(new Date(lastSync), "dd/MM HH:mm")}
           </span>
         )}
         <button
