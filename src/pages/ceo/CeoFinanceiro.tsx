@@ -4,6 +4,7 @@ import { useCeoFinanceiro } from "@/hooks/useCeoData";
 import { format, parseISO, startOfMonth, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
+import { CeoMetricsAndAlerts } from "@/components/ceo/CeoMetricsAndAlerts";
 
 const periodos = ["mensal", "trimestral", "anual"] as const;
 type Periodo = typeof periodos[number];
@@ -142,6 +143,9 @@ export default function CeoFinanceiro() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl">
+      {/* CEO Metrics & Alerts */}
+      <CeoMetricsAndAlerts />
+
       {/* Period toggle */}
       <div className="flex items-center justify-between">
         <div>

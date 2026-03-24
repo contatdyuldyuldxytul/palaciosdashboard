@@ -43,7 +43,7 @@ export function CeoMetricsAndAlerts() {
     const pipelineValor = emNegociacao.reduce((s, l) => s + Number(l.valor_estimado || 0), 0);
 
     // Contratos
-    const contratosMes = leadsData.filter(l => l.status === "fechado" && l.data_fechamento?.startsWith(currentMonth)).length;
+    const contratosMes = leadsData.filter(l => l.status === "fechado" && l.data_atualizacao?.startsWith(currentMonth)).length;
 
     // Alerts
     const alerts: { type: "critical" | "attention" | "positive"; text: string; time: string }[] = [];
