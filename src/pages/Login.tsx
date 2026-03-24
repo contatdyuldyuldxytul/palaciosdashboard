@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import logoPalacios from "@/assets/logo-palacios-white.png";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -60,17 +61,7 @@ export default function Login() {
 
       <div className="w-full max-w-sm animate-slide-up relative z-10">
         <div className="flex flex-col items-center mb-8">
-          <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
-            style={{
-              background: 'rgba(0, 200, 150, 0.15)',
-              border: '1px solid rgba(0, 200, 150, 0.25)',
-              backdropFilter: 'blur(20px)',
-              boxShadow: '0 0 40px rgba(0, 200, 150, 0.15)',
-            }}
-          >
-            <span className="text-primary font-bold text-xl">P3</span>
-          </div>
+          <img src={logoPalacios} alt="Palacios 3D Studio" className="w-20 h-20 mb-4 opacity-90" />
           <h1 className="text-2xl font-bold text-foreground" style={{ lineHeight: "1.1" }}>RenderOS</h1>
           <p className="text-sm text-muted-foreground mt-1">Palacios 3D Studio</p>
         </div>
