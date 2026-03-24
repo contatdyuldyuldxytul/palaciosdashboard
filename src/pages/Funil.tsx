@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { usePipedrive, PipedriveDeal } from "@/hooks/usePipedrive";
-import { TrendingUp, Users, Target, AlertTriangle, RefreshCw, Pause, Recycle, DoorOpen, Activity } from "lucide-react";
+import { useFunnelAnalysis } from "@/hooks/useFunnelAnalysis";
+import { TrendingUp, Users, Target, RefreshCw, Pause, Recycle, DoorOpen, Activity, BarChart3 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -58,7 +59,6 @@ export default function Funil() {
   const demoGoal = 15;
   const demoPct = Math.min((demoCount / demoGoal) * 100, 100);
 
-  // Status calculation
   const dayOfMonth = new Date().getDate();
   const monthProgress = dayOfMonth / 30;
   const demoRatio = demoCount / demoGoal;
@@ -74,13 +74,10 @@ export default function Funil() {
     statusColor = "hsl(0,70%,55%)";
   }
 
-  // Cumulative totals
   const cumulative = [...funnel].map(f => f.count);
   for (let i = funnel.length - 2; i >= 0; i--) {
     cumulative[i] = funnel[i].count + cumulative[i + 1];
   }
-
-  const overallConv = cumulative[0] > 0 ? (cumulative[cumulative.length - 1] / cumulative[0]) * 100 : 0;
 
   const convs = funnel.map((s, i) => {
     if (i === 0) return null;
@@ -90,6 +87,29 @@ export default function Funil() {
     const bench = BENCHMARKS[i];
     return { from: funnel[i - 1].label, to: s.label, pct, bench, totalPrev, totalCur };
   }).filter(Boolean) as { from: string; to: string; pct: number; bench: number | null; totalPrev: number; totalCur: number }[];
+
+  // Prepare analysis data
+  const analysisData = useMemo(() => {
+    if (deals.length === 0) return null;
+    return {
+      entrada: funnel[0].count,
+      tentando: funnel[1].count,
+      contatoRealizado: funnel[2].count,
+      decisor: funnel[3].count,
+      demo: funnel[4].count,
+      conv1: convs[0]?.pct.toFixed(1) || "0",
+      conv2: convs[1]?.pct.toFixed(1) || "0",
+      conv3: convs[2]?.pct.toFixed(1) || "0",
+      conv4: convs[3]?.pct.toFixed(1) || "0",
+      hold: side.find(s => s.key === "Hold")?.count || 0,
+      reciclaveis: side.find(s => s.key === "Recicláveis")?.count || 0,
+      portaAberta: side.find(s => s.key === "Porta Aberta")?.count || 0,
+      demoGoal,
+      dayOfMonth,
+    };
+  }, [deals.length, funnel[0].count, funnel[1].count, funnel[2].count, funnel[3].count, funnel[4].count]);
+
+  const { analysis, loading: analysisLoading, updatedAt, refresh: refreshAnalysis } = useFunnelAnalysis(analysisData);
 
   const maxW = 100;
   const minW = 40;
@@ -169,92 +189,130 @@ export default function Funil() {
         </motion.div>
       </div>
 
-      {/* Funnel with inline conversions */}
-      <div className="flex flex-col min-h-[460px]">
-        {funnel.map((s, i) => {
-          const w = maxW - i * stp;
-          const isFinal = (s as any).isFinal;
-          const convBetween = i > 0 && (i - 1) < convs.length ? convs[i - 1] : null;
+      {/* Funnel + Side Cards */}
+      <div className="grid grid-cols-[1fr_220px] gap-4 items-start">
+        {/* LEFT: Funnel with inline conversions */}
+        <div className="flex flex-col min-h-[460px]">
+          {funnel.map((s, i) => {
+            const w = maxW - i * stp;
+            const isFinal = (s as any).isFinal;
+            const convBetween = i > 0 && (i - 1) < convs.length ? convs[i - 1] : null;
 
-          return (
-            <div key={s.key} className="flex-1 flex flex-col justify-center">
-              {convBetween && (
-                <div className="flex justify-center py-1">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex items-center gap-2 cursor-default">
-                        <span className="text-muted-foreground/40 text-xs">↓</span>
-                        <span className="text-[16px] font-bold tabular-nums" style={{
-                          color: (convBetween.bench ? convBetween.pct / convBetween.bench : 1) >= 1
-                            ? "hsl(155,60%,45%)"
-                            : (convBetween.bench ? convBetween.pct / convBetween.bench : 1) >= 0.7
-                              ? "hsl(45,80%,55%)"
-                              : "hsl(0,70%,55%)"
-                        }}>
-                          {convBetween.pct.toFixed(1)}%
-                        </span>
-                        {convBetween.bench && (
-                          <span className="text-[10px] text-muted-foreground/50 tabular-nums">vs {convBetween.bench}%</span>
-                        )}
-                        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{
-                          background: (convBetween.bench ? convBetween.pct / convBetween.bench : 1) >= 1
-                            ? "hsl(155,60%,45%)"
-                            : (convBetween.bench ? convBetween.pct / convBetween.bench : 1) >= 0.7
-                              ? "hsl(45,80%,55%)"
-                              : "hsl(0,70%,55%)"
-                        }} />
+            return (
+              <div key={s.key} className="flex-1 flex flex-col justify-center">
+                {convBetween && (
+                  <div className="flex justify-center py-1">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-2 cursor-default">
+                          <span className="text-muted-foreground/40 text-xs">↓</span>
+                          <span className="text-[16px] font-bold tabular-nums" style={{
+                            color: (convBetween.bench ? convBetween.pct / convBetween.bench : 1) >= 1
+                              ? "hsl(155,60%,45%)"
+                              : (convBetween.bench ? convBetween.pct / convBetween.bench : 1) >= 0.7
+                                ? "hsl(45,80%,55%)"
+                                : "hsl(0,70%,55%)"
+                          }}>
+                            {convBetween.pct.toFixed(1)}%
+                          </span>
+                          {convBetween.bench && (
+                            <span className="text-[10px] text-muted-foreground/50 tabular-nums">vs {convBetween.bench}%</span>
+                          )}
+                          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{
+                            background: (convBetween.bench ? convBetween.pct / convBetween.bench : 1) >= 1
+                              ? "hsl(155,60%,45%)"
+                              : (convBetween.bench ? convBetween.pct / convBetween.bench : 1) >= 0.7
+                                ? "hsl(45,80%,55%)"
+                                : "hsl(0,70%,55%)"
+                          }} />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="bg-background border-border/40 text-foreground">
+                        <p className="text-xs">
+                          {convBetween.totalCur} leads chegaram até <span className="font-semibold">{convBetween.to}</span> de {convBetween.totalPrev} totais que passaram por <span className="font-semibold">{convBetween.from}</span>
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                )}
+
+                <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: 0.15 + i * 0.07 }}
+                  className="flex justify-center">
+                  <div className={`relative rounded-lg overflow-hidden ${isFinal ? "ring-1 ring-emerald-500/30" : ""}`}
+                    style={{ width: `${w}%`, height: "64px" }}>
+                    <div className={`absolute inset-0 bg-gradient-to-r ${gradients[i]} opacity-85`} />
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/[0.06] to-transparent" />
+                    <div className="absolute inset-0 border border-white/[0.08] rounded-lg" />
+                    <div className="relative z-10 flex items-center justify-between h-full px-4">
+                      <span className="text-sm font-semibold text-white">{s.label}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm font-bold bg-black/25 rounded-full px-2.5 py-0.5 text-white/90 tabular-nums">{s.count}</span>
+                        {isFinal && <span className="text-[9px] font-semibold bg-emerald-500/25 text-emerald-300 rounded-full px-1.5 py-0.5">✓</span>}
                       </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="right" className="bg-background border-border/40 text-foreground">
-                      <p className="text-xs">
-                        {convBetween.totalCur} leads chegaram até <span className="font-semibold">{convBetween.to}</span> de {convBetween.totalPrev} totais que passaram por <span className="font-semibold">{convBetween.from}</span>
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              )}
-
-              <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.15 + i * 0.07 }}
-                className="flex justify-center">
-                <div className={`relative rounded-lg overflow-hidden ${isFinal ? "ring-1 ring-emerald-500/30" : ""}`}
-                  style={{ width: `${w}%`, height: "64px" }}>
-                  <div className={`absolute inset-0 bg-gradient-to-r ${gradients[i]} opacity-85`} />
-                  <div className="absolute inset-0 bg-gradient-to-b from-white/[0.06] to-transparent" />
-                  <div className="absolute inset-0 border border-white/[0.08] rounded-lg" />
-                  <div className="relative z-10 flex items-center justify-between h-full px-4">
-                    <span className="text-sm font-semibold text-white">{s.label}</span>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-bold bg-black/25 rounded-full px-2.5 py-0.5 text-white/90 tabular-nums">{s.count}</span>
-                      {isFinal && <span className="text-[9px] font-semibold bg-emerald-500/25 text-emerald-300 rounded-full px-1.5 py-0.5">✓</span>}
                     </div>
                   </div>
+                </motion.div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* RIGHT: Side cards stacked vertically */}
+        <div className="space-y-2 pt-2">
+          {side.map((c, i) => {
+            const Icon = c.icon;
+            return (
+              <motion.div key={c.key} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.5 + i * 0.05 }}
+                className={`rounded-lg border border-border/40 backdrop-blur-md bg-secondary p-3 flex items-center gap-3 ${c.clickable ? "cursor-pointer hover:border-amber-500/30 transition-all" : ""}`}
+                onClick={c.clickable ? () => setHoldOpen(true) : undefined}>
+                <Icon className="w-4 h-4 flex-shrink-0" style={{ color: "hsl(45,80%,55%)" }} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-foreground">{c.label}</p>
+                  <p className="text-[9px] text-muted-foreground leading-tight">{c.sublabel}</p>
                 </div>
+                <p className="text-xl font-extrabold text-foreground tabular-nums">{c.count}</p>
               </motion.div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
-      {/* Hold, Recicláveis, Porta Aberta — bottom row */}
-      <div className="grid grid-cols-3 gap-3">
-        {side.map((c, i) => {
-          const Icon = c.icon;
-          return (
-            <motion.div key={c.key} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.5 + i * 0.05 }}
-              className={`rounded-lg border border-border/40 backdrop-blur-md bg-secondary p-4 flex items-center gap-3 ${c.clickable ? "cursor-pointer hover:border-amber-500/30 transition-all" : ""}`}
-              onClick={c.clickable ? () => setHoldOpen(true) : undefined}>
-              <Icon className="w-5 h-5 flex-shrink-0" style={{ color: "hsl(45,80%,55%)" }} />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-foreground">{c.label}</p>
-                <p className="text-[10px] text-muted-foreground">{c.sublabel}</p>
-              </div>
-              <p className="text-2xl font-extrabold text-foreground tabular-nums">{c.count}</p>
-            </motion.div>
-          );
-        })}
-      </div>
+      {/* Análise Automática */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.6 }}
+        className="relative rounded-lg border border-border/40 backdrop-blur-md bg-secondary p-4 overflow-hidden"
+        style={{ borderLeft: "3px solid hsl(155,60%,45%)" }}>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4" style={{ color: "hsl(155,60%,45%)" }} />
+            <span className="text-xs font-semibold text-foreground">Análise Automática</span>
+            {updatedAt && (
+              <span className="text-[10px] text-muted-foreground">
+                Atualizado às {updatedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+              </span>
+            )}
+          </div>
+          <button
+            onClick={refreshAnalysis}
+            disabled={analysisLoading}
+            className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3 h-3 ${analysisLoading ? "animate-spin" : ""}`} />
+            Atualizar análise
+          </button>
+        </div>
+        {analysisLoading && !analysis ? (
+          <div className="space-y-2">
+            <div className="h-3 rounded bg-muted/20 animate-pulse w-full" />
+            <div className="h-3 rounded bg-muted/20 animate-pulse w-4/5" />
+            <div className="h-3 rounded bg-muted/20 animate-pulse w-3/5" />
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground leading-relaxed">{analysis || "Clique em 'Atualizar análise' para gerar."}</p>
+        )}
+      </motion.div>
 
       {/* Hold Modal */}
       <Dialog open={holdOpen} onOpenChange={setHoldOpen}>
