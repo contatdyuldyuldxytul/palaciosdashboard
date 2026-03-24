@@ -161,11 +161,27 @@ export default function Funil() {
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="flex items-center justify-between"
       >
-        <h1 className="text-3xl font-extrabold tracking-tight text-foreground" style={{ lineHeight: "1.1" }}>
-          Funil de Vendas
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1.5">{leads.length} leads no pipeline</p>
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground" style={{ lineHeight: "1.1" }}>
+            Funil de Vendas
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1.5">{mergedLeads.length} leads no pipeline {pipedriveDeals.length > 0 ? "(Pipedrive)" : ""}</p>
+        </div>
+        <button
+          onClick={manualSync}
+          disabled={pipedriveSyncing}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-medium transition-all duration-300 disabled:opacity-50 active:scale-[0.96]"
+          style={{
+            background: 'rgba(245, 158, 11, 0.1)',
+            border: '1px solid rgba(245, 158, 11, 0.25)',
+            color: 'hsl(45, 100%, 55%)',
+          }}
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${pipedriveSyncing ? "animate-spin" : ""}`} />
+          {pipedriveSyncing ? "Sincronizando..." : `Sync Pipedrive${minutesAgo !== null ? ` (${minutesAgo}min)` : ""}`}
+        </button>
       </motion.div>
 
       {/* Summary Cards */}
