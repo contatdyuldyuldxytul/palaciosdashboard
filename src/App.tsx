@@ -60,7 +60,7 @@ const App = () => (
               {/* Team member dashboards */}
               <Route path="/equipe/aline" element={<TeamMemberDashboard memberName="Aline" initials="AL" />} />
               
-              <Route path="/equipe/camila" element={<LdrMemberDashboard memberName="Camila" initials="CA" avatarColor="hsl(45,80%,45%)" />} />
+              <Route path="/equipe/milena" element={<LdrMemberDashboard memberName="Milena" initials="MI" avatarColor="hsl(45,80%,45%)" />} />
 
 
               {/* Clientes */}
