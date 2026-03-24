@@ -3,6 +3,7 @@ import { usePipedrive, PipedriveDeal } from "@/hooks/usePipedrive";
 import { TrendingUp, Users, Target, AlertTriangle, RefreshCw, Pause, Recycle, DoorOpen } from "lucide-react";
 import { motion } from "framer-motion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const FUNNEL_STAGES = [
   { key: "Entrada de Leads", label: "Entrada de Leads", merge: undefined as string[] | undefined },
@@ -53,18 +54,25 @@ export default function Funil() {
   const holdDeals = side.find(s => s.key === "Hold")?.deals || [];
   const totalFunnel = funnel.reduce((s, f) => s + f.count, 0);
   const demoCount = funnel[4]?.count || 0;
-  const overallConv = totalFunnel > 0 ? (demoCount / totalFunnel) * 100 : 0;
   const comissao = demoCount * 30;
 
-  // Conversions
+  // Cumulative totals: each stage's "total that passed through" = its count + sum of all below
+  const cumulative = [...funnel].map(f => f.count);
+  for (let i = funnel.length - 2; i >= 0; i--) {
+    cumulative[i] = funnel[i].count + cumulative[i + 1];
+  }
+
+  const overallConv = cumulative[0] > 0 ? (cumulative[cumulative.length - 1] / cumulative[0]) * 100 : 0;
+
+  // Conversions using cumulative
   const convs = funnel.map((s, i) => {
     if (i === 0) return null;
-    const prev = funnel[i - 1].count;
-    const cur = s.count;
-    const pct = prev > 0 ? (cur / prev) * 100 : 0;
+    const totalPrev = cumulative[i - 1];
+    const totalCur = cumulative[i];
+    const pct = totalPrev > 0 ? (totalCur / totalPrev) * 100 : 0;
     const bench = BENCHMARKS[i];
-    return { from: funnel[i - 1].label, to: s.label, pct, bench, prev, cur };
-  }).filter(Boolean) as { from: string; to: string; pct: number; bench: number | null; prev: number; cur: number }[];
+    return { from: funnel[i - 1].label, to: s.label, pct, bench, totalPrev, totalCur };
+  }).filter(Boolean) as { from: string; to: string; pct: number; bench: number | null; totalPrev: number; totalCur: number }[];
 
   const maxW = 100;
   const minW = 40;
@@ -134,28 +142,37 @@ export default function Funil() {
                 {/* Conversion indicator between bars */}
                 {convBetween && (
                   <div className="flex justify-center py-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground/40 text-xs">↓</span>
-                      <span className="text-[16px] font-bold tabular-nums" style={{
-                        color: (convBetween.bench ? convBetween.pct / convBetween.bench : 1) >= 1
-                          ? "hsl(155,60%,45%)"
-                          : (convBetween.bench ? convBetween.pct / convBetween.bench : 1) >= 0.7
-                            ? "hsl(45,80%,55%)"
-                            : "hsl(0,70%,55%)"
-                      }}>
-                        {convBetween.pct.toFixed(1)}%
-                      </span>
-                      {convBetween.bench && (
-                        <span className="text-[10px] text-muted-foreground/50 tabular-nums">vs {convBetween.bench}%</span>
-                      )}
-                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{
-                        background: (convBetween.bench ? convBetween.pct / convBetween.bench : 1) >= 1
-                          ? "hsl(155,60%,45%)"
-                          : (convBetween.bench ? convBetween.pct / convBetween.bench : 1) >= 0.7
-                            ? "hsl(45,80%,55%)"
-                            : "hsl(0,70%,55%)"
-                      }} />
-                    </div>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-2 cursor-default">
+                          <span className="text-muted-foreground/40 text-xs">↓</span>
+                          <span className="text-[16px] font-bold tabular-nums" style={{
+                            color: (convBetween.bench ? convBetween.pct / convBetween.bench : 1) >= 1
+                              ? "hsl(155,60%,45%)"
+                              : (convBetween.bench ? convBetween.pct / convBetween.bench : 1) >= 0.7
+                                ? "hsl(45,80%,55%)"
+                                : "hsl(0,70%,55%)"
+                          }}>
+                            {convBetween.pct.toFixed(1)}%
+                          </span>
+                          {convBetween.bench && (
+                            <span className="text-[10px] text-muted-foreground/50 tabular-nums">vs {convBetween.bench}%</span>
+                          )}
+                          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{
+                            background: (convBetween.bench ? convBetween.pct / convBetween.bench : 1) >= 1
+                              ? "hsl(155,60%,45%)"
+                              : (convBetween.bench ? convBetween.pct / convBetween.bench : 1) >= 0.7
+                                ? "hsl(45,80%,55%)"
+                                : "hsl(0,70%,55%)"
+                          }} />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="bg-background border-border/40 text-foreground">
+                        <p className="text-xs">
+                          {convBetween.totalCur} leads chegaram até <span className="font-semibold">{convBetween.to}</span> de {convBetween.totalPrev} totais que passaram por <span className="font-semibold">{convBetween.from}</span>
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
                 )}
 
