@@ -309,8 +309,45 @@ export default function Funil() {
             <div className="h-3 rounded bg-muted/20 animate-pulse w-4/5" />
             <div className="h-3 rounded bg-muted/20 animate-pulse w-3/5" />
           </div>
+        ) : analysis ? (
+          <div className="text-[15px] text-muted-foreground leading-[1.6] space-y-2">
+            {analysis.split('\n').filter(Boolean).map((line, idx) => {
+              let processed = line;
+              // Replace tags with badge spans
+              const tagMap: Record<string, { bg: string; text: string }> = {
+                '[ALERTA]': { bg: 'bg-amber-500/20', text: 'text-amber-400' },
+                '[AÇÃO]': { bg: 'bg-emerald-500/20', text: 'text-emerald-400' },
+                '[POSITIVO]': { bg: 'bg-blue-500/20', text: 'text-blue-400' },
+              };
+              let badge: { label: string; bg: string; text: string } | null = null;
+              for (const [tag, style] of Object.entries(tagMap)) {
+                if (processed.includes(tag)) {
+                  badge = { label: tag.replace(/[\[\]]/g, ''), ...style };
+                  processed = processed.replace(tag, '').trim();
+                  break;
+                }
+              }
+              // Parse **bold** markers
+              const parts = processed.split(/(\*\*[^*]+\*\*)/g).map((part, pi) => {
+                if (part.startsWith('**') && part.endsWith('**')) {
+                  return <strong key={pi} className="text-foreground font-semibold">{part.slice(2, -2)}</strong>;
+                }
+                return <span key={pi}>{part}</span>;
+              });
+              return (
+                <div key={idx} className="flex items-start gap-2">
+                  {badge && (
+                    <span className={`${badge.bg} ${badge.text} text-[10px] font-bold px-1.5 py-0.5 rounded-md flex-shrink-0 mt-0.5 uppercase tracking-wider`}>
+                      {badge.label}
+                    </span>
+                  )}
+                  <span>{parts}</span>
+                </div>
+              );
+            })}
+          </div>
         ) : (
-          <p className="text-sm text-muted-foreground leading-relaxed">{analysis || "Clique em 'Atualizar análise' para gerar."}</p>
+          <p className="text-sm text-muted-foreground leading-relaxed">Clique em 'Atualizar análise' para gerar.</p>
         )}
       </motion.div>
 
