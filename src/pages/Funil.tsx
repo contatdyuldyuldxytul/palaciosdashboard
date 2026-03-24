@@ -121,7 +121,7 @@ export default function Funil() {
       {/* Funnel + Conversions + Side Cards */}
       <div className="grid grid-cols-[1fr_320px] gap-5">
         {/* LEFT: Funnel bars */}
-        <div className="space-y-1.5">
+        <div className="space-y-3 flex flex-col justify-between min-h-[420px]">
           {funnel.map((s, i) => {
             const w = maxW - i * stp;
             const isFinal = (s as any).isFinal;
@@ -130,7 +130,7 @@ export default function Funil() {
                 transition={{ duration: 0.5, delay: 0.15 + i * 0.07 }}
                 className="flex justify-center">
                 <div className={`relative rounded-lg overflow-hidden ${isFinal ? "ring-1 ring-emerald-500/30" : ""}`}
-                  style={{ width: `${w}%`, height: "48px" }}>
+                  style={{ width: `${w}%`, height: "72px" }}>
                   <div className={`absolute inset-0 bg-gradient-to-r ${gradients[i]} opacity-85`} />
                   <div className="absolute inset-0 bg-gradient-to-b from-white/[0.06] to-transparent" />
                   <div className="absolute inset-0 border border-white/[0.08] rounded-lg" />
