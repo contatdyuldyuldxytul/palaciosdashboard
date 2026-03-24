@@ -6,6 +6,7 @@ import {
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import logoPalacios from "@/assets/logo-palacios.png";
+import logoPalaciosIcon from "@/assets/logo-palacios-icon.png";
 
 const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
