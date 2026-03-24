@@ -13,6 +13,7 @@ import { CeoLayout } from "@/layouts/CeoLayout";
 import Dashboard from "@/pages/Dashboard";
 import Leads from "@/pages/Leads";
 import TeamMemberDashboard from "@/pages/TeamMemberDashboard";
+import LdrMemberDashboard from "@/pages/LdrMemberDashboard";
 import Funil from "@/pages/Funil";
 import Metas from "@/pages/Metas";
 import Scripts from "@/pages/Scripts";
@@ -59,6 +60,7 @@ const App = () => (
               {/* Team member dashboards */}
               <Route path="/equipe/aline" element={<TeamMemberDashboard memberName="Aline" initials="AL" />} />
               <Route path="/equipe/milena" element={<TeamMemberDashboard memberName="Milena" initials="MI" />} />
+              <Route path="/equipe/camila" element={<LdrMemberDashboard memberName="Camila" initials="CA" avatarColor="hsl(45,80%,45%)" />} />
 
 
               {/* Clientes */}

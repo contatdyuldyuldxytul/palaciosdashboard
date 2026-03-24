@@ -95,7 +95,7 @@ export function AppSidebar() {
                           >
                             <span
                               className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0"
-                              style={{ background: "hsl(160,60%,38%)" }}
+                              style={{ background: (sub as any).color || "hsl(160,60%,38%)" }}
                             >
                               {sub.initials}
                             </span>
