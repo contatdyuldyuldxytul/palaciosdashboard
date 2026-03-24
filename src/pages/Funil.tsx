@@ -201,44 +201,6 @@ export default function Funil() {
         </div>
       </div>
 
-      {/* Deals Table */}
-      {deals.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-          className="relative rounded-lg border border-border/40 backdrop-blur-md p-4 bg-secondary overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-[1.5px]" style={{ background: "linear-gradient(90deg, transparent, hsl(45,100%,55%), transparent)" }} />
-          <h2 className="text-xs font-bold text-foreground mb-3">Deals — ALINE'S PIPELINE</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-border/30">
-                  <th className="text-left py-1.5 px-2 text-muted-foreground font-medium">Empresa</th>
-                  <th className="text-left py-1.5 px-2 text-muted-foreground font-medium">Contato</th>
-                  <th className="text-left py-1.5 px-2 text-muted-foreground font-medium">Etapa</th>
-                  <th className="text-left py-1.5 px-2 text-muted-foreground font-medium">Responsável</th>
-                  <th className="text-right py-1.5 px-2 text-muted-foreground font-medium">Dias</th>
-                </tr>
-              </thead>
-              <tbody>
-                {deals.filter(d => d.status === "open").sort((a, b) => b.days_in_stage - a.days_in_stage).slice(0, 30).map(d => {
-                  const stale = d.days_in_stage >= 7;
-                  return (
-                    <tr key={d.pipedrive_id} className={`border-b border-border/10 ${stale ? "bg-amber-500/5" : "hover:bg-muted/10"}`}>
-                      <td className="py-2 px-2 font-medium text-foreground">{d.empresa}</td>
-                      <td className="py-2 px-2 text-muted-foreground">{d.contato || "—"}</td>
-                      <td className="py-2 px-2"><span className="px-1.5 py-0.5 rounded text-[10px] bg-muted/20 text-muted-foreground">{d.pipedrive_stage}</span></td>
-                      <td className="py-2 px-2 text-muted-foreground">{d.responsavel_nome || "—"}</td>
-                      <td className="py-2 px-2 text-right tabular-nums">
-                        {stale ? <span className="text-amber-400 font-semibold flex items-center justify-end gap-1"><AlertTriangle className="w-3 h-3" />{d.days_in_stage}d</span> : <span className="text-muted-foreground">{d.days_in_stage}d</span>}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </motion.div>
-      )}
 
       {/* Hold Modal */}
       <Dialog open={holdOpen} onOpenChange={setHoldOpen}>
