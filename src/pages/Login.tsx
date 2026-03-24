@@ -62,7 +62,7 @@ export default function Login() {
       <div className="w-full max-w-sm animate-slide-up relative z-10">
         <div className="flex flex-col items-center mb-8">
           <img src={logoPalacios} alt="Palacios 3D Studio" className="w-20 h-20 mb-4 opacity-90" />
-          <h1 className="text-2xl font-bold text-foreground" style={{ lineHeight: "1.1" }}>RenderOS</h1>
+          
           <p className="text-sm text-muted-foreground mt-1">Palacios 3D Studio</p>
         </div>
 
