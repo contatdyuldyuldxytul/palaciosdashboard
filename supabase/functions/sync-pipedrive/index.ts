@@ -5,41 +5,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const STAGE_MAP: Record<string, string> = {
-  "Entrada de Leads": "lead",
-  "Tentando Contato #A": "contatado",
-  "Tentando Contato #B": "contatado",
-  "Contato Realizado #A": "contatado",
-  "Contato Realizado #B": "contatado",
-  "Contato com o Decisor": "contatado",
-  "Demo Agendada": "reuniao_agendada",
-  "Hold": "contatado",
-  "Porta Aberta": "reuniao_realizada",
-  "Porta Aberta Decisores": "proposta",
-};
-
-interface PipedriveDeal {
-  id: number;
-  title: string;
-  value: number;
-  currency: string;
-  status: string; // open, won, lost
-  stage_id: number;
-  person_name: string | null;
-  org_name: string | null;
-  owner_name: string;
-  expected_close_date: string | null;
-  update_time: string;
-  add_time: string;
-  stage_change_time: string | null;
-  won_time: string | null;
-  lost_time: string | null;
-  lost_reason: string | null;
-  person_id: { name: string } | null;
-  org_id: { name: string } | null;
-  user_id: { name: string } | null;
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -51,9 +16,24 @@ serve(async (req) => {
       throw new Error('PIPEDRIVE_API_KEY not configured');
     }
 
-    // 1. Fetch all stages to build stage_id → name map
+    // 1. Fetch all pipelines and find "ALINE'S PIPELINE - ALFA"
+    const pipelinesRes = await fetch(
+      `https://api.pipedrive.com/v1/pipelines?api_token=${PIPEDRIVE_API_KEY}`
+    );
+    const pipelinesData = await pipelinesRes.json();
+    if (!pipelinesData.success) throw new Error('Failed to fetch Pipedrive pipelines');
+
+    const targetPipeline = (pipelinesData.data || []).find(
+      (p: any) => p.name === "ALINE'S PIPELINE - ALFA"
+    );
+    if (!targetPipeline) {
+      throw new Error('Pipeline "ALINE\'S PIPELINE - ALFA" not found');
+    }
+    const pipelineId = targetPipeline.id;
+
+    // 2. Fetch stages for this pipeline only
     const stagesRes = await fetch(
-      `https://api.pipedrive.com/v1/stages?api_token=${PIPEDRIVE_API_KEY}`
+      `https://api.pipedrive.com/v1/stages?api_token=${PIPEDRIVE_API_KEY}&pipeline_id=${pipelineId}`
     );
     const stagesData = await stagesRes.json();
     if (!stagesData.success) throw new Error('Failed to fetch Pipedrive stages');
@@ -63,14 +43,14 @@ serve(async (req) => {
       stageIdToName[stage.id] = stage.name;
     }
 
-    // 2. Fetch all deals (paginated)
+    // 3. Fetch all deals from this pipeline only (paginated)
     const allDeals: any[] = [];
     let start = 0;
     let hasMore = true;
 
     while (hasMore) {
       const dealsRes = await fetch(
-        `https://api.pipedrive.com/v1/deals?api_token=${PIPEDRIVE_API_KEY}&start=${start}&limit=100&status=all_not_deleted`
+        `https://api.pipedrive.com/v1/deals?api_token=${PIPEDRIVE_API_KEY}&start=${start}&limit=100&status=all_not_deleted&pipeline_id=${pipelineId}`
       );
       const dealsData = await dealsRes.json();
       if (!dealsData.success) throw new Error('Failed to fetch Pipedrive deals');
@@ -83,24 +63,22 @@ serve(async (req) => {
       start = (dealsData.additional_data?.pagination?.next_start) || 0;
     }
 
-    // 3. Map deals to platform format
+    // 4. Map deals — keep raw pipedrive_stage name
     const mappedDeals = allDeals.map((deal: any) => {
       const stageName = stageIdToName[deal.stage_id] || 'Unknown';
-      let platformStatus: string;
+      const ownerName = deal.user_id?.name || deal.owner_name || null;
+      const contactName = deal.person_id?.name || deal.person_name || null;
+      const companyName = deal.org_id?.name || deal.org_name || deal.title || 'Sem nome';
 
+      let platformStatus: string;
       if (deal.status === 'won') {
         platformStatus = 'fechado';
       } else if (deal.status === 'lost') {
         platformStatus = 'perdido';
       } else {
-        platformStatus = STAGE_MAP[stageName] || 'lead';
+        platformStatus = 'open';
       }
 
-      const ownerName = deal.user_id?.name || deal.owner_name || null;
-      const contactName = deal.person_id?.name || deal.person_name || null;
-      const companyName = deal.org_id?.name || deal.org_name || deal.title || 'Sem nome';
-
-      // Calculate days in current stage
       const stageChangeDate = deal.stage_change_time || deal.add_time;
       const daysInStage = stageChangeDate
         ? Math.floor((Date.now() - new Date(stageChangeDate).getTime()) / (1000 * 60 * 60 * 24))
@@ -121,7 +99,7 @@ serve(async (req) => {
         expected_close_date: deal.expected_close_date || null,
         pipedrive_stage: stageName,
         days_in_stage: daysInStage,
-        notas: `Pipedrive Deal #${deal.id} | Stage: ${stageName}`,
+        notas: deal.title || `Pipedrive Deal #${deal.id}`,
       };
     });
 
@@ -136,21 +114,28 @@ serve(async (req) => {
       return dt.getMonth() === currentMonth && dt.getFullYear() === currentYear;
     });
 
-    const totalPipelineValue = mappedDeals
-      .filter(d => !['fechado', 'perdido'].includes(d.status))
-      .reduce((s, d) => s + d.valor_estimado, 0);
+    const activeDealStages = [
+      "Entrada de Leads", "Tentando Contato #A", "Tentando Contato #B",
+      "Contato Realizado #A", "Contato Realizado #B", "Contato com o Decisor",
+      "Demo Agendada", "Hold", "Porta Aberta Decisores", "Recicláveis"
+    ];
+
+    const activeDeals = mappedDeals.filter(d => 
+      d.status === 'open' && activeDealStages.includes(d.pipedrive_stage)
+    );
 
     const wonValue = wonThisMonth.reduce((s, d) => s + d.valor_estimado, 0);
 
     return new Response(JSON.stringify({
       success: true,
       deals: mappedDeals,
+      pipeline_name: "ALINE'S PIPELINE - ALFA",
       summary: {
         total_deals: mappedDeals.length,
-        active_deals: mappedDeals.filter(d => !['fechado', 'perdido'].includes(d.status)).length,
+        active_deals: activeDeals.length,
         won_this_month: wonThisMonth.length,
         won_value_this_month: wonValue,
-        total_pipeline_value: totalPipelineValue,
+        total_pipeline_value: activeDeals.reduce((s, d) => s + d.valor_estimado, 0),
         synced_at: new Date().toISOString(),
       },
     }), {
