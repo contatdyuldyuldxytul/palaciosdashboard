@@ -17,6 +17,7 @@ const navItems = [
 
 const subItems = [
   { title: "Aline", url: "/equipe/aline", parentUrl: "/vendas", initials: "AL" },
+  { title: "Milena", url: "/equipe/milena", parentUrl: "/vendas", initials: "MI" },
 ];
 
 export function AppSidebar() {
