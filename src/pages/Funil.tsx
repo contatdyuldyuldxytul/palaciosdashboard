@@ -190,7 +190,7 @@ export default function Funil() {
       </div>
 
       {/* Funnel + Side Cards */}
-      <div className="grid grid-cols-[1fr_220px] gap-4 items-start">
+      <div className="grid grid-cols-[1fr_220px] gap-4 items-stretch">
         {/* LEFT: Funnel with inline conversions */}
         <div className="flex flex-col min-h-[460px]">
           {funnel.map((s, i) => {
@@ -259,13 +259,13 @@ export default function Funil() {
         </div>
 
         {/* RIGHT: Side cards stacked vertically */}
-        <div className="space-y-2 pt-2">
+        <div className="flex flex-col gap-2">
           {side.map((c, i) => {
             const Icon = c.icon;
             return (
               <motion.div key={c.key} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.5 + i * 0.05 }}
-                className={`rounded-lg border border-border/40 backdrop-blur-md bg-secondary p-3 flex items-center gap-3 ${c.clickable ? "cursor-pointer hover:border-amber-500/30 transition-all" : ""}`}
+                className={`rounded-lg border border-border/40 backdrop-blur-md bg-secondary p-3 flex-1 flex items-center gap-3 ${c.clickable ? "cursor-pointer hover:border-amber-500/30 transition-all" : ""}`}
                 onClick={c.clickable ? () => setHoldOpen(true) : undefined}>
                 <Icon className="w-4 h-4 flex-shrink-0" style={{ color: "hsl(45,80%,55%)" }} />
                 <div className="flex-1 min-w-0">
