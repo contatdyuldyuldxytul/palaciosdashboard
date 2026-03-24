@@ -1,5 +1,6 @@
 import { useLeads, getStatusDisplay, LeadStatus } from "@/hooks/useLeads";
-import { TrendingUp, Users, Target, AlertTriangle, DollarSign } from "lucide-react";
+import { usePipedrive, PipedriveDeal } from "@/hooks/usePipedrive";
+import { TrendingUp, Users, Target, AlertTriangle, DollarSign, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 
 const stageOrder: LeadStatus[] = ["lead", "contatado", "reuniao_agendada", "reuniao_realizada", "proposta", "fechado"];
@@ -84,18 +85,28 @@ function PerformanceIndicator({ actual, benchmark }: { actual: number; benchmark
 
 export default function Funil() {
   const { data: leads = [], isLoading } = useLeads();
+  const { deals: pipedriveDeals, manualSync, isSyncing: pipedriveSyncing, minutesAgo } = usePipedrive();
+
+  // Merge: use Pipedrive deals as primary source, fallback to DB leads
+  const mergedLeads = pipedriveDeals.length > 0
+    ? pipedriveDeals.map(d => ({
+        ...d,
+        status: d.status as LeadStatus,
+        valor_estimado: d.valor_estimado || 0,
+      }))
+    : leads.map(l => ({ ...l, days_in_stage: 0, pipedrive_stage: '', expected_close_date: null as string | null }));
 
   const stageCounts = stageOrder.map((status) => ({
     status,
     name: getStatusDisplay(status),
-    count: leads.filter((l) => l.status === status).length,
+    count: mergedLeads.filter((l) => l.status === status).length,
   }));
 
-  const totalLeads = leads.filter((l) => l.status !== "perdido").length;
+  const totalLeads = mergedLeads.filter((l) => l.status !== "perdido").length;
   const closedCount = stageCounts.find((s) => s.status === "fechado")?.count || 0;
   const overallConversion = totalLeads > 0 ? (closedCount / totalLeads) * 100 : 0;
 
-  const valorNegociacao = leads
+  const valorNegociacao = mergedLeads
     .filter((l) => ["proposta", "reuniao_realizada"].includes(l.status))
     .reduce((sum, l) => sum + (l.valor_estimado || 0), 0);
 
@@ -150,11 +161,27 @@ export default function Funil() {
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="flex items-center justify-between"
       >
-        <h1 className="text-3xl font-extrabold tracking-tight text-foreground" style={{ lineHeight: "1.1" }}>
-          Funil de Vendas
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1.5">{leads.length} leads no pipeline</p>
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground" style={{ lineHeight: "1.1" }}>
+            Funil de Vendas
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1.5">{mergedLeads.length} leads no pipeline {pipedriveDeals.length > 0 ? "(Pipedrive)" : ""}</p>
+        </div>
+        <button
+          onClick={manualSync}
+          disabled={pipedriveSyncing}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-medium transition-all duration-300 disabled:opacity-50 active:scale-[0.96]"
+          style={{
+            background: 'rgba(245, 158, 11, 0.1)',
+            border: '1px solid rgba(245, 158, 11, 0.25)',
+            color: 'hsl(45, 100%, 55%)',
+          }}
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${pipedriveSyncing ? "animate-spin" : ""}`} />
+          {pipedriveSyncing ? "Sincronizando..." : `Sync Pipedrive${minutesAgo !== null ? ` (${minutesAgo}min)` : ""}`}
+        </button>
       </motion.div>
 
       {/* Summary Cards */}
@@ -269,7 +296,7 @@ export default function Funil() {
       </div>
 
       {/* Bottom Insight */}
-      {leads.length > 0 && (
+      {mergedLeads.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 16, filter: "blur(4px)" }}
           animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
@@ -300,6 +327,84 @@ export default function Funil() {
                 )}
               </p>
             </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Pipedrive Deals Table */}
+      {pipedriveDeals.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 1, ease: [0.16, 1, 0.3, 1] }}
+          className="relative rounded-xl border border-border/40 bg-card/60 backdrop-blur-md p-6 overflow-hidden"
+        >
+          <div
+            className="absolute top-0 left-0 w-full h-[2px]"
+            style={{ background: "linear-gradient(90deg, transparent, hsl(45,100%,55%), transparent)" }}
+          />
+          <h2 className="text-sm font-bold text-foreground mb-4">Deals do Pipedrive</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-border/30">
+                  <th className="text-left py-2 px-2 text-muted-foreground font-medium">Empresa</th>
+                  <th className="text-left py-2 px-2 text-muted-foreground font-medium">Contato</th>
+                  <th className="text-left py-2 px-2 text-muted-foreground font-medium">Valor</th>
+                  <th className="text-left py-2 px-2 text-muted-foreground font-medium">Etapa</th>
+                  <th className="text-left py-2 px-2 text-muted-foreground font-medium">Status</th>
+                  <th className="text-left py-2 px-2 text-muted-foreground font-medium">Previsão</th>
+                  <th className="text-left py-2 px-2 text-muted-foreground font-medium">Responsável</th>
+                  <th className="text-right py-2 px-2 text-muted-foreground font-medium">Dias na Etapa</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pipedriveDeals
+                  .filter(d => d.status !== 'perdido')
+                  .sort((a, b) => b.valor_estimado - a.valor_estimado)
+                  .slice(0, 30)
+                  .map((deal) => {
+                    const isStale = deal.days_in_stage >= 7;
+                    return (
+                      <tr
+                        key={deal.pipedrive_id}
+                        className={`border-b border-border/10 transition-colors ${isStale ? "bg-amber-500/5" : "hover:bg-muted/10"}`}
+                      >
+                        <td className="py-2.5 px-2 font-medium text-foreground">{deal.empresa}</td>
+                        <td className="py-2.5 px-2 text-muted-foreground">{deal.contato || "—"}</td>
+                        <td className="py-2.5 px-2 text-foreground tabular-nums font-medium">{formatCurrency(deal.valor_estimado)}</td>
+                        <td className="py-2.5 px-2 text-muted-foreground text-[10px]">{deal.pipedrive_stage}</td>
+                        <td className="py-2.5 px-2">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                            deal.status === 'fechado' ? 'bg-emerald-500/15 text-emerald-400' :
+                            deal.status === 'proposta' ? 'bg-purple-500/15 text-purple-400' :
+                            deal.status === 'reuniao_realizada' ? 'bg-orange-500/15 text-orange-400' :
+                            deal.status === 'reuniao_agendada' ? 'bg-yellow-500/15 text-yellow-400' :
+                            deal.status === 'contatado' ? 'bg-blue-500/15 text-blue-400' :
+                            'bg-muted/20 text-muted-foreground'
+                          }`}>
+                            {getStatusDisplay(deal.status as any)}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-2 text-muted-foreground tabular-nums">
+                          {deal.expected_close_date || "—"}
+                        </td>
+                        <td className="py-2.5 px-2 text-muted-foreground">{deal.responsavel_nome || "—"}</td>
+                        <td className="py-2.5 px-2 text-right tabular-nums">
+                          {isStale ? (
+                            <span className="text-amber-400 font-semibold flex items-center justify-end gap-1">
+                              <AlertTriangle className="w-3 h-3" />
+                              {deal.days_in_stage}d — Sem atualização
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">{deal.days_in_stage}d</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
           </div>
         </motion.div>
       )}
