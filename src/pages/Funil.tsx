@@ -118,86 +118,87 @@ export default function Funil() {
         ))}
       </div>
 
-      {/* Funnel + Conversions + Side Cards */}
-      <div className="grid grid-cols-[1fr_320px] gap-5">
-        {/* LEFT: Funnel bars */}
-        <div className="space-y-3 flex flex-col justify-between min-h-[420px]">
+      {/* Funnel with inline conversions + Side Cards */}
+      <div className="grid grid-cols-[1fr_280px] gap-5 items-end">
+        {/* LEFT: Funnel bars with conversion indicators between */}
+        <div className="flex flex-col min-h-[460px]">
           {funnel.map((s, i) => {
             const w = maxW - i * stp;
             const isFinal = (s as any).isFinal;
+            const conv = convs[i] || null; // conv at index i corresponds to transition INTO stage i (but convs is 0-indexed from stage 1)
+            // convs array: index 0 = transition from stage 0→1, index 1 = stage 1→2, etc.
+            const convBetween = i < convs.length ? convs[i] : null;
+
             return (
-              <motion.div key={s.key} initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.15 + i * 0.07 }}
-                className="flex justify-center">
-                <div className={`relative rounded-lg overflow-hidden ${isFinal ? "ring-1 ring-emerald-500/30" : ""}`}
-                  style={{ width: `${w}%`, height: "72px" }}>
-                  <div className={`absolute inset-0 bg-gradient-to-r ${gradients[i]} opacity-85`} />
-                  <div className="absolute inset-0 bg-gradient-to-b from-white/[0.06] to-transparent" />
-                  <div className="absolute inset-0 border border-white/[0.08] rounded-lg" />
-                  <div className="relative z-10 flex items-center justify-between h-full px-4">
-                    <span className="text-sm font-semibold text-white">{s.label}</span>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-bold bg-black/25 rounded-full px-2.5 py-0.5 text-white/90 tabular-nums">{s.count}</span>
-                      {isFinal && <span className="text-[9px] font-semibold bg-emerald-500/25 text-emerald-300 rounded-full px-1.5 py-0.5">✓</span>}
+              <div key={s.key} className="flex-1 flex flex-col justify-center">
+                {/* Conversion indicator between bars */}
+                {convBetween && (
+                  <div className="flex justify-center py-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground/40 text-xs">↓</span>
+                      <span className="text-[16px] font-bold tabular-nums" style={{
+                        color: (convBetween.bench ? convBetween.pct / convBetween.bench : 1) >= 1
+                          ? "hsl(155,60%,45%)"
+                          : (convBetween.bench ? convBetween.pct / convBetween.bench : 1) >= 0.7
+                            ? "hsl(45,80%,55%)"
+                            : "hsl(0,70%,55%)"
+                      }}>
+                        {convBetween.pct.toFixed(1)}%
+                      </span>
+                      {convBetween.bench && (
+                        <span className="text-[10px] text-muted-foreground/50 tabular-nums">vs {convBetween.bench}%</span>
+                      )}
+                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{
+                        background: (convBetween.bench ? convBetween.pct / convBetween.bench : 1) >= 1
+                          ? "hsl(155,60%,45%)"
+                          : (convBetween.bench ? convBetween.pct / convBetween.bench : 1) >= 0.7
+                            ? "hsl(45,80%,55%)"
+                            : "hsl(0,70%,55%)"
+                      }} />
                     </div>
                   </div>
-                </div>
-              </motion.div>
+                )}
+
+                {/* Stage bar */}
+                <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: 0.15 + i * 0.07 }}
+                  className="flex justify-center">
+                  <div className={`relative rounded-lg overflow-hidden ${isFinal ? "ring-1 ring-emerald-500/30" : ""}`}
+                    style={{ width: `${w}%`, height: "64px" }}>
+                    <div className={`absolute inset-0 bg-gradient-to-r ${gradients[i]} opacity-85`} />
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/[0.06] to-transparent" />
+                    <div className="absolute inset-0 border border-white/[0.08] rounded-lg" />
+                    <div className="relative z-10 flex items-center justify-between h-full px-4">
+                      <span className="text-sm font-semibold text-white">{s.label}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm font-bold bg-black/25 rounded-full px-2.5 py-0.5 text-white/90 tabular-nums">{s.count}</span>
+                        {isFinal && <span className="text-[9px] font-semibold bg-emerald-500/25 text-emerald-300 rounded-full px-1.5 py-0.5">✓</span>}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
             );
           })}
         </div>
 
-        {/* RIGHT: Conversions + Side Cards */}
-        <div className="space-y-4">
-          {/* Conversion rates */}
-          <motion.div initial={{ opacity: 0, x: 15 }} animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="rounded-lg border border-border/40 backdrop-blur-md bg-secondary p-4">
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">Taxas de Conversão</p>
-            <div className="space-y-2.5">
-              {convs.map((c, i) => {
-                const ratio = c.bench ? c.pct / c.bench : 1;
-                const dotColor = ratio >= 1 ? "hsl(155,60%,45%)" : ratio >= 0.7 ? "hsl(45,80%,55%)" : "hsl(0,70%,55%)";
-                // Shorten labels
-                const fromShort = c.from.replace("Entrada de Leads", "Entrada").replace("Contato c/ Decisor", "Decisor");
-                const toShort = c.to.replace("Entrada de Leads", "Entrada").replace("Tentando Contato", "Tentando").replace("Contato Realizado", "Contato").replace("Contato c/ Decisor", "Decisor").replace("Demo Agendada", "Demo");
-
-                return (
-                  <div key={i} className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: dotColor }} />
-                    <span className="text-[11px] text-muted-foreground flex-1 min-w-0 truncate">
-                      {fromShort} → {toShort}
-                    </span>
-                    <span className="text-sm font-bold text-foreground tabular-nums whitespace-nowrap" style={{ color: dotColor }}>
-                      {c.pct.toFixed(1)}%
-                    </span>
-                    {c.bench && (
-                      <span className="text-[10px] text-muted-foreground/60 tabular-nums whitespace-nowrap">
-                        vs {c.bench}%
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </motion.div>
-
-          {/* Side cards */}
-          <div className="grid grid-cols-3 gap-2">
-            {side.map((c, i) => {
-              const Icon = c.icon;
-              return (
-                <motion.div key={c.key} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.5 + i * 0.05 }}
-                  className={`rounded-lg border border-border/40 backdrop-blur-md bg-secondary p-3 text-center ${c.clickable ? "cursor-pointer hover:border-amber-500/30 transition-all" : ""}`}
-                  onClick={c.clickable ? () => setHoldOpen(true) : undefined}>
-                  <Icon className="w-3.5 h-3.5 mx-auto mb-1.5" style={{ color: "hsl(45,80%,55%)" }} />
-                  <p className="text-xl font-extrabold text-foreground tabular-nums">{c.count}</p>
-                  <p className="text-[9px] text-muted-foreground font-medium mt-0.5">{c.label}</p>
-                </motion.div>
-              );
-            })}
-          </div>
+        {/* RIGHT: Side cards only */}
+        <div className="space-y-2 pb-1">
+          {side.map((c, i) => {
+            const Icon = c.icon;
+            return (
+              <motion.div key={c.key} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.5 + i * 0.05 }}
+                className={`rounded-lg border border-border/40 backdrop-blur-md bg-secondary p-3 flex items-center gap-3 ${c.clickable ? "cursor-pointer hover:border-amber-500/30 transition-all" : ""}`}
+                onClick={c.clickable ? () => setHoldOpen(true) : undefined}>
+                <Icon className="w-4 h-4 flex-shrink-0" style={{ color: "hsl(45,80%,55%)" }} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] text-muted-foreground font-medium">{c.label}</p>
+                </div>
+                <p className="text-xl font-extrabold text-foreground tabular-nums">{c.count}</p>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
 
