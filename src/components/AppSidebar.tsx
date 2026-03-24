@@ -58,7 +58,7 @@ export function AppSidebar() {
         <ul className="space-y-1">
           {visibleItems.map((item) => {
             const active = isActive(item.url);
-            const children = subItems.filter((s) => s.parentUrl === item.url);
+            const children = item.hasChildren ? subItems.filter((s) => item.url.startsWith(s.parentUrl)) : [];
             return (
               <li key={item.url} className="space-y-0.5">
                 <Link
