@@ -218,7 +218,7 @@ export default function Funil() {
             initial={{ opacity: 0, y: 16, filter: "blur(4px)" }}
             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
             transition={{ duration: 0.6, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }}
-            className="relative rounded-xl border border-border/40 bg-card/60 backdrop-blur-md p-5 overflow-hidden"
+            className="relative rounded-xl border border-border/40 backdrop-blur-md p-5 overflow-hidden bg-secondary"
             style={{ boxShadow: `0 0 20px ${card.accent}15` }}
           >
             <div
@@ -301,7 +301,7 @@ export default function Funil() {
           initial={{ opacity: 0, y: 16, filter: "blur(4px)" }}
           animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
           transition={{ duration: 0.7, delay: 0.9, ease: [0.16, 1, 0.3, 1] }}
-          className="relative rounded-xl border border-border/40 bg-card/60 backdrop-blur-md p-6 overflow-hidden"
+          className="relative rounded-xl border border-border/40 backdrop-blur-md p-6 overflow-hidden bg-secondary"
           style={{ boxShadow: "0 0 24px hsl(230,60%,50%,0.08)" }}
         >
           <div
@@ -337,7 +337,7 @@ export default function Funil() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 1, ease: [0.16, 1, 0.3, 1] }}
-          className="relative rounded-xl border border-border/40 bg-card/60 backdrop-blur-md p-6 overflow-hidden"
+          className="relative rounded-xl border border-border/40 backdrop-blur-md p-6 overflow-hidden bg-secondary"
         >
           <div
             className="absolute top-0 left-0 w-full h-[2px]"
