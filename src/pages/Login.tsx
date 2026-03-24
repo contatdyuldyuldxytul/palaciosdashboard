@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import logoPalacios from "@/assets/logo-palacios-white.png";
 
 export default function Login() {
   const [email, setEmail] = useState("");
