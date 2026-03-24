@@ -1,5 +1,6 @@
 import { useLeads, getStatusDisplay, LeadStatus } from "@/hooks/useLeads";
-import { TrendingUp, Users, Target, AlertTriangle, DollarSign } from "lucide-react";
+import { usePipedrive, PipedriveDeal } from "@/hooks/usePipedrive";
+import { TrendingUp, Users, Target, AlertTriangle, DollarSign, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 
 const stageOrder: LeadStatus[] = ["lead", "contatado", "reuniao_agendada", "reuniao_realizada", "proposta", "fechado"];
@@ -84,18 +85,28 @@ function PerformanceIndicator({ actual, benchmark }: { actual: number; benchmark
 
 export default function Funil() {
   const { data: leads = [], isLoading } = useLeads();
+  const { deals: pipedriveDeals, manualSync, isSyncing: pipedriveSyncing, minutesAgo } = usePipedrive();
+
+  // Merge: use Pipedrive deals as primary source, fallback to DB leads
+  const mergedLeads = pipedriveDeals.length > 0
+    ? pipedriveDeals.map(d => ({
+        ...d,
+        status: d.status as LeadStatus,
+        valor_estimado: d.valor_estimado || 0,
+      }))
+    : leads.map(l => ({ ...l, days_in_stage: 0, pipedrive_stage: '', expected_close_date: null as string | null }));
 
   const stageCounts = stageOrder.map((status) => ({
     status,
     name: getStatusDisplay(status),
-    count: leads.filter((l) => l.status === status).length,
+    count: mergedLeads.filter((l) => l.status === status).length,
   }));
 
-  const totalLeads = leads.filter((l) => l.status !== "perdido").length;
+  const totalLeads = mergedLeads.filter((l) => l.status !== "perdido").length;
   const closedCount = stageCounts.find((s) => s.status === "fechado")?.count || 0;
   const overallConversion = totalLeads > 0 ? (closedCount / totalLeads) * 100 : 0;
 
-  const valorNegociacao = leads
+  const valorNegociacao = mergedLeads
     .filter((l) => ["proposta", "reuniao_realizada"].includes(l.status))
     .reduce((sum, l) => sum + (l.valor_estimado || 0), 0);
 
