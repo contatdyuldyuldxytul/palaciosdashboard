@@ -6,6 +6,7 @@ import {
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import logoPalacios from "@/assets/logo-palacios.png";
+import logoPalaciosIcon from "@/assets/logo-palacios-icon.png";
 
 const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -45,7 +46,7 @@ export function AppSidebar() {
       <div className="flex items-center px-3 h-14" style={{ borderBottom: '1px solid var(--glass-border)' }}>
         {collapsed ? (
           <div className="w-10 h-10 rounded-lg bg-primary/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 overflow-hidden" style={{ border: '1px solid var(--glass-border)' }}>
-            <img src={logoPalacios} alt="Palacios 3D Studio" className="w-7 h-7 object-contain" />
+            <img src={logoPalaciosIcon} alt="Palacios 3D Studio" className="w-7 h-7 object-contain" />
           </div>
         ) : (
           <img src={logoPalacios} alt="Palacios 3D Studio" className="h-7 w-auto object-contain opacity-90" />
