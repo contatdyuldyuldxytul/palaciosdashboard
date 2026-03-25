@@ -41,7 +41,7 @@ async function fetchPipedriveData(): Promise<PipedriveData> {
   return { deals: data.deals, summary: data.summary };
 }
 
-export function usePipedrive(autoSyncInterval = 2 * 60 * 1000) {
+export function usePipedrive(autoSyncInterval = 2 * 60 * 60 * 1000) {
   const queryClient = useQueryClient();
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
