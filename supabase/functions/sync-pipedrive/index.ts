@@ -17,11 +17,19 @@ serve(async (req) => {
     }
 
     // 1. Fetch all pipelines and find "ALINE'S PIPELINE - ALFA"
-    const pipelinesRes = await fetch(
-      `https://api.pipedrive.com/v1/pipelines?api_token=${PIPEDRIVE_API_KEY}`
-    );
-    const pipelinesData = await pipelinesRes.json();
-    if (!pipelinesData.success) throw new Error('Failed to fetch Pipedrive pipelines');
+    console.log('Pipedrive API key length:', PIPEDRIVE_API_KEY.length);
+    const pipelinesUrl = `https://api.pipedrive.com/v1/pipelines?api_token=${PIPEDRIVE_API_KEY}`;
+    const pipelinesRes = await fetch(pipelinesUrl);
+    const pipelinesText = await pipelinesRes.text();
+    console.log('Pipelines response status:', pipelinesRes.status, 'body:', pipelinesText.substring(0, 500));
+    
+    let pipelinesData;
+    try {
+      pipelinesData = JSON.parse(pipelinesText);
+    } catch {
+      throw new Error(`Pipedrive returned non-JSON (status ${pipelinesRes.status}): ${pipelinesText.substring(0, 200)}`);
+    }
+    if (!pipelinesData.success) throw new Error(`Failed to fetch Pipedrive pipelines: ${JSON.stringify(pipelinesData)}`);
 
     const targetPipeline = (pipelinesData.data || []).find(
       (p: any) => p.name === "ALINE'S PIPELINE - ALFA"
