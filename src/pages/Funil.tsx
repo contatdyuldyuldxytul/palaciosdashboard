@@ -39,7 +39,7 @@ function dealsIn(deals: PipedriveDeal[], names: string[]) {
 }
 
 export default function Funil() {
-  const { deals, manualSync, isSyncing, minutesAgo } = usePipedrive();
+  const { deals, manualSync, isSyncing, minutesAgo, syncError } = usePipedrive();
   const [holdOpen, setHoldOpen] = useState(false);
 
   const funnel = FUNNEL_STAGES.map(s => ({
@@ -141,6 +141,12 @@ export default function Funil() {
           {isSyncing ? "Sync..." : `Sync${minutesAgo !== null ? ` (${minutesAgo}m)` : ""}`}
         </button>
       </div>
+
+      {syncError && (
+        <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+          {syncError}
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-4 gap-3">

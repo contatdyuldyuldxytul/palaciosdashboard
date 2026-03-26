@@ -34,6 +34,20 @@ export interface PipedriveData {
   summary: PipedriveSummary;
 }
 
+function getPipedriveErrorMessage(error: unknown) {
+  const fallback = "Não foi possível sincronizar o Pipedrive agora.";
+
+  if (error instanceof Error) {
+    if (error.message.includes("daily request budget exceeded") || error.message.includes("errorCode\":429")) {
+      return "Limite diário do Pipedrive atingido. Tente novamente mais tarde ou use o último sync disponível.";
+    }
+
+    return error.message || fallback;
+  }
+
+  return fallback;
+}
+
 async function fetchPipedriveData(): Promise<PipedriveData> {
   const { data, error } = await supabase.functions.invoke('sync-pipedrive');
   if (error) throw error;
@@ -50,6 +64,8 @@ export function usePipedrive(autoSyncInterval = 2 * 60 * 60 * 1000) {
     queryFn: fetchPipedriveData,
     staleTime: 60_000,
     refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    retry: false,
   });
 
   const manualSync = useCallback(() => {
@@ -76,6 +92,7 @@ export function usePipedrive(autoSyncInterval = 2 * 60 * 60 * 1000) {
     ...query,
     deals: query.data?.deals || [],
     summary: query.data?.summary || null,
+    syncError: query.error ? getPipedriveErrorMessage(query.error) : null,
     manualSync,
     lastSync,
     minutesAgo,
