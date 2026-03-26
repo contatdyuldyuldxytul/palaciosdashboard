@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { Upload, FileSpreadsheet, CheckCircle2, XCircle, AlertTriangle, Copy, Loader2, Plus, Check, Calendar as CalendarIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { format } from "date-fns";
