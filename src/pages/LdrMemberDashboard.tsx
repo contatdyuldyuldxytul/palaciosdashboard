@@ -221,7 +221,8 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
 
   // Status update writes back to Sheets
   const handleStatusChange = (lead: SheetLead, newStatus: string) => {
-    setSheetLeads(prev => prev.map(l => l.id === lead.id ? { ...l, status: newStatus } : l));
+    // Refetch to get updated data
+    fetchSheetLeads();
     writeToSheets({
       tab: "leads",
       action: "update",
@@ -268,7 +269,7 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
           <p className="text-xs text-muted-foreground mt-1">
             LDR · {sheetLeads.length} leads gerados
             {lastSync && <span className="ml-2">· Última sincronização: {format(lastSync, "HH:mm")}</span>}
-            <button onClick={fetchSheetLeads} disabled={sheetsLoading} className="ml-2 inline-flex items-center gap-1 text-primary hover:underline disabled:opacity-50">
+            <button onClick={() => fetchSheetLeads()} disabled={sheetsLoading} className="ml-2 inline-flex items-center gap-1 text-primary hover:underline disabled:opacity-50">
               <RefreshCw className={`w-3 h-3 ${sheetsLoading ? "animate-spin" : ""}`} /> Atualizar
             </button>
           </p>
