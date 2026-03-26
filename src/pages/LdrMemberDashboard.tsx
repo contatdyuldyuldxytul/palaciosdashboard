@@ -412,6 +412,8 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
           </div>
         )}
       </motion.div>
+      </>
+      )}
     </div>
   );
 }
