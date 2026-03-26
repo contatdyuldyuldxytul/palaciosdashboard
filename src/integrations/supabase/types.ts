@@ -41,6 +41,39 @@ export type Database = {
         }
         Relationships: []
       }
+      checklist_checks: {
+        Row: {
+          colaborador: string
+          concluido: boolean
+          concluido_em: string | null
+          data: string
+          id: string
+          tarefa_id: string
+          tarefa_tipo: string | null
+          tarefa_titulo: string
+        }
+        Insert: {
+          colaborador: string
+          concluido?: boolean
+          concluido_em?: string | null
+          data?: string
+          id?: string
+          tarefa_id: string
+          tarefa_tipo?: string | null
+          tarefa_titulo: string
+        }
+        Update: {
+          colaborador?: string
+          concluido?: boolean
+          concluido_em?: string | null
+          data?: string
+          id?: string
+          tarefa_id?: string
+          tarefa_tipo?: string | null
+          tarefa_titulo?: string
+        }
+        Relationships: []
+      }
       checklist_projetos: {
         Row: {
           cliente_id: string
@@ -389,6 +422,72 @@ export type Database = {
         }
         Relationships: []
       }
+      metas_distribuidas: {
+        Row: {
+          criado_em: string
+          data: string
+          demos_dia: number
+          id: string
+          leads_contatados_dia: number
+          leads_milena_dia: number
+          mes_ano: string
+        }
+        Insert: {
+          criado_em?: string
+          data: string
+          demos_dia?: number
+          id?: string
+          leads_contatados_dia?: number
+          leads_milena_dia?: number
+          mes_ano: string
+        }
+        Update: {
+          criado_em?: string
+          data?: string
+          demos_dia?: number
+          id?: string
+          leads_contatados_dia?: number
+          leads_milena_dia?: number
+          mes_ano?: string
+        }
+        Relationships: []
+      }
+      metas_mensais: {
+        Row: {
+          contratos: number
+          criado_em: string
+          demos_aline: number
+          id: string
+          leads_contatados_aline: number
+          leads_milena: number
+          mes_ano: string
+          minimo_viavel: number
+          receita_esperada: number
+        }
+        Insert: {
+          contratos?: number
+          criado_em?: string
+          demos_aline?: number
+          id?: string
+          leads_contatados_aline?: number
+          leads_milena?: number
+          mes_ano: string
+          minimo_viavel?: number
+          receita_esperada?: number
+        }
+        Update: {
+          contratos?: number
+          criado_em?: string
+          demos_aline?: number
+          id?: string
+          leads_contatados_aline?: number
+          leads_milena?: number
+          mes_ano?: string
+          minimo_viavel?: number
+          receita_esperada?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -425,6 +524,30 @@ export type Database = {
           vendedor_sub_role?:
             | Database["public"]["Enums"]["vendedor_sub_role"]
             | null
+        }
+        Relationships: []
+      }
+      relatorios_meta: {
+        Row: {
+          conteudo: string
+          data_geracao: string
+          id: string
+          mes_ano: string
+          tipo: string
+        }
+        Insert: {
+          conteudo: string
+          data_geracao?: string
+          id?: string
+          mes_ano: string
+          tipo?: string
+        }
+        Update: {
+          conteudo?: string
+          data_geracao?: string
+          id?: string
+          mes_ano?: string
+          tipo?: string
         }
         Relationships: []
       }
