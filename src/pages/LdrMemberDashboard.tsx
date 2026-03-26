@@ -457,13 +457,12 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-xs text-muted-foreground border-b border-border">
-                  <th className="text-left p-4 font-medium">Empresa</th>
-                  <th className="text-left p-4 font-medium">Contato</th>
-                  <th className="text-left p-4 font-medium">Status</th>
-                  <th className="text-left p-4 font-medium">Data</th>
-                  <th className="text-left p-4 font-medium">Observações</th>
-                </tr>
+                 <tr className="text-xs text-muted-foreground border-b border-border">
+                   <th className="text-left p-4 font-medium">Empresa</th>
+                   <th className="text-left p-4 font-medium">Cidade</th>
+                   <th className="text-left p-4 font-medium">Status</th>
+                   <th className="text-left p-4 font-medium">Data</th>
+                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {filtered.map(lead => {
@@ -472,8 +471,8 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
                   const d = parseSheetDate(lead.data_primeiro_contato);
                   return (
                     <tr key={lead.id} className="hover:bg-muted/20 transition-colors">
-                      <td className="p-4"><p className="font-medium text-foreground">{lead.empresa}</p><p className="text-xs text-muted-foreground">{lead.cargo}</p></td>
-                      <td className="p-4 text-muted-foreground">{lead.contato_nome}</td>
+                      <td className="p-4"><p className="font-medium text-foreground">{lead.empresa}</p></td>
+                      <td className="p-4 text-muted-foreground">{lead.cidade || "—"}</td>
                       <td className="p-4">
                         <select value={normStatus} onChange={e => handleStatusChange(lead, e.target.value)}
                           className="text-xs border-0 focus:outline-none cursor-pointer rounded-full px-2.5 py-1 font-medium"
@@ -484,7 +483,6 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
                         </select>
                       </td>
                       <td className="p-4 text-muted-foreground">{d ? format(d, "dd/MM/yyyy") : "—"}</td>
-                      <td className="p-4 text-muted-foreground text-xs max-w-[200px] truncate">{lead.observacoes || "—"}</td>
                     </tr>
                   );
                 })}
