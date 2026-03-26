@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { Upload, FileSpreadsheet, CheckCircle2, XCircle, AlertTriangle, Copy, Loader2, Plus, Check, Calendar as CalendarIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { format } from "date-fns";
@@ -105,6 +106,7 @@ function formToSheetRecord(form: LeadForm) {
 }
 
 export function RefinamentoDados() {
+  const queryClient = useQueryClient();
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingCount, setLoadingCount] = useState(0);
@@ -119,6 +121,25 @@ export function RefinamentoDados() {
   const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
   const [bulkSaving, setBulkSaving] = useState(false);
   const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0 });
+
+  const insertLeadToDb = async (form: LeadForm) => {
+    const statusMap: Record<string, string> = {
+      "Lead": "lead", "Contatado": "contatado", "Reunião Agendada": "reuniao_agendada",
+      "Reunião Realizada": "reuniao_realizada", "Proposta": "proposta", "Fechado": "fechado", "Perdido": "perdido",
+    };
+    await supabase.from("leads").insert({
+      empresa: form.empresa,
+      contato: form.contato_nome || null,
+      cargo: form.cargo || null,
+      telefone: form.telefone || null,
+      email: form.email || null,
+      cidade: form.cidade || null,
+      responsavel_nome: form.responsavel || "Milena",
+      status: (statusMap[form.status] || "lead") as any,
+      origem: form.origem_lead || null,
+      notas: form.observacoes || null,
+    });
+  };
 
   const parseFile = useCallback(async (f: File): Promise<Empresa[]> => {
     const buffer = await f.arrayBuffer();
@@ -254,7 +275,7 @@ export function RefinamentoDados() {
     setForm(prev => ({ ...prev, [field]: value }));
   };
 
-  // Save single lead to Google Sheets
+  // Save single lead to Google Sheets + DB
   const saveLead = async () => {
     setSaving(true);
     try {
@@ -264,7 +285,9 @@ export function RefinamentoDados() {
         action: "append",
         record,
       });
-      toast.success("✅ Lead adicionado ao Google Sheets!");
+      await insertLeadToDb(form);
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      toast.success("✅ Lead adicionado!");
       setAddedLeads(prev => new Set(prev).add(modalEmpresa?.nome || ""));
       setModalOpen(false);
     } catch (err: any) {
@@ -288,19 +311,20 @@ export function RefinamentoDados() {
     try {
       for (let i = 0; i < toAdd.length; i++) {
         const empresa = toAdd[i];
-        const record = formToSheetRecord({
-          ...createDefaultForm(empresa),
-          data_descoberta: new Date(),
-        });
+        const defaultForm = createDefaultForm(empresa);
+        const formData = { ...defaultForm, data_descoberta: new Date() };
+        const record = formToSheetRecord(formData);
         await writeToSheets({
           tab: "leads",
           action: "append",
           record,
         });
+        await insertLeadToDb(formData);
         setBulkProgress({ current: i + 1, total: toAdd.length });
         setAddedLeads(prev => new Set(prev).add(empresa.nome));
       }
-      toast.success(`✅ ${toAdd.length} leads adicionados ao Google Sheets com sucesso!`);
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      toast.success(`✅ ${toAdd.length} leads adicionados com sucesso!`);
     } catch (err: any) {
       console.error(err);
       toast.error(`Erro ao adicionar leads. ${bulkProgress.current} de ${bulkProgress.total} foram adicionados.`);
