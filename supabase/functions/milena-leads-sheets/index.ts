@@ -55,9 +55,15 @@ serve(async (req) => {
     const SHEET_ID = Deno.env.get("GOOGLE_SHEETS_ID");
     if (!SERVICE_ACCOUNT || !SHEET_ID) throw new Error("Google Sheets not configured");
 
+    // Parse request body for optional filter
+    let filterStatusOnly = false;
+    try {
+      const body = await req.json();
+      filterStatusOnly = body?.filter_status === "lead";
+    } catch { /* no body = return all */ }
+
     const accessToken = await getAccessToken(SERVICE_ACCOUNT);
 
-    // Read "leads" tab
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent("leads")}`;
     const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
     if (!res.ok) throw new Error(`Failed to read sheet: ${await res.text()}`);
@@ -73,14 +79,22 @@ serve(async (req) => {
     const headers = rows[0].map((h: string) => normalize(h));
     const findCol = (names: string[]) => headers.findIndex(h => names.some(n => h.includes(n)));
 
+    const colId = findCol(["id"]);
     const colResponsavel = findCol(["responsavel", "responsável"]);
     const colStatus = findCol(["status"]);
-    const colNome = findCol(["nome", "contato", "name"]);
+    const colContatoNome = findCol(["contato_nome", "contato", "nome_contato"]);
     const colEmpresa = findCol(["empresa", "company"]);
     const colEmail = findCol(["email", "e-mail"]);
     const colTelefone = findCol(["telefone", "phone", "tel"]);
     const colCidade = findCol(["cidade", "city"]);
-    const colEstado = findCol(["estado", "state", "uf"]);
+    const colCargo = findCol(["cargo"]);
+    const colDataPrimeiroContato = findCol(["data_primeiro_contato", "data_descoberta", "data_criacao"]);
+    const colDataUltimaInteracao = findCol(["data_ultima_interacao", "data_atualizacao"]);
+    const colDataReuniao = findCol(["data_reuniao"]);
+    const colValorContrato = findCol(["valor_contrato", "valor_estimado", "valor"]);
+    const colObservacoes = findCol(["observacoes", "notas", "obs"]);
+    const colOrigemLead = findCol(["origem_lead", "origem"]);
+    const colPerdidoMotivo = findCol(["perdido_motivo", "motivo_perda"]);
 
     const leads = [];
     for (let i = 1; i < rows.length; i++) {
@@ -88,17 +102,31 @@ serve(async (req) => {
       const responsavel = normalize(row[colResponsavel] || "");
       const status = normalize(row[colStatus] || "");
 
-      if (responsavel.includes("milena") && status === "lead") {
-        leads.push({
-          nome: row[colNome] || "",
-          empresa: row[colEmpresa] || "",
-          email: row[colEmail] || "",
-          telefone: colTelefone >= 0 ? row[colTelefone] || "" : "",
-          cidade: colCidade >= 0 ? row[colCidade] || "" : "",
-          estado: colEstado >= 0 ? row[colEstado] || "" : "",
-          _raw: row.map((c: string) => c || ""),
-        });
-      }
+      if (!responsavel.includes("milena")) continue;
+      if (filterStatusOnly && status !== "lead") continue;
+
+      const getVal = (col: number) => col >= 0 ? (row[col] || "") : "";
+
+      leads.push({
+        id: getVal(colId) || `row-${i}`,
+        empresa: getVal(colEmpresa),
+        contato_nome: getVal(colContatoNome),
+        cargo: getVal(colCargo),
+        telefone: getVal(colTelefone),
+        email: getVal(colEmail),
+        cidade: getVal(colCidade),
+        status: getVal(colStatus) || "Lead",
+        data_primeiro_contato: getVal(colDataPrimeiroContato),
+        data_ultima_interacao: getVal(colDataUltimaInteracao),
+        data_reuniao: getVal(colDataReuniao),
+        valor_contrato: getVal(colValorContrato),
+        observacoes: getVal(colObservacoes),
+        origem_lead: getVal(colOrigemLead),
+        perdido_motivo: getVal(colPerdidoMotivo),
+        responsavel: getVal(colResponsavel),
+        row_index: i + 1, // 1-indexed for sheet updates
+        _raw: row.map((c: string) => c || ""),
+      });
     }
 
     return new Response(JSON.stringify({ success: true, leads, headers: rows[0] }), {
