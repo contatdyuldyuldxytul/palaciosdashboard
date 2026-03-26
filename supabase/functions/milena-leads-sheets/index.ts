@@ -70,13 +70,15 @@ serve(async (req) => {
     const data = await res.json();
     const rows: string[][] = data.values || [];
 
-    if (rows.length < 2) {
+    // Row 1 = title, Row 2 = headers, data starts Row 3
+    if (rows.length < 3) {
       return new Response(JSON.stringify({ success: true, leads: [] }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const headers = rows[0].map((h: string) => normalize(h));
+    // Use row index 1 (0-based) as headers (row 2 in sheet)
+    const headers = rows[1].map((h: string) => normalize(h));
     const findCol = (names: string[]) => headers.findIndex(h => names.some(n => h.includes(n)));
 
     const colId = findCol(["id"]);
@@ -97,7 +99,8 @@ serve(async (req) => {
     const colPerdidoMotivo = findCol(["perdido_motivo", "motivo_perda"]);
 
     const leads = [];
-    for (let i = 1; i < rows.length; i++) {
+    // Data starts from row index 2 (0-based) = row 3 in sheet
+    for (let i = 2; i < rows.length; i++) {
       const row = rows[i];
       const responsavel = normalize(row[colResponsavel] || "");
       const status = normalize(row[colStatus] || "");
@@ -129,7 +132,7 @@ serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ success: true, leads, headers: rows[0] }), {
+    return new Response(JSON.stringify({ success: true, leads, headers: rows[1] }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
