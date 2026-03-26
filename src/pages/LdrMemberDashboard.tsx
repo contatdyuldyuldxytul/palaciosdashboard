@@ -236,7 +236,7 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
 
   const tabs = [
     { key: "dashboard" as const, label: "Dashboard" },
-    { key: "refinamento" as const, label: "Refinamento de Dados" },
+    { key: "refinamento" as const, label: "Filtro de Empresas" },
     { key: "historico" as const, label: "Histórico Pipedrive" },
   ];
 
