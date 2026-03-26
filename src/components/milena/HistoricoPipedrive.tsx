@@ -15,11 +15,18 @@ interface SheetLead {
   _raw: string[];
 }
 
+interface MatchInfo {
+  field: string;
+  pipedrive_value: string;
+  confidence: number;
+}
+
 interface LeadResult {
   nome: string;
   empresa: string;
   email: string;
   status: "JA_PROSPECTADO" | "POSSIVEL_DUPLICATA" | "NOVO";
+  match_info: MatchInfo | null;
   pipedrive_info: {
     added: string;
     stage: string;
