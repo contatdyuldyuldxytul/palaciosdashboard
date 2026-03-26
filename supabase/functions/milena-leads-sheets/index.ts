@@ -132,7 +132,7 @@ serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ success: true, leads, headers: rows[0] }), {
+    return new Response(JSON.stringify({ success: true, leads, headers: rows[1] }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
