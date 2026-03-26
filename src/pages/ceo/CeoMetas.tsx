@@ -3,6 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useMetas } from "@/hooks/useCeoData";
 import { useLeads } from "@/hooks/useCeoData";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
+import { CeoGoalSetting } from "@/components/ceo/CeoGoalSetting";
 
 const AMBER = "hsl(45, 100%, 55%)";
 const periodos = ["mensal", "trimestral", "anual"] as const;
