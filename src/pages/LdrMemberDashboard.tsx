@@ -340,37 +340,7 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
 
       {/* ROW 2 — Checklist + Activity Feed */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }} className="glass-card p-5">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4" style={{ color: "hsl(45,80%,55%)" }} />
-              <h2 className="text-sm font-semibold text-foreground">Checklist do Dia</h2>
-            </div>
-            <span className="text-xs text-muted-foreground">{completedCount} de {checklist.length} concluídas</span>
-          </div>
-          {checklist.length > 0 && (
-            <div className="h-1.5 rounded-full bg-muted/30 overflow-hidden mb-4">
-              <motion.div initial={{ width: 0 }} animate={{ width: `${checklist.length > 0 ? (completedCount / checklist.length) * 100 : 0}%` }} transition={{ duration: 0.8 }} className="h-full rounded-full" style={{ background: "hsl(45,80%,55%)" }} />
-            </div>
-          )}
-          {checklistLoading ? (
-            <div className="space-y-2">{[...Array(4)].map((_, i) => <div key={i} className="h-8 bg-muted/30 rounded-lg animate-pulse" />)}</div>
-          ) : checklist.length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center py-4">Nenhuma tarefa encontrada</p>
-          ) : (
-            <div className="space-y-1.5 max-h-[240px] overflow-y-auto scrollbar-thin">
-              {checklist.map(item => (
-                <button key={item.id} onClick={() => handleToggleChecklist(item)}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm transition-all hover:bg-white/[0.04] ${item.concluida ? "opacity-50" : ""}`}>
-                  <div className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-all ${item.concluida ? "border-amber-500" : "border-muted-foreground/30"}`} style={item.concluida ? { background: "hsl(45,80%,55%)" } : undefined}>
-                    {item.concluida && <CheckCircle2 className="w-3 h-3 text-primary-foreground" />}
-                  </div>
-                  <span className={`text-xs ${item.concluida ? "line-through text-muted-foreground" : "text-foreground"}`}>{item.nome_etapa}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </motion.div>
+        <AIDailyChecklist colaborador={memberName} accentColor="hsl(45,80%,55%)" />
 
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.35 }} className="glass-card p-5">
           <div className="flex items-center gap-2 mb-4">
