@@ -18,14 +18,13 @@ interface SheetLead {
 interface MatchInfo {
   field: string;
   pipedrive_value: string;
-  confidence: number;
 }
 
 interface LeadResult {
   nome: string;
   empresa: string;
   email: string;
-  status: "JA_PROSPECTADO" | "POSSIVEL_DUPLICATA" | "NOVO";
+  status: "JA_PROSPECTADO" | "NOVO";
   match_info: MatchInfo | null;
   pipedrive_info: {
     added: string;
@@ -37,11 +36,10 @@ interface LeadResult {
 interface Summary {
   total: number;
   ja_prospectados: number;
-  possiveis_duplicatas: number;
   novos: number;
 }
 
-type FilterType = "todos" | "NOVO" | "POSSIVEL_DUPLICATA" | "JA_PROSPECTADO";
+type FilterType = "todos" | "NOVO" | "JA_PROSPECTADO";
 
 export function HistoricoPipedrive() {
   const [leads, setLeads] = useState<SheetLead[]>([]);
@@ -103,7 +101,7 @@ export function HistoricoPipedrive() {
 
   const filteredResults = summary
     ? filter === "todos"
-      ? results.filter(r => r.status === "NOVO" || r.status === "POSSIVEL_DUPLICATA")
+      ? results
       : results.filter(r => r.status === filter)
     : [];
 
@@ -121,7 +119,6 @@ export function HistoricoPipedrive() {
 
   const statusConfig = {
     JA_PROSPECTADO: { label: "Já Prospectado", color: "bg-red-500/10 text-red-400 border-red-500/20", icon: "🔴" },
-    POSSIVEL_DUPLICATA: { label: "Possível Duplicata", color: "bg-amber-500/10 text-amber-400 border-amber-500/20", icon: "🟡" },
     NOVO: { label: "Novo Lead", color: "bg-green-500/10 text-green-400 border-green-500/20", icon: "🟢" },
   };
 
@@ -167,7 +164,7 @@ export function HistoricoPipedrive() {
       {/* Summary Cards */}
       {summary && !loadingAnalysis && (
         <>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
               className="glass-card p-4 text-center" style={{ borderColor: "rgba(34,197,94,0.2)" }}>
               <CircleCheck className="w-5 h-5 mx-auto mb-1" style={{ color: "hsl(142,71%,45%)" }} />
@@ -175,12 +172,6 @@ export function HistoricoPipedrive() {
               <p className="text-xs text-muted-foreground">Novos Leads</p>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-              className="glass-card p-4 text-center" style={{ borderColor: "rgba(245,158,11,0.2)" }}>
-              <CircleDot className="w-5 h-5 mx-auto mb-1" style={{ color: "hsl(38,92%,50%)" }} />
-              <p className="text-2xl font-bold text-foreground">{summary.possiveis_duplicatas}</p>
-              <p className="text-xs text-muted-foreground">Possíveis Duplicatas</p>
-            </motion.div>
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
               className="glass-card p-4 text-center" style={{ borderColor: "rgba(239,68,68,0.2)" }}>
               <CircleAlert className="w-5 h-5 mx-auto mb-1" style={{ color: "hsl(0,84%,60%)" }} />
               <p className="text-2xl font-bold text-foreground">{summary.ja_prospectados}</p>
@@ -193,7 +184,6 @@ export function HistoricoPipedrive() {
             {([
               { key: "todos", label: "Todos" },
               { key: "NOVO", label: "🟢 Novos" },
-              { key: "POSSIVEL_DUPLICATA", label: "🟡 Duplicatas" },
               { key: "JA_PROSPECTADO", label: "🔴 Prospectados" },
             ] as { key: FilterType; label: string }[]).map(f => (
               <button key={f.key} onClick={() => setFilter(f.key)}
@@ -239,7 +229,7 @@ export function HistoricoPipedrive() {
                           </span>
                           {r.match_info && (
                             <p className="text-[10px] text-muted-foreground mt-1">
-                              Match: <span className="text-foreground/70">{r.match_info.field}</span> → "{r.match_info.pipedrive_value}" ({r.match_info.confidence}%)
+                              Match: <span className="text-foreground/70">{r.match_info.field}</span> → "{r.match_info.pipedrive_value}"
                             </p>
                           )}
                           {r.pipedrive_info && (
