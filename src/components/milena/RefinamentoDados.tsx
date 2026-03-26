@@ -275,7 +275,7 @@ export function RefinamentoDados() {
     setForm(prev => ({ ...prev, [field]: value }));
   };
 
-  // Save single lead to Google Sheets
+  // Save single lead to Google Sheets + DB
   const saveLead = async () => {
     setSaving(true);
     try {
@@ -285,7 +285,9 @@ export function RefinamentoDados() {
         action: "append",
         record,
       });
-      toast.success("✅ Lead adicionado ao Google Sheets!");
+      await insertLeadToDb(form);
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      toast.success("✅ Lead adicionado!");
       setAddedLeads(prev => new Set(prev).add(modalEmpresa?.nome || ""));
       setModalOpen(false);
     } catch (err: any) {
@@ -309,19 +311,20 @@ export function RefinamentoDados() {
     try {
       for (let i = 0; i < toAdd.length; i++) {
         const empresa = toAdd[i];
-        const record = formToSheetRecord({
-          ...createDefaultForm(empresa),
-          data_descoberta: new Date(),
-        });
+        const defaultForm = createDefaultForm(empresa);
+        const formData = { ...defaultForm, data_descoberta: new Date() };
+        const record = formToSheetRecord(formData);
         await writeToSheets({
           tab: "leads",
           action: "append",
           record,
         });
+        await insertLeadToDb(formData);
         setBulkProgress({ current: i + 1, total: toAdd.length });
         setAddedLeads(prev => new Set(prev).add(empresa.nome));
       }
-      toast.success(`✅ ${toAdd.length} leads adicionados ao Google Sheets com sucesso!`);
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      toast.success(`✅ ${toAdd.length} leads adicionados com sucesso!`);
     } catch (err: any) {
       console.error(err);
       toast.error(`Erro ao adicionar leads. ${bulkProgress.current} de ${bulkProgress.total} foram adicionados.`);
