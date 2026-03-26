@@ -3,6 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useMetas } from "@/hooks/useCeoData";
 import { useLeads } from "@/hooks/useCeoData";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
+import { CeoGoalSetting } from "@/components/ceo/CeoGoalSetting";
 
 const AMBER = "hsl(45, 100%, 55%)";
 const periodos = ["mensal", "trimestral", "anual"] as const;
@@ -81,6 +82,9 @@ export default function CeoMetas() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl">
+      {/* Goal Setting Section */}
+      <CeoGoalSetting />
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight" style={{ lineHeight: "1.1", color: AMBER }}>Metas Comerciais</h1>
