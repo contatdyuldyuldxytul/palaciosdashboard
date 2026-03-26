@@ -85,7 +85,7 @@ async function readSheet(accessToken: string, spreadsheetId: string, sheetName: 
 
 // Column mappings per table
 const COLUMN_MAP: Record<string, string[]> = {
-  leads: ["empresa", "contato", "cargo", "telefone", "email", "cidade", "estado", "status", "responsavel_nome", "origem", "notas", "valor_estimado", "motivo_perda"],
+  leads: ["id", "empresa", "contato_nome", "cargo", "telefone", "email", "cidade", "responsavel", "status", "data_primeiro_contato", "data_ultima_interacao", "data_reuniao", "valor_contrato", "observacoes", "origem_lead", "perdido_motivo"],
   reunioes_realizadas: ["data_reuniao", "vendedor_nome", "duracao_minutos", "resultado", "gerou_proposta", "valor_proposta", "notas"],
   comissoes: ["vendedor_nome", "mes_referencia", "salario_fixo", "leads_gerados", "valor_leads", "reunioes_realizadas", "valor_reunioes", "contratos_indicados", "valor_contratos", "comissao_contratos", "total_comissao"],
   metas: ["periodo", "mes", "trimestre", "ano", "meta_receita", "realizado_receita", "meta_leads", "realizado_leads", "meta_reunioes", "realizado_reunioes", "meta_contratos", "realizado_contratos"],
