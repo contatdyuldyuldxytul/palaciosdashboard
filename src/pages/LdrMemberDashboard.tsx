@@ -10,6 +10,8 @@ import { ptBR } from "date-fns/locale";
 import { motion } from "framer-motion";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
+import { RefinamentoDados } from "@/components/milena/RefinamentoDados";
+import { HistoricoPipedrive } from "@/components/milena/HistoricoPipedrive";
 
 interface LdrMemberDashboardProps {
   memberName: string;
@@ -66,6 +68,7 @@ interface ChecklistItem {
 }
 
 export default function LdrMemberDashboard({ memberName, initials, avatarColor = "hsl(45,80%,45%)" }: LdrMemberDashboardProps) {
+  const [activeTab, setActiveTab] = useState<"dashboard" | "refinamento" | "historico">("dashboard");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("Todos");
   const [showForm, setShowForm] = useState(false);
@@ -153,8 +156,32 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
   const greetingHour = now.getHours();
   const greeting = greetingHour < 12 ? "Bom dia" : greetingHour < 18 ? "Boa tarde" : "Boa noite";
 
+  const tabs = [
+    { key: "dashboard" as const, label: "Dashboard" },
+    { key: "refinamento" as const, label: "Refinamento de Dados" },
+    { key: "historico" as const, label: "Histórico Pipedrive" },
+  ];
+
   return (
     <div className="p-6 space-y-6 max-w-7xl">
+      {/* Tab Navigation */}
+      <div className="flex items-center gap-1 border-b border-white/10">
+        {tabs.map((tab) => (
+          <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+            className={`px-4 py-3 text-sm font-medium whitespace-nowrap transition-all duration-300 border-b-2 ${
+              activeTab === tab.key
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground hover:border-white/10"
+            }`}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "refinamento" && <RefinamentoDados />}
+      {activeTab === "historico" && <HistoricoPipedrive />}
+      {activeTab === "dashboard" && (
+      <>
       {/* Banner */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
         className="glass-card p-5 flex items-center gap-4" style={{ background: "linear-gradient(135deg, rgba(245,158,11,0.08), rgba(245,158,11,0.02))", borderColor: "rgba(245,158,11,0.15)" }}>
@@ -385,6 +412,8 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
           </div>
         )}
       </motion.div>
+      </>
+      )}
     </div>
   );
 }
