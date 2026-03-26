@@ -1,10 +1,19 @@
-import { useState, useCallback } from "react";
-import { Upload, FileSpreadsheet, Copy, Loader2, CircleAlert, CircleCheck, CircleDot } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Search, Copy, Loader2, CircleAlert, CircleCheck, CircleDot, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import * as XLSX from "xlsx";
 import { format } from "date-fns";
+
+interface SheetLead {
+  nome: string;
+  empresa: string;
+  email: string;
+  telefone: string;
+  cidade: string;
+  estado: string;
+  _raw: string[];
+}
 
 interface LeadResult {
   nome: string;
@@ -28,45 +37,47 @@ interface Summary {
 type FilterType = "todos" | "NOVO" | "POSSIVEL_DUPLICATA" | "JA_PROSPECTADO";
 
 export function HistoricoPipedrive() {
-  const [file, setFile] = useState<File | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [loadingCount, setLoadingCount] = useState(0);
+  const [leads, setLeads] = useState<SheetLead[]>([]);
+  const [sheetHeaders, setSheetHeaders] = useState<string[]>([]);
+  const [loadingSheets, setLoadingSheets] = useState(true);
+  const [loadingAnalysis, setLoadingAnalysis] = useState(false);
   const [results, setResults] = useState<LeadResult[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [filter, setFilter] = useState<FilterType>("todos");
-  const [rawRows, setRawRows] = useState<Record<string, any>[]>([]);
 
-  const parseFile = useCallback(async (f: File): Promise<Record<string, any>[]> => {
-    const buffer = await f.arrayBuffer();
-    const wb = XLSX.read(buffer, { type: "array" });
-    const sheet = wb.Sheets[wb.SheetNames[0]];
-    return XLSX.utils.sheet_to_json<Record<string, any>>(sheet);
+  const fetchLeads = useCallback(async () => {
+    setLoadingSheets(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("milena-leads-sheets");
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || "Erro ao buscar leads");
+      setLeads(data.leads || []);
+      setSheetHeaders(data.headers || []);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Erro ao buscar leads do Google Sheets");
+    } finally {
+      setLoadingSheets(false);
+    }
   }, []);
 
-  const handleFile = useCallback(async (f: File) => {
-    if (!f.name.match(/\.(csv|xlsx)$/i)) {
-      toast.error("Apenas arquivos CSV ou XLSX são aceitos.");
-      return;
-    }
-    setFile(f);
-    setLoading(true);
+  useEffect(() => { fetchLeads(); }, [fetchLeads]);
+
+  const analyzeInPipedrive = useCallback(async () => {
+    if (leads.length === 0) return;
+    setLoadingAnalysis(true);
     setResults([]);
     setSummary(null);
 
     try {
-      const rows = await parseFile(f);
-      setRawRows(rows);
-      setLoadingCount(rows.length);
-
-      // Normalize rows to have nome, empresa, email
-      const leads = rows.map(r => ({
-        nome: r.nome || r.contato || r.name || r.Nome || r.Contato || r.Name || "",
-        empresa: r.empresa || r.company || r.Empresa || r.Company || "",
-        email: r.email || r.Email || r["E-mail"] || r["e-mail"] || "",
+      const leadsToCheck = leads.map(l => ({
+        nome: l.nome,
+        empresa: l.empresa,
+        email: l.email,
       }));
 
       const { data, error } = await supabase.functions.invoke("check-pipedrive-history", {
-        body: { leads },
+        body: { leads: leadsToCheck },
       });
 
       if (error) throw error;
@@ -77,36 +88,27 @@ export function HistoricoPipedrive() {
       setFilter("todos");
     } catch (err: any) {
       console.error(err);
-      toast.error(err.message || "Erro ao processar arquivo");
+      toast.error(err.message || "Erro ao analisar no Pipedrive");
     } finally {
-      setLoading(false);
+      setLoadingAnalysis(false);
     }
-  }, [parseFile]);
+  }, [leads]);
 
-  const onDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    const f = e.dataTransfer.files[0];
-    if (f) handleFile(f);
-  }, [handleFile]);
-
-  const defaultFiltered = filter === "todos"
-    ? results.filter(r => r.status === "NOVO" || r.status === "POSSIVEL_DUPLICATA")
-    : results.filter(r => r.status === filter);
-
-  const visibleResults = defaultFiltered;
+  const filteredResults = summary
+    ? filter === "todos"
+      ? results.filter(r => r.status === "NOVO" || r.status === "POSSIVEL_DUPLICATA")
+      : results.filter(r => r.status === filter)
+    : [];
 
   const copyNovos = () => {
     const novos = results.filter(r => r.status === "NOVO");
-    const headers = rawRows.length > 0 ? Object.keys(rawRows[0]) : ["Nome", "Empresa", "Email"];
     const lines = novos.map(n => {
-      const rawRow = rawRows.find(r =>
-        (r.nome || r.contato || r.name || r.Nome || r.Contato || r.Name || "") === n.nome ||
-        (r.empresa || r.company || r.Empresa || r.Company || "") === n.empresa
-      );
-      if (rawRow) return headers.map(h => rawRow[h] ?? "").join("\t");
+      const lead = leads.find(l => l.nome === n.nome || l.empresa === n.empresa);
+      if (lead) return lead._raw.join("\t");
       return [n.nome, n.empresa, n.email].join("\t");
     });
-    navigator.clipboard.writeText([headers.join("\t"), ...lines].join("\n"));
+    const header = sheetHeaders.length > 0 ? sheetHeaders.join("\t") : "Nome\tEmpresa\tEmail";
+    navigator.clipboard.writeText([header, ...lines].join("\n"));
     toast.success(`${novos.length} novos leads copiados!`);
   };
 
@@ -118,43 +120,52 @@ export function HistoricoPipedrive() {
 
   return (
     <div className="space-y-5">
-      {/* Upload */}
-      {!loading && !summary && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-          onDrop={onDrop} onDragOver={(e) => e.preventDefault()}
-          className="glass-card p-8 border-2 border-dashed border-white/10 hover:border-primary/30 transition-colors cursor-pointer text-center"
-          onClick={() => document.getElementById("file-input-history")?.click()}>
-          <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
-          <p className="text-sm text-foreground font-medium">Suba sua lista de leads para verificar se já foram prospectados no Pipedrive</p>
-          <p className="text-xs text-muted-foreground mt-1">Arraste um CSV ou XLSX aqui ou clique para selecionar</p>
-          {file && <p className="text-xs text-primary mt-2 flex items-center justify-center gap-1"><FileSpreadsheet className="w-3 h-3" />{file.name}</p>}
-          <input id="file-input-history" type="file" accept=".csv,.xlsx" className="hidden" onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
-          <button className="mt-4 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all"
-            onClick={(e) => { e.stopPropagation(); document.getElementById("file-input-history")?.click(); }}>
-            Selecionar arquivo
+      {/* Header with actions */}
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-muted-foreground">
+            {loadingSheets ? "Carregando leads..." : `${leads.length} leads da Milena com status "Lead" no Google Sheets`}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={fetchLeads} disabled={loadingSheets}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted text-xs font-medium text-muted-foreground hover:text-foreground transition-all">
+            <RefreshCw className={`w-3 h-3 ${loadingSheets ? "animate-spin" : ""}`} /> Atualizar
           </button>
-        </motion.div>
-      )}
+          <button onClick={analyzeInPipedrive} disabled={loadingAnalysis || loadingSheets || leads.length === 0}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all disabled:opacity-50">
+            {loadingAnalysis ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+            {loadingAnalysis ? `Comparando ${leads.length} leads...` : "🔍 Analisar no Pipedrive"}
+          </button>
+        </div>
+      </div>
 
-      {/* Loading */}
-      {loading && (
+      {/* Loading sheets */}
+      {loadingSheets && (
         <div className="glass-card p-8 text-center">
           <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-primary" />
-          <p className="text-sm text-foreground font-medium">🔍 Comparando {loadingCount} leads com o Pipedrive...</p>
+          <p className="text-sm text-foreground font-medium">Buscando leads do Google Sheets...</p>
+        </div>
+      )}
+
+      {/* Loading analysis */}
+      {loadingAnalysis && (
+        <div className="glass-card p-8 text-center">
+          <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-primary" />
+          <p className="text-sm text-foreground font-medium">🔍 Comparando {leads.length} leads com o Pipedrive...</p>
           <p className="text-xs text-muted-foreground mt-1">Buscando todos os deals do pipeline</p>
         </div>
       )}
 
-      {/* Results */}
-      {summary && !loading && (
+      {/* Summary Cards */}
+      {summary && !loadingAnalysis && (
         <>
-          {/* Summary Cards */}
           <div className="grid grid-cols-3 gap-3">
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 }}
-              className="glass-card p-4 text-center" style={{ borderColor: "rgba(239,68,68,0.2)" }}>
-              <CircleAlert className="w-5 h-5 mx-auto mb-1" style={{ color: "hsl(0,84%,60%)" }} />
-              <p className="text-2xl font-bold text-foreground">{summary.ja_prospectados}</p>
-              <p className="text-xs text-muted-foreground">Já Prospectados</p>
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+              className="glass-card p-4 text-center" style={{ borderColor: "rgba(34,197,94,0.2)" }}>
+              <CircleCheck className="w-5 h-5 mx-auto mb-1" style={{ color: "hsl(142,71%,45%)" }} />
+              <p className="text-2xl font-bold text-foreground">{summary.novos}</p>
+              <p className="text-xs text-muted-foreground">Novos Leads</p>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
               className="glass-card p-4 text-center" style={{ borderColor: "rgba(245,158,11,0.2)" }}>
@@ -163,10 +174,10 @@ export function HistoricoPipedrive() {
               <p className="text-xs text-muted-foreground">Possíveis Duplicatas</p>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-              className="glass-card p-4 text-center" style={{ borderColor: "rgba(34,197,94,0.2)" }}>
-              <CircleCheck className="w-5 h-5 mx-auto mb-1" style={{ color: "hsl(142,71%,45%)" }} />
-              <p className="text-2xl font-bold text-foreground">{summary.novos}</p>
-              <p className="text-xs text-muted-foreground">Novos Leads</p>
+              className="glass-card p-4 text-center" style={{ borderColor: "rgba(239,68,68,0.2)" }}>
+              <CircleAlert className="w-5 h-5 mx-auto mb-1" style={{ color: "hsl(0,84%,60%)" }} />
+              <p className="text-2xl font-bold text-foreground">{summary.ja_prospectados}</p>
+              <p className="text-xs text-muted-foreground">Já Prospectados</p>
             </motion.div>
           </div>
 
@@ -190,27 +201,25 @@ export function HistoricoPipedrive() {
               </button>
             </div>
           </div>
+        </>
+      )}
 
-          {/* Upload new */}
-          <div className="flex justify-end">
-            <button onClick={() => { setFile(null); setSummary(null); setResults([]); }}
-              className="text-xs text-primary hover:underline">Enviar outro arquivo</button>
-          </div>
-
-          {/* Table */}
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-xs text-muted-foreground border-b border-border">
-                    <th className="text-left p-4 font-medium">Nome</th>
-                    <th className="text-left p-4 font-medium">Empresa</th>
-                    <th className="text-left p-4 font-medium">Email</th>
-                    <th className="text-left p-4 font-medium">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {visibleResults.map((r, i) => {
+      {/* Leads Table (before or after analysis) */}
+      {!loadingSheets && !loadingAnalysis && leads.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-xs text-muted-foreground border-b border-border">
+                  <th className="text-left p-4 font-medium">Nome</th>
+                  <th className="text-left p-4 font-medium">Empresa</th>
+                  <th className="text-left p-4 font-medium">Email</th>
+                  <th className="text-left p-4 font-medium">{summary ? "Status Pipedrive" : "Status"}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {summary ? (
+                  filteredResults.map((r, i) => {
                     const cfg = statusConfig[r.status];
                     return (
                       <tr key={i} className="hover:bg-muted/20 transition-colors">
@@ -229,12 +238,32 @@ export function HistoricoPipedrive() {
                         </td>
                       </tr>
                     );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </motion.div>
-        </>
+                  })
+                ) : (
+                  leads.map((l, i) => (
+                    <tr key={i} className="hover:bg-muted/20 transition-colors">
+                      <td className="p-4 font-medium text-foreground">{l.nome || "—"}</td>
+                      <td className="p-4 text-muted-foreground">{l.empresa || "—"}</td>
+                      <td className="p-4 text-muted-foreground text-xs">{l.email || "—"}</td>
+                      <td className="p-4">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border bg-muted/30 text-muted-foreground border-border">
+                          Lead
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Empty state */}
+      {!loadingSheets && leads.length === 0 && (
+        <div className="glass-card p-8 text-center">
+          <p className="text-sm text-muted-foreground">Nenhum lead encontrado para Milena com status "Lead"</p>
+        </div>
       )}
     </div>
   );
