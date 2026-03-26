@@ -15,11 +15,18 @@ interface SheetLead {
   _raw: string[];
 }
 
+interface MatchInfo {
+  field: string;
+  pipedrive_value: string;
+  confidence: number;
+}
+
 interface LeadResult {
   nome: string;
   empresa: string;
   email: string;
   status: "JA_PROSPECTADO" | "POSSIVEL_DUPLICATA" | "NOVO";
+  match_info: MatchInfo | null;
   pipedrive_info: {
     added: string;
     stage: string;
@@ -230,8 +237,13 @@ export function HistoricoPipedrive() {
                           <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border ${cfg.color}`}>
                             {cfg.icon} {cfg.label}
                           </span>
-                          {r.pipedrive_info && (
+                          {r.match_info && (
                             <p className="text-[10px] text-muted-foreground mt-1">
+                              Match: <span className="text-foreground/70">{r.match_info.field}</span> → "{r.match_info.pipedrive_value}" ({r.match_info.confidence}%)
+                            </p>
+                          )}
+                          {r.pipedrive_info && (
+                            <p className="text-[10px] text-muted-foreground mt-0.5">
                               Adicionado em {format(new Date(r.pipedrive_info.added), "dd/MM/yyyy")} · {r.pipedrive_info.stage}
                             </p>
                           )}
