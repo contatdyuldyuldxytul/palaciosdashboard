@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLeads, Lead } from "@/hooks/useLeads";
 import { RefinamentoDados } from "@/components/milena/RefinamentoDados";
 import { HistoricoPipedrive } from "@/components/milena/HistoricoPipedrive";
+import { AIDailyChecklist } from "@/components/AIDailyChecklist";
 
 interface LdrMemberDashboardProps {
   memberName: string;
