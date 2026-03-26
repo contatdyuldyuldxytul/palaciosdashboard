@@ -85,6 +85,7 @@ export default function CeoMetas() {
       {/* Goal Setting Section */}
       <CeoGoalSetting />
 
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight" style={{ lineHeight: "1.1", color: AMBER }}>Metas Comerciais</h1>
           <p className="text-sm text-muted-foreground mt-1">Dia {dayOfMonth}/{daysInMonth} do mês — {(pctMonth * 100).toFixed(0)}% do tempo</p>
