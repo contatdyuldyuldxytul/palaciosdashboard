@@ -106,6 +106,7 @@ function formToSheetRecord(form: LeadForm) {
 }
 
 export function RefinamentoDados() {
+  const queryClient = useQueryClient();
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingCount, setLoadingCount] = useState(0);
@@ -120,6 +121,25 @@ export function RefinamentoDados() {
   const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
   const [bulkSaving, setBulkSaving] = useState(false);
   const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0 });
+
+  const insertLeadToDb = async (form: LeadForm) => {
+    const statusMap: Record<string, string> = {
+      "Lead": "lead", "Contatado": "contatado", "Reunião Agendada": "reuniao_agendada",
+      "Reunião Realizada": "reuniao_realizada", "Proposta": "proposta", "Fechado": "fechado", "Perdido": "perdido",
+    };
+    await supabase.from("leads").insert({
+      empresa: form.empresa,
+      contato: form.contato_nome || null,
+      cargo: form.cargo || null,
+      telefone: form.telefone || null,
+      email: form.email || null,
+      cidade: form.cidade || null,
+      responsavel_nome: form.responsavel || "Milena",
+      status: (statusMap[form.status] || "lead") as any,
+      origem: form.origem_lead || null,
+      notas: form.observacoes || null,
+    });
+  };
 
   const parseFile = useCallback(async (f: File): Promise<Empresa[]> => {
     const buffer = await f.arrayBuffer();
