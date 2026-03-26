@@ -11,31 +11,37 @@ SOBRE O ICP DA PALACIOS 3D STUDIO:
 Clientes ideais são CONSTRUTORAS e INCORPORADORAS brasileiras que fazem lançamentos imobiliários residenciais ou comerciais. Características:
 - Empresas que constroem e vendem imóveis na planta
 - Fazem lançamentos imobiliários com material de vendas
-- Precisam de renders 3D para vender unidades
-- Geralmente têm entre 10-500 funcionários
-- Atuam em cidades brasileiras de médio e grande porte
+- Precisam de renders 3D para acelerar vendas
+- Nomes típicos contêm: Incorporadora, Construtora, Empreendimentos, Imobiliária de lançamentos, Engenharia (quando faz residencial)
 
 NÃO são ICP:
-- Construtoras de obras públicas (estradas, pontes)
-- Empresas de reforma e manutenção
-- Imobiliárias (só vendem, não constroem)
+- Construtoras de obras públicas
+- Empresas de reforma e manutenção (descrição contém REFORMA)
+- Imobiliárias que só vendem
 - Escritórios de arquitetura
 - Administradoras de condomínio
-- Engenharia industrial
-- Prefeituras e órgãos públicos
+- Pessoas físicas
+- Órgãos públicos e prefeituras
 
-Analise cada linha da planilha fornecida e classifique:
-- QUALIFICADO: é construtora ou incorporadora que faz lançamentos imobiliários
-- NÃO QUALIFICADO: não é o perfil
-- INCERTO: pode ser mas precisa de verificação
+REGRA ESPECIAL para Descrição:
+- Se Descrição contém EDIFICACAO NOVA = mais chance de ser ICP
+- Se Descrição contém REFORMA = menos chance de ser ICP
+- Se Descrição contém CERTIFICADO DE CONCLUSAO = projeto já entregue, pode ser ICP para próximo lançamento
 
-Retorne APENAS um JSON válido:
+Analise cada empresa e classifique:
+- QUALIFICADO: é construtora ou incorporadora de lançamentos imobiliários
+- NAO_QUALIFICADO: não é o perfil
+- INCERTO: pode ser mas precisa verificação
+
+Retorne APENAS JSON válido:
 {
   "empresas": [
     {
       "nome": "nome da empresa",
+      "descricao": "tipo de alvará",
+      "bairro": "bairro",
       "classificacao": "QUALIFICADO" ou "NAO_QUALIFICADO" ou "INCERTO",
-      "motivo": "explicação curta em 1 linha"
+      "motivo": "explicação em 1 linha"
     }
   ],
   "resumo": {
@@ -64,7 +70,7 @@ serve(async (req) => {
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: `Analise estas empresas da planilha e classifique cada uma:\n\n${data}` },
+          { role: "user", content: `Analise estas empresas extraídas de alvarás da Prefeitura de São Paulo e classifique cada uma:\n\n${data}` },
         ],
       }),
     });
@@ -88,7 +94,6 @@ serve(async (req) => {
     const result = await response.json();
     const content = result.choices?.[0]?.message?.content || "";
     
-    // Extract JSON from response
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("No valid JSON in AI response");
     
