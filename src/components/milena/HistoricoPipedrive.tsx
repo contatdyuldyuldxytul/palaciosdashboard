@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Search, Copy, Loader2, CircleAlert, CircleCheck, CircleDot, RefreshCw } from "lucide-react";
+import { Search, Copy, Loader2, CircleAlert, CircleCheck, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
