@@ -4,6 +4,7 @@ import { useMetas } from "@/hooks/useCeoData";
 import { useLeads } from "@/hooks/useCeoData";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
 import { CeoGoalSetting } from "@/components/ceo/CeoGoalSetting";
+import { CeoCadencePlanning } from "@/components/ceo/CeoCadencePlanning";
 
 const AMBER = "hsl(45, 100%, 55%)";
 const periodos = ["mensal", "trimestral", "anual"] as const;
@@ -82,6 +83,9 @@ export default function CeoMetas() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl">
+      {/* Cadence Planning Section */}
+      <CeoCadencePlanning />
+
       {/* Goal Setting Section */}
       <CeoGoalSetting />
 
