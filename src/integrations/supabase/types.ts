@@ -230,6 +230,48 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_activities: {
+        Row: {
+          concluido: boolean
+          concluido_em: string | null
+          criado_em: string
+          criado_por: string | null
+          data: string
+          descricao: string | null
+          id: string
+          quantidade: number | null
+          responsavel: string
+          tipo: string
+          titulo: string
+        }
+        Insert: {
+          concluido?: boolean
+          concluido_em?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          data?: string
+          descricao?: string | null
+          id?: string
+          quantidade?: number | null
+          responsavel: string
+          tipo?: string
+          titulo: string
+        }
+        Update: {
+          concluido?: boolean
+          concluido_em?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          data?: string
+          descricao?: string | null
+          id?: string
+          quantidade?: number | null
+          responsavel?: string
+          tipo?: string
+          titulo?: string
+        }
+        Relationships: []
+      }
       financeiro_clientes: {
         Row: {
           cliente_id: string
