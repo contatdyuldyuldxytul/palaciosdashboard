@@ -27,6 +27,8 @@ const FIXED_COST_FIELDS = [
   { key: "veiculos", label: "Veículos" },
   { key: "diretoria_prolabore", label: "Diretoria / Sócios (pró-labore)" },
   { key: "outros_fixos", label: "Outros Gastos Fixos" },
+  { key: "educacao", label: "Educação", autoFromCat: "Educação" },
+  { key: "software", label: "Software", autoFromCat: "Software" },
 ];
 
 export default function CeoFinCustosPE() {

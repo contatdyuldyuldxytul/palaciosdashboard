@@ -41,12 +41,14 @@ export default function CeoFinDRE() {
     const adm = sumCat("Saída", "Adm");
     const financeiro = sumCat("Saída", "Financeiro");
     const outras = sumCat("Saída", "Outras Despesas");
-    const totalDesp = pessoal + aluguel + marketing + adm + financeiro + outras;
+    const educacao = sumCat("Saída", "Educação");
+    const software = sumCat("Saída", "Software");
+    const totalDesp = pessoal + aluguel + marketing + adm + financeiro + educacao + software + outras;
     const ebit = lucroBruto - totalDesp;
     const recNaoOp = sumCat("Entrada", "Receita não Operacional");
     const resultadoLiq = ebit + recNaoOp;
 
-    return { receitaBruta, deducoes, receitaLiq, cmv, lucroBruto, pessoal, aluguel, marketing, adm, financeiro, outras, totalDesp, ebit, recNaoOp, resultadoLiq };
+    return { receitaBruta, deducoes, receitaLiq, cmv, lucroBruto, pessoal, aluguel, marketing, adm, financeiro, educacao, software, outras, totalDesp, ebit, recNaoOp, resultadoLiq };
   };
 
   const cur = useMemo(() => calcDRE(curQ.data || []), [curQ.data]);
@@ -75,6 +77,8 @@ export default function CeoFinDRE() {
     { label: "(-) Marketing", cur: -cur.marketing, prev: -prev.marketing },
     { label: "(-) Despesas Adm", cur: -cur.adm, prev: -prev.adm },
     { label: "(-) Despesas Financeiras", cur: -cur.financeiro, prev: -prev.financeiro },
+    { label: "(-) Educação", cur: -cur.educacao, prev: -prev.educacao },
+    { label: "(-) Software", cur: -cur.software, prev: -prev.software },
     { label: "(-) Outras Despesas", cur: -cur.outras, prev: -prev.outras },
     { label: "= TOTAL DESPESAS OPERACIONAIS", cur: -cur.totalDesp, prev: -prev.totalDesp, bold: true },
     { label: "", divider: true },
