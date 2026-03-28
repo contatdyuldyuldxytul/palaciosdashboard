@@ -1,13 +1,16 @@
-import { DollarSign, Users, Calendar, TrendingUp, Target } from "lucide-react";
+import { useState } from "react";
+import { DollarSign, Users, Calendar as CalendarIcon, TrendingUp, Target, CalendarDays } from "lucide-react";
 import { MetricCard } from "@/components/MetricCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SyncIndicator } from "@/components/SyncIndicator";
 import { useLeads, getStatusDisplay, LeadStatus } from "@/hooks/useLeads";
 import { format } from "date-fns";
+import { CalendarioPreVendas } from "@/components/CalendarioPreVendas";
 
 const stageOrder: LeadStatus[] = ["lead", "contatado", "reuniao_agendada", "reuniao_realizada", "proposta", "fechado"];
 
 export default function Dashboard() {
+  const [activeTab, setActiveTab] = useState<"dashboard" | "calendario">("dashboard");
   const { data: leads = [], isLoading } = useLeads();
 
   const leadsCount = leads.length;
