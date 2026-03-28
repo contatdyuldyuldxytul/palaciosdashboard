@@ -1,12 +1,14 @@
 import { useState, useMemo } from "react";
 import { useChecklistChecks } from "@/hooks/useMetasMensais";
+import { useCustomActivitiesForMonth } from "@/hooks/useCustomActivities";
+import { usePipedrive } from "@/hooks/usePipedrive";
 import { useLeads } from "@/hooks/useLeads";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Calendar, Mail, Phone, Globe, MessageSquare, Sun, Sunset } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Mail, Phone, Globe, MessageSquare, Sun, Sunset, Star } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   getCycleDayInfo, getMonthCycleData, getWeekCycleData,
-  todaySP, CycleDayInfo, CycleActivity, formatDateBR,
+  todaySP, CycleDayInfo, CycleActivity, formatDateBR, getGroupLeadCounts,
 } from "@/lib/cadenceEngine";
 
 const AMBER = "hsl(45, 100%, 55%)";
