@@ -52,7 +52,10 @@ export function CalendarioPreVendas({ defaultFilter = "Todas" }: Props) {
   const { data: checksAline = [] } = useChecklistChecks("Aline");
   const { data: checksMilena = [] } = useChecklistChecks("Milena");
   const { data: allLeads = [] } = useLeads();
+  const { deals } = usePipedrive();
+  const { data: customActivitiesMonth = [] } = useCustomActivitiesForMonth(year, month);
   const allChecks = [...checksAline, ...checksMilena];
+  const leadCounts = useMemo(() => getGroupLeadCounts(deals), [deals]);
 
   // Month cycle data
   const monthData = useMemo(() => getMonthCycleData(year, month), [year, month]);
