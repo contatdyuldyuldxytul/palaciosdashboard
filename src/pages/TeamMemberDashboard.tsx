@@ -7,6 +7,7 @@ import { CircularProgress } from "@/components/CircularProgress";
 import { Plus, Search, Phone, FileText, TrendingUp, Users, Target, CalendarCheck, CheckCircle2, Activity } from "lucide-react";
 import { AIDailyChecklist } from "@/components/AIDailyChecklist";
 import { CadenceChecklist } from "@/components/CadenceChecklist";
+import { CalendarioPreVendas } from "@/components/CalendarioPreVendas";
 import { usePlanejamentoHoje } from "@/hooks/usePlanejamento";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -56,6 +57,7 @@ interface ChecklistItem {
 export default function TeamMemberDashboard({ memberName, initials }: TeamMemberDashboardProps) {
   const { data: cadencePlan = [] } = usePlanejamentoHoje(memberName);
   const hasCadencePlan = cadencePlan.length > 0;
+  const [activeTab, setActiveTab] = useState<"dashboard" | "calendario">("dashboard");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("Todos");
   const [showForm, setShowForm] = useState(false);
@@ -142,6 +144,26 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
 
   return (
     <div className="p-6 space-y-6 max-w-7xl">
+      {/* Tab Navigation */}
+      <div className="flex items-center gap-1 border-b border-white/10">
+        {([
+          { key: "dashboard" as const, label: "Dashboard" },
+          { key: "calendario" as const, label: "📅 Calendário" },
+        ]).map(tab => (
+          <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+            className={`px-4 py-3 text-sm font-medium whitespace-nowrap transition-all duration-300 border-b-2 ${
+              activeTab === tab.key
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground hover:border-white/10"
+            }`}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "calendario" && <CalendarioPreVendas />}
+      {activeTab === "dashboard" && (
+      <>
       {/* Banner */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
         className="glass-card p-5 flex items-center gap-4" style={{ background: "linear-gradient(135deg, rgba(0,200,150,0.08), rgba(0,200,150,0.02))", borderColor: "rgba(0,200,150,0.15)" }}>
@@ -342,6 +364,8 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
           </div>
         )}
       </motion.div>
+      </>
+      )}
     </div>
   );
 }
