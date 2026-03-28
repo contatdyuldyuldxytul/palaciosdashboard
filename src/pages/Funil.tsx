@@ -250,13 +250,25 @@ export default function Funil() {
                     <div className={`absolute inset-0 bg-gradient-to-r ${gradients[i]} opacity-85`} />
                     <div className="absolute inset-0 bg-gradient-to-b from-white/[0.06] to-transparent" />
                     <div className="absolute inset-0 border border-white/[0.08] rounded-lg" />
-                    <div className="relative z-10 flex items-center justify-between h-full px-4">
-                      <span className="text-sm font-semibold text-white">{s.label}</span>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-bold bg-black/25 rounded-full px-2.5 py-0.5 text-white/90 tabular-nums">{s.count}</span>
-                        {isFinal && <span className="text-[9px] font-semibold bg-emerald-500/25 text-emerald-300 rounded-full px-1.5 py-0.5">✓</span>}
-                      </div>
-                    </div>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="relative z-10 flex items-center justify-between h-full px-4 cursor-default">
+                          <span className="text-sm font-semibold text-white">{s.label}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm font-bold bg-black/25 rounded-full px-2.5 py-0.5 text-white/90 tabular-nums">{cumulative[i]}</span>
+                            {isFinal && <span className="text-[9px] font-semibold bg-emerald-500/25 text-emerald-300 rounded-full px-1.5 py-0.5">✓</span>}
+                          </div>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="bg-background border-border/40 text-foreground max-w-xs">
+                        <p className="text-xs">
+                          <span className="font-semibold">{s.count}</span> nesta etapa
+                          {i < funnel.length - 1 && (
+                            <> + <span className="font-semibold">{cumulative[i] - s.count}</span> nas etapas seguintes</>
+                          )}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
                 </motion.div>
               </div>
