@@ -115,13 +115,42 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
     .sort((a, b) => new Date(b.data_atualizacao).getTime() - new Date(a.data_atualizacao).getTime())
     .slice(0, 10);
 
-  // Funnel
-  const funnelData = stageOrder.map((status) => ({
-    status, name: getStatusDisplay(status),
-    count: memberLeads.filter((l) => l.status === status).length,
-  }));
-  const maxFunnelCount = Math.max(...funnelData.map((s) => s.count), 1);
-  const totalFunnel = funnelData.reduce((s, f) => s + f.count, 0);
+  // Pipedrive Funnel (same as Pré-Vendas page)
+  const PIPEDRIVE_STAGES = [
+    { key: "Entrada de Leads", label: "Entrada de Leads", merge: undefined as string[] | undefined },
+    { key: "Tentando Contato", label: "Tentando Contato", merge: ["Tentando Contato #A", "Tentando Contato #B"] },
+    { key: "Contato Realizado", label: "Contato Realizado", merge: ["Contato Realizado #A", "Contato Realizado #B"] },
+    { key: "Contato com o Decisor", label: "Contato c/ Decisor" },
+    { key: "Demo Agendada", label: "Demo Agendada" },
+  ];
+  const SIDE_STAGES = [
+    { key: "Hold", stages: ["Hold"], label: "Hold", sublabel: "Empreendimentos futuros" },
+    { key: "Recicláveis", stages: ["Recicláveis"], label: "Recicláveis", sublabel: "Prospectar no futuro" },
+    { key: "Porta Aberta", stages: ["Porta Aberta Decisores"], label: "Porta Aberta", sublabel: "Sem momento agora" },
+  ];
+  const pCnt = (names: string[]) => pipedriveDeals.filter(d => d.status === "open" && names.includes(d.pipedrive_stage)).length;
+  const pipeFunnel = PIPEDRIVE_STAGES.map(s => ({ ...s, count: pCnt(s.merge || [s.key]) }));
+  const pipeSide = SIDE_STAGES.map(s => ({ ...s, count: pCnt(s.stages) }));
+  const pipeTotalFunnel = pipeFunnel.reduce((s, f) => s + f.count, 0);
+  const pipeGradients = [
+    "from-[hsl(230,80%,65%)] to-[hsl(250,70%,55%)]",
+    "from-[hsl(260,70%,60%)] to-[hsl(280,65%,50%)]",
+    "from-[hsl(290,60%,55%)] to-[hsl(320,60%,50%)]",
+    "from-[hsl(330,65%,55%)] to-[hsl(350,60%,50%)]",
+    "from-[hsl(150,60%,40%)] to-[hsl(160,55%,35%)]",
+  ];
+  const BENCHMARKS = [null, 85, 70, 40, 50];
+  const pipeCumulative = [...pipeFunnel].map(f => f.count);
+  for (let i = pipeFunnel.length - 2; i >= 0; i--) {
+    pipeCumulative[i] = pipeFunnel[i].count + pipeCumulative[i + 1];
+  }
+  const pipeConvs = pipeFunnel.map((s, i) => {
+    if (i === 0) return null;
+    const totalPrev = pipeCumulative[i - 1];
+    const totalCur = pipeCumulative[i];
+    const pct = totalPrev > 0 ? (totalCur / totalPrev) * 100 : 0;
+    return { from: pipeFunnel[i - 1].label, to: s.label, pct, bench: BENCHMARKS[i] };
+  }).filter(Boolean) as { from: string; to: string; pct: number; bench: number | null }[];
 
   const handleAddLead = () => {
     if (!newLead.empresa) return;
