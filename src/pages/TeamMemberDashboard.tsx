@@ -65,6 +65,7 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
   const { data: allLeads = [], isLoading } = useLeads();
   const addLead = useAddLead();
   const updateLead = useUpdateLead();
+  const { deals: pipedriveDeals } = usePipedrive();
 
   const memberLeads = allLeads.filter(
     (l) => (l.responsavel_nome || "").toLowerCase().trim() === memberName.toLowerCase().trim()
