@@ -394,13 +394,16 @@ export function CalendarioPreVendas({ defaultFilter = "Todas" }: Props) {
                             <span className="text-xs font-semibold text-amber-400">MANHÃ</span>
                           </div>
                           <div className="space-y-1.5">
-                            {manha.map((a, i) => (
-                              <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/20">
-                                <span>{a.emoji}</span>
-                                <span className="text-xs text-foreground flex-1">{a.descricao}</span>
-                                <span className="text-[8px] text-muted-foreground">{a.periodo}</span>
-                              </div>
-                            ))}
+                            {manha.map((a, i) => {
+                              const lc = a.grupo === "A" ? leadCounts.groupA : leadCounts.groupB;
+                              return (
+                                <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/20">
+                                  <span>{a.emoji}</span>
+                                  <span className="text-xs text-foreground flex-1">{a.descricao} <span className="text-muted-foreground text-[10px]">({lc > 0 ? `${lc} leads` : "—"})</span></span>
+                                  <span className="text-[8px] text-muted-foreground">{a.periodo}</span>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       )}
@@ -411,13 +414,16 @@ export function CalendarioPreVendas({ defaultFilter = "Todas" }: Props) {
                             <span className="text-xs font-semibold text-orange-400">TARDE</span>
                           </div>
                           <div className="space-y-1.5">
-                            {tarde.map((a, i) => (
-                              <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/20">
-                                <span>{a.emoji}</span>
-                                <span className="text-xs text-foreground flex-1">{a.descricao}</span>
-                                <span className="text-[8px] text-muted-foreground">{a.periodo}</span>
-                              </div>
-                            ))}
+                            {tarde.map((a, i) => {
+                              const lc = a.grupo === "A" ? leadCounts.groupA : leadCounts.groupB;
+                              return (
+                                <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/20">
+                                  <span>{a.emoji}</span>
+                                  <span className="text-xs text-foreground flex-1">{a.descricao} <span className="text-muted-foreground text-[10px]">({lc > 0 ? `${lc} leads` : "—"})</span></span>
+                                  <span className="text-[8px] text-muted-foreground">{a.periodo}</span>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       )}
