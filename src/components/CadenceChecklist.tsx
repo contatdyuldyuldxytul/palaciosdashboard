@@ -1,6 +1,5 @@
 import { useState, useMemo } from "react";
 import { useChecklistChecks, useToggleChecklistCheck } from "@/hooks/useMetasMensais";
-import { useMetasMensais } from "@/hooks/useMetasMensais";
 import { motion } from "framer-motion";
 import { CheckCircle2, Loader2, Mail, Phone, Globe, MessageSquare, Target as TargetIcon, FileText, Sun, Sunset } from "lucide-react";
 import { getCycleDayInfo, todaySP, CycleActivity } from "@/lib/cadenceEngine";
