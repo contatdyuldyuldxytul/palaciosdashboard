@@ -12,10 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLeads, Lead } from "@/hooks/useLeads";
 import { RefinamentoDados } from "@/components/milena/RefinamentoDados";
 import { HistoricoPipedrive } from "@/components/milena/HistoricoPipedrive";
-import { AIDailyChecklist } from "@/components/AIDailyChecklist";
 import { CadenceChecklist } from "@/components/CadenceChecklist";
 import { CalendarioPreVendas } from "@/components/CalendarioPreVendas";
-import { usePlanejamentoHoje } from "@/hooks/usePlanejamento";
 
 interface LdrMemberDashboardProps {
   memberName: string;
@@ -110,8 +108,6 @@ interface ChecklistItem {
 }
 
 export default function LdrMemberDashboard({ memberName, initials, avatarColor = "hsl(45,80%,45%)" }: LdrMemberDashboardProps) {
-  const { data: cadencePlan = [] } = usePlanejamentoHoje(memberName);
-  const hasCadencePlan = cadencePlan.length > 0;
   const [activeTab, setActiveTab] = useState<"dashboard" | "refinamento" | "historico" | "calendario">("dashboard");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("Todos");
@@ -265,7 +261,7 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
 
       {activeTab === "refinamento" && <RefinamentoDados />}
       {activeTab === "historico" && <HistoricoPipedrive />}
-      {activeTab === "calendario" && <CalendarioPreVendas />}
+      {activeTab === "calendario" && <CalendarioPreVendas defaultFilter="Milena" />}
       {activeTab === "dashboard" && (
       <>
       {/* Banner */}
@@ -347,11 +343,7 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
 
       {/* ROW 2 — Checklist + Activity Feed */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {hasCadencePlan ? (
-          <CadenceChecklist colaborador={memberName} accentColor="hsl(45,80%,55%)" />
-        ) : (
-          <AIDailyChecklist colaborador={memberName} accentColor="hsl(45,80%,55%)" />
-        )}
+        <CadenceChecklist colaborador={memberName} accentColor="hsl(45,80%,55%)" />
 
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.35 }} className="glass-card p-5">
           <div className="flex items-center gap-2 mb-4">
