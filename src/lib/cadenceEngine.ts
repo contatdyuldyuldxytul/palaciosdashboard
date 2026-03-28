@@ -221,3 +221,39 @@ export function formatDateBR(dateStr: string): string {
   const [y, m, d] = dateStr.split("-");
   return `${d}/${m}/${y}`;
 }
+
+/**
+ * Check if a given date is a follow-up day.
+ * Follow-up happens every 3 working days starting from 2026-03-27.
+ */
+const FOLLOWUP_ANCHOR = new Date(2026, 2, 27); // March 27, 2026
+
+export function isFollowUpDay(dateStr: string): boolean {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const target = new Date(y, m - 1, d);
+  if (!isWorkingDay(target)) return false;
+
+  const anchor = toDateOnly(FOLLOWUP_ANCHOR);
+  const tgt = toDateOnly(target);
+
+  if (tgt < anchor) return false;
+
+  // Count working days between anchor and target
+  let count = 0;
+  const cur = new Date(anchor);
+  while (cur < tgt) {
+    cur.setDate(cur.getDate() + 1);
+    if (isWorkingDay(cur)) count++;
+  }
+
+  return count % 3 === 0; // every 3 working days (0, 3, 6, 9...)
+}
+
+/**
+ * Get Pipedrive group lead counts from deal stages.
+ */
+export function getGroupLeadCounts(deals: Array<{ status: string; pipedrive_stage: string }>): { groupA: number; groupB: number } {
+  const groupA = deals.filter(d => d.status === "open" && (d.pipedrive_stage === "Tentando Contato #A" || d.pipedrive_stage === "Contato Realizado #A")).length;
+  const groupB = deals.filter(d => d.status === "open" && (d.pipedrive_stage === "Tentando Contato #B" || d.pipedrive_stage === "Contato Realizado #B")).length;
+  return { groupA, groupB };
+}

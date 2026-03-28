@@ -1,12 +1,14 @@
 import { useState, useMemo } from "react";
 import { useChecklistChecks } from "@/hooks/useMetasMensais";
+import { useCustomActivitiesForMonth } from "@/hooks/useCustomActivities";
+import { usePipedrive } from "@/hooks/usePipedrive";
 import { useLeads } from "@/hooks/useLeads";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Calendar, Mail, Phone, Globe, MessageSquare, Sun, Sunset } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Mail, Phone, Globe, MessageSquare, Sun, Sunset, Star } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   getCycleDayInfo, getMonthCycleData, getWeekCycleData,
-  todaySP, CycleDayInfo, CycleActivity, formatDateBR,
+  todaySP, CycleDayInfo, CycleActivity, formatDateBR, getGroupLeadCounts,
 } from "@/lib/cadenceEngine";
 
 const AMBER = "hsl(45, 100%, 55%)";
@@ -50,7 +52,10 @@ export function CalendarioPreVendas({ defaultFilter = "Todas" }: Props) {
   const { data: checksAline = [] } = useChecklistChecks("Aline");
   const { data: checksMilena = [] } = useChecklistChecks("Milena");
   const { data: allLeads = [] } = useLeads();
+  const { deals } = usePipedrive();
+  const { data: customActivitiesMonth = [] } = useCustomActivitiesForMonth(year, month);
   const allChecks = [...checksAline, ...checksMilena];
+  const leadCounts = useMemo(() => getGroupLeadCounts(deals), [deals]);
 
   // Month cycle data
   const monthData = useMemo(() => getMonthCycleData(year, month), [year, month]);
@@ -113,14 +118,22 @@ export function CalendarioPreVendas({ defaultFilter = "Todas" }: Props) {
   }, [year, month]);
 
   // Filter activities
-  const filterActivities = (info: CycleDayInfo): CycleActivity[] => {
+  const filterActivities = (info: CycleDayInfo, forPerson?: "Aline" | "Milena"): CycleActivity[] => {
     if (!info.isWorkingDay) return [];
-    let acts = info.activities;
-    if (filter === "Aline") return acts; // Aline does cadence
-    if (filter === "Milena") return []; // Milena has lead gen, not cadence activities
-    if (filter === "Grupo A") return acts.filter(a => a.grupo === "A");
-    if (filter === "Grupo B") return acts.filter(a => a.grupo === "B");
-    return acts;
+    const person = forPerson || filter;
+    if (person === "Milena") return []; // Milena has lead gen, not cadence activities
+    if (person === "Aline") return info.activities;
+    if (filter === "Grupo A") return info.activities.filter(a => a.grupo === "A");
+    if (filter === "Grupo B") return info.activities.filter(a => a.grupo === "B");
+    return info.activities; // "Todas"
+  };
+
+  // Get custom activities for a specific date
+  const getCustomActivitiesForDate = (dateStr: string) => {
+    let filtered = customActivitiesMonth.filter(ca => ca.data === dateStr);
+    if (filter === "Aline") filtered = filtered.filter(ca => ca.responsavel === "Aline");
+    else if (filter === "Milena") filtered = filtered.filter(ca => ca.responsavel === "Milena");
+    return filtered;
   };
 
   // Selected day info
@@ -254,9 +267,12 @@ export function CalendarioPreVendas({ defaultFilter = "Todas" }: Props) {
                           {acts.length > 4 && (
                             <span className="text-[7px] px-1 py-0.5 rounded bg-muted/30 text-muted-foreground">+{acts.length - 4}</span>
                           )}
-                          {filter === "Milena" && info?.isWorkingDay && (
+                          {(filter === "Milena" || filter === "Todas") && info?.isWorkingDay && (
                             <span className="text-[7px] px-1 py-0.5 rounded bg-teal-500/20 text-teal-400">🎯</span>
                           )}
+                          {getCustomActivitiesForDate(cell.dateStr).map((ca, ci) => (
+                            <span key={`ca-${ci}`} className="text-[7px] px-1 py-0.5 rounded bg-white/10 text-white/70">⭐</span>
+                          ))}
                         </div>
                       )}
                     </>
@@ -378,13 +394,16 @@ export function CalendarioPreVendas({ defaultFilter = "Todas" }: Props) {
                             <span className="text-xs font-semibold text-amber-400">MANHÃ</span>
                           </div>
                           <div className="space-y-1.5">
-                            {manha.map((a, i) => (
-                              <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/20">
-                                <span>{a.emoji}</span>
-                                <span className="text-xs text-foreground flex-1">{a.descricao}</span>
-                                <span className="text-[8px] text-muted-foreground">{a.periodo}</span>
-                              </div>
-                            ))}
+                            {manha.map((a, i) => {
+                              const lc = a.grupo === "A" ? leadCounts.groupA : leadCounts.groupB;
+                              return (
+                                <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/20">
+                                  <span>{a.emoji}</span>
+                                  <span className="text-xs text-foreground flex-1">{a.descricao} <span className="text-muted-foreground text-[10px]">({lc > 0 ? `${lc} leads` : "—"})</span></span>
+                                  <span className="text-[8px] text-muted-foreground">{a.periodo}</span>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       )}
@@ -395,13 +414,16 @@ export function CalendarioPreVendas({ defaultFilter = "Todas" }: Props) {
                             <span className="text-xs font-semibold text-orange-400">TARDE</span>
                           </div>
                           <div className="space-y-1.5">
-                            {tarde.map((a, i) => (
-                              <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/20">
-                                <span>{a.emoji}</span>
-                                <span className="text-xs text-foreground flex-1">{a.descricao}</span>
-                                <span className="text-[8px] text-muted-foreground">{a.periodo}</span>
-                              </div>
-                            ))}
+                            {tarde.map((a, i) => {
+                              const lc = a.grupo === "A" ? leadCounts.groupA : leadCounts.groupB;
+                              return (
+                                <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/20">
+                                  <span>{a.emoji}</span>
+                                  <span className="text-xs text-foreground flex-1">{a.descricao} <span className="text-muted-foreground text-[10px]">({lc > 0 ? `${lc} leads` : "—"})</span></span>
+                                  <span className="text-[8px] text-muted-foreground">{a.periodo}</span>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       )}
@@ -427,6 +449,29 @@ export function CalendarioPreVendas({ defaultFilter = "Todas" }: Props) {
                 </div>
               </div>
             )}
+
+            {/* Custom Activities */}
+            {(() => {
+              const dayStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, "0")}-${String(currentDate.getDate()).padStart(2, "0")}`;
+              const customs = getCustomActivitiesForDate(dayStr);
+              if (customs.length === 0) return null;
+              return (
+                <div className="glass-card p-5">
+                  <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                    <Star className="w-4 h-4 text-white/70" /> Atividades Personalizadas
+                  </h3>
+                  <div className="space-y-1.5">
+                    {customs.map(ca => (
+                      <div key={ca.id} className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                        <span>⭐</span>
+                        <span className="text-xs text-foreground flex-1">{ca.titulo}</span>
+                        <span className="text-[10px] text-muted-foreground">{ca.responsavel}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
 
             {!info?.isWorkingDay && (
               <div className="glass-card p-8 text-center">
@@ -464,15 +509,18 @@ export function CalendarioPreVendas({ defaultFilter = "Todas" }: Props) {
                   Aline — SDR
                 </h4>
                 <div className="space-y-1">
-                  {selectedDayInfo.activities.map((a, i) => (
-                    <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/20">
-                      <span>{a.emoji}</span>
-                      <div className="flex-1">
-                        <p className="text-xs text-foreground">{a.descricao}</p>
+                  {selectedDayInfo.activities.map((a, i) => {
+                    const lc = a.grupo === "A" ? leadCounts.groupA : leadCounts.groupB;
+                    return (
+                      <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/20">
+                        <span>{a.emoji}</span>
+                        <div className="flex-1">
+                          <p className="text-xs text-foreground">{a.descricao} <span className="text-muted-foreground text-[10px]">({lc > 0 ? `${lc} leads` : "—"})</span></p>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground">{a.periodo}</span>
                       </div>
-                      <span className="text-[10px] text-muted-foreground">{a.periodo}</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
@@ -487,6 +535,24 @@ export function CalendarioPreVendas({ defaultFilter = "Todas" }: Props) {
                   <p className="text-xs text-foreground">Geração de Leads</p>
                 </div>
               </div>
+
+              {/* Custom Activities */}
+              {selectedDay && getCustomActivitiesForDate(selectedDay).length > 0 && (
+                <div>
+                  <h4 className="text-xs font-semibold text-foreground mb-2 flex items-center gap-2">
+                    <Star className="w-4 h-4 text-white/70" /> Personalizadas
+                  </h4>
+                  <div className="space-y-1">
+                    {getCustomActivitiesForDate(selectedDay).map(ca => (
+                      <div key={ca.id} className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                        <span>⭐</span>
+                        <p className="text-xs text-foreground flex-1">{ca.titulo}</p>
+                        <span className="text-[10px] text-muted-foreground">{ca.responsavel}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <p className="text-xs text-muted-foreground text-center py-6">Fim de semana — sem atividades.</p>
