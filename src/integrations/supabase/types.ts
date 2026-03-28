@@ -14,6 +14,84 @@ export type Database = {
   }
   public: {
     Tables: {
+      balanco: {
+        Row: {
+          aluguel_pagar: number | null
+          atualizado_em: string
+          banco: number | null
+          caixa: number | null
+          capital_social: number | null
+          criado_em: string
+          depreciacao: number | null
+          duplicatas_receber: number | null
+          emprestimos_cp: number | null
+          emprestimos_lp: number | null
+          equipamentos: number | null
+          estoques: number | null
+          financiamentos_lp: number | null
+          fornecedores_pagar: number | null
+          id: string
+          imobilizado: number | null
+          impostos_recolher: number | null
+          instalacoes: number | null
+          mes: string
+          outros_circulante: number | null
+          resultado_acumulado: number | null
+          salarios_pagar: number | null
+          titulos_receber_lp: number | null
+        }
+        Insert: {
+          aluguel_pagar?: number | null
+          atualizado_em?: string
+          banco?: number | null
+          caixa?: number | null
+          capital_social?: number | null
+          criado_em?: string
+          depreciacao?: number | null
+          duplicatas_receber?: number | null
+          emprestimos_cp?: number | null
+          emprestimos_lp?: number | null
+          equipamentos?: number | null
+          estoques?: number | null
+          financiamentos_lp?: number | null
+          fornecedores_pagar?: number | null
+          id?: string
+          imobilizado?: number | null
+          impostos_recolher?: number | null
+          instalacoes?: number | null
+          mes: string
+          outros_circulante?: number | null
+          resultado_acumulado?: number | null
+          salarios_pagar?: number | null
+          titulos_receber_lp?: number | null
+        }
+        Update: {
+          aluguel_pagar?: number | null
+          atualizado_em?: string
+          banco?: number | null
+          caixa?: number | null
+          capital_social?: number | null
+          criado_em?: string
+          depreciacao?: number | null
+          duplicatas_receber?: number | null
+          emprestimos_cp?: number | null
+          emprestimos_lp?: number | null
+          equipamentos?: number | null
+          estoques?: number | null
+          financiamentos_lp?: number | null
+          fornecedores_pagar?: number | null
+          id?: string
+          imobilizado?: number | null
+          impostos_recolher?: number | null
+          instalacoes?: number | null
+          mes?: string
+          outros_circulante?: number | null
+          resultado_acumulado?: number | null
+          salarios_pagar?: number | null
+          titulos_receber_lp?: number | null
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           assistant: string
@@ -272,6 +350,75 @@ export type Database = {
         }
         Relationships: []
       }
+      custos_config: {
+        Row: {
+          aluguel: number | null
+          atualizado_em: string
+          condominio_iptu: number | null
+          contabilidade_juridico: number | null
+          criado_em: string
+          depreciacao: number | null
+          diretoria_prolabore: number | null
+          energia_agua_telefone: number | null
+          financeiro_bancario: number | null
+          gastos_variaveis_unitarios: number | null
+          id: string
+          internet_ti: number | null
+          marketing_publicidade: number | null
+          mes: string
+          outros_fixos: number | null
+          pessoal: number | null
+          preco_venda_unitario: number | null
+          seguros: number | null
+          veiculos: number | null
+          volume_vendas: number | null
+        }
+        Insert: {
+          aluguel?: number | null
+          atualizado_em?: string
+          condominio_iptu?: number | null
+          contabilidade_juridico?: number | null
+          criado_em?: string
+          depreciacao?: number | null
+          diretoria_prolabore?: number | null
+          energia_agua_telefone?: number | null
+          financeiro_bancario?: number | null
+          gastos_variaveis_unitarios?: number | null
+          id?: string
+          internet_ti?: number | null
+          marketing_publicidade?: number | null
+          mes: string
+          outros_fixos?: number | null
+          pessoal?: number | null
+          preco_venda_unitario?: number | null
+          seguros?: number | null
+          veiculos?: number | null
+          volume_vendas?: number | null
+        }
+        Update: {
+          aluguel?: number | null
+          atualizado_em?: string
+          condominio_iptu?: number | null
+          contabilidade_juridico?: number | null
+          criado_em?: string
+          depreciacao?: number | null
+          diretoria_prolabore?: number | null
+          energia_agua_telefone?: number | null
+          financeiro_bancario?: number | null
+          gastos_variaveis_unitarios?: number | null
+          id?: string
+          internet_ti?: number | null
+          marketing_publicidade?: number | null
+          mes?: string
+          outros_fixos?: number | null
+          pessoal?: number | null
+          preco_venda_unitario?: number | null
+          seguros?: number | null
+          veiculos?: number | null
+          volume_vendas?: number | null
+        }
+        Relationships: []
+      }
       financeiro_clientes: {
         Row: {
           cliente_id: string
@@ -346,6 +493,126 @@ export type Database = {
           recorrente?: boolean | null
           subcategoria?: string | null
           tipo?: string
+          valor?: number
+        }
+        Relationships: []
+      }
+      fluxo_caixa: {
+        Row: {
+          aporte_capital_proj: number | null
+          aporte_capital_real: number | null
+          aquisicao_imobilizado_proj: number | null
+          aquisicao_imobilizado_real: number | null
+          atualizado_em: string
+          captacao_emprestimos_proj: number | null
+          captacao_emprestimos_real: number | null
+          criado_em: string
+          id: string
+          impostos_proj: number | null
+          impostos_real: number | null
+          mes: string
+          outros_investimentos_proj: number | null
+          outros_investimentos_real: number | null
+          pagamento_despesas_proj: number | null
+          pagamento_despesas_real: number | null
+          pagamento_emprestimos_proj: number | null
+          pagamento_emprestimos_real: number | null
+          pagamento_pessoal_proj: number | null
+          pagamento_pessoal_real: number | null
+          pagamentos_fornecedores_proj: number | null
+          pagamentos_fornecedores_real: number | null
+          recebimentos_clientes_proj: number | null
+          recebimentos_clientes_real: number | null
+          venda_ativos_proj: number | null
+          venda_ativos_real: number | null
+        }
+        Insert: {
+          aporte_capital_proj?: number | null
+          aporte_capital_real?: number | null
+          aquisicao_imobilizado_proj?: number | null
+          aquisicao_imobilizado_real?: number | null
+          atualizado_em?: string
+          captacao_emprestimos_proj?: number | null
+          captacao_emprestimos_real?: number | null
+          criado_em?: string
+          id?: string
+          impostos_proj?: number | null
+          impostos_real?: number | null
+          mes: string
+          outros_investimentos_proj?: number | null
+          outros_investimentos_real?: number | null
+          pagamento_despesas_proj?: number | null
+          pagamento_despesas_real?: number | null
+          pagamento_emprestimos_proj?: number | null
+          pagamento_emprestimos_real?: number | null
+          pagamento_pessoal_proj?: number | null
+          pagamento_pessoal_real?: number | null
+          pagamentos_fornecedores_proj?: number | null
+          pagamentos_fornecedores_real?: number | null
+          recebimentos_clientes_proj?: number | null
+          recebimentos_clientes_real?: number | null
+          venda_ativos_proj?: number | null
+          venda_ativos_real?: number | null
+        }
+        Update: {
+          aporte_capital_proj?: number | null
+          aporte_capital_real?: number | null
+          aquisicao_imobilizado_proj?: number | null
+          aquisicao_imobilizado_real?: number | null
+          atualizado_em?: string
+          captacao_emprestimos_proj?: number | null
+          captacao_emprestimos_real?: number | null
+          criado_em?: string
+          id?: string
+          impostos_proj?: number | null
+          impostos_real?: number | null
+          mes?: string
+          outros_investimentos_proj?: number | null
+          outros_investimentos_real?: number | null
+          pagamento_despesas_proj?: number | null
+          pagamento_despesas_real?: number | null
+          pagamento_emprestimos_proj?: number | null
+          pagamento_emprestimos_real?: number | null
+          pagamento_pessoal_proj?: number | null
+          pagamento_pessoal_real?: number | null
+          pagamentos_fornecedores_proj?: number | null
+          pagamentos_fornecedores_real?: number | null
+          recebimentos_clientes_proj?: number | null
+          recebimentos_clientes_real?: number | null
+          venda_ativos_proj?: number | null
+          venda_ativos_real?: number | null
+        }
+        Relationships: []
+      }
+      lancamentos: {
+        Row: {
+          categoria: string
+          classificacao: string
+          criado_em: string
+          data: string
+          descricao: string
+          id: string
+          mes: string
+          valor: number
+        }
+        Insert: {
+          categoria: string
+          classificacao: string
+          criado_em?: string
+          data?: string
+          descricao: string
+          id?: string
+          mes?: string
+          valor?: number
+        }
+        Update: {
+          categoria?: string
+          classificacao?: string
+          criado_em?: string
+          data?: string
+          descricao?: string
+          id?: string
+          mes?: string
           valor?: number
         }
         Relationships: []
@@ -467,6 +734,51 @@ export type Database = {
           realizado_reunioes?: number | null
           trimestre?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      metas_comerciais: {
+        Row: {
+          aprovado: boolean | null
+          aprovado_em: string | null
+          criado_em: string
+          grupo_a_leads: number | null
+          grupo_b_leads: number | null
+          id: string
+          mes: string
+          meta_contratos: number | null
+          meta_demos: number | null
+          meta_receita: number | null
+          minimo_viavel: number | null
+          total_leads: number | null
+        }
+        Insert: {
+          aprovado?: boolean | null
+          aprovado_em?: string | null
+          criado_em?: string
+          grupo_a_leads?: number | null
+          grupo_b_leads?: number | null
+          id?: string
+          mes: string
+          meta_contratos?: number | null
+          meta_demos?: number | null
+          meta_receita?: number | null
+          minimo_viavel?: number | null
+          total_leads?: number | null
+        }
+        Update: {
+          aprovado?: boolean | null
+          aprovado_em?: string | null
+          criado_em?: string
+          grupo_a_leads?: number | null
+          grupo_b_leads?: number | null
+          id?: string
+          mes?: string
+          meta_contratos?: number | null
+          meta_demos?: number | null
+          meta_receita?: number | null
+          minimo_viavel?: number | null
+          total_leads?: number | null
         }
         Relationships: []
       }
