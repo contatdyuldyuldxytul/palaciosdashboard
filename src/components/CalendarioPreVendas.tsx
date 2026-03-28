@@ -267,9 +267,12 @@ export function CalendarioPreVendas({ defaultFilter = "Todas" }: Props) {
                           {acts.length > 4 && (
                             <span className="text-[7px] px-1 py-0.5 rounded bg-muted/30 text-muted-foreground">+{acts.length - 4}</span>
                           )}
-                          {filter === "Milena" && info?.isWorkingDay && (
+                          {(filter === "Milena" || filter === "Todas") && info?.isWorkingDay && (
                             <span className="text-[7px] px-1 py-0.5 rounded bg-teal-500/20 text-teal-400">🎯</span>
                           )}
+                          {getCustomActivitiesForDate(cell.dateStr).map((ca, ci) => (
+                            <span key={`ca-${ci}`} className="text-[7px] px-1 py-0.5 rounded bg-white/10 text-white/70">⭐</span>
+                          ))}
                         </div>
                       )}
                     </>
