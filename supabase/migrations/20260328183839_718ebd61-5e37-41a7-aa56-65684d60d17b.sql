@@ -1,0 +1,1 @@
+ALTER TABLE public.custos_config ADD COLUMN IF NOT EXISTS educacao numeric DEFAULT 0, ADD COLUMN IF NOT EXISTS software numeric DEFAULT 0;
