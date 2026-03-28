@@ -47,7 +47,9 @@ export type Database = {
           concluido: boolean
           concluido_em: string | null
           data: string
+          grupo: string | null
           id: string
+          periodo: string | null
           tarefa_id: string
           tarefa_tipo: string | null
           tarefa_titulo: string
@@ -57,7 +59,9 @@ export type Database = {
           concluido?: boolean
           concluido_em?: string | null
           data?: string
+          grupo?: string | null
           id?: string
+          periodo?: string | null
           tarefa_id: string
           tarefa_tipo?: string | null
           tarefa_titulo: string
@@ -67,7 +71,9 @@ export type Database = {
           concluido?: boolean
           concluido_em?: string | null
           data?: string
+          grupo?: string | null
           id?: string
+          periodo?: string | null
           tarefa_id?: string
           tarefa_tipo?: string | null
           tarefa_titulo?: string
@@ -485,6 +491,51 @@ export type Database = {
           mes_ano?: string
           minimo_viavel?: number
           receita_esperada?: number
+        }
+        Relationships: []
+      }
+      planejamento_mensal: {
+        Row: {
+          aprovado: boolean
+          aprovado_em: string | null
+          ciclo_dia: number
+          criado_em: string
+          data: string
+          dia_semana: string
+          editado: boolean
+          grupo: string | null
+          id: string
+          mes_ano: string
+          responsavel: string
+          tarefas_json: Json
+        }
+        Insert: {
+          aprovado?: boolean
+          aprovado_em?: string | null
+          ciclo_dia?: number
+          criado_em?: string
+          data: string
+          dia_semana: string
+          editado?: boolean
+          grupo?: string | null
+          id?: string
+          mes_ano: string
+          responsavel: string
+          tarefas_json?: Json
+        }
+        Update: {
+          aprovado?: boolean
+          aprovado_em?: string | null
+          ciclo_dia?: number
+          criado_em?: string
+          data?: string
+          dia_semana?: string
+          editado?: boolean
+          grupo?: string | null
+          id?: string
+          mes_ano?: string
+          responsavel?: string
+          tarefas_json?: Json
         }
         Relationships: []
       }
