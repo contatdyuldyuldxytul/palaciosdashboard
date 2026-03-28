@@ -5,10 +5,8 @@ import { SyncIndicator } from "@/components/SyncIndicator";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { CircularProgress } from "@/components/CircularProgress";
 import { Plus, Search, Phone, FileText, TrendingUp, Users, Target, CalendarCheck, CheckCircle2, Activity } from "lucide-react";
-import { AIDailyChecklist } from "@/components/AIDailyChecklist";
 import { CadenceChecklist } from "@/components/CadenceChecklist";
 import { CalendarioPreVendas } from "@/components/CalendarioPreVendas";
-import { usePlanejamentoHoje } from "@/hooks/usePlanejamento";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { motion } from "framer-motion";
@@ -55,8 +53,6 @@ interface ChecklistItem {
 }
 
 export default function TeamMemberDashboard({ memberName, initials }: TeamMemberDashboardProps) {
-  const { data: cadencePlan = [] } = usePlanejamentoHoje(memberName);
-  const hasCadencePlan = cadencePlan.length > 0;
   const [activeTab, setActiveTab] = useState<"dashboard" | "calendario">("dashboard");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("Todos");
@@ -161,7 +157,7 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
         ))}
       </div>
 
-      {activeTab === "calendario" && <CalendarioPreVendas />}
+      {activeTab === "calendario" && <CalendarioPreVendas defaultFilter="Aline" />}
       {activeTab === "dashboard" && (
       <>
       {/* Banner */}
@@ -235,11 +231,7 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
       {/* ROW 2 — Checklist + Activity Feed */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Checklist */}
-        {hasCadencePlan ? (
-          <CadenceChecklist colaborador={memberName} accentColor="hsl(160,100%,39%)" />
-        ) : (
-          <AIDailyChecklist colaborador={memberName} accentColor="hsl(160,100%,39%)" />
-        )}
+        <CadenceChecklist colaborador={memberName} accentColor="hsl(160,100%,39%)" />
 
         {/* Activity Feed */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.35 }} className="glass-card p-5">
