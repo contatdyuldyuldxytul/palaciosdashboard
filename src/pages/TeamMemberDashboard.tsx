@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLeads, getStatusDisplay, LeadStatus, useAddLead, useUpdateLead } from "@/hooks/useLeads";
+import { usePipedrive, PipedriveDeal } from "@/hooks/usePipedrive";
 import { writeToSheets } from "@/hooks/useWriteSheets";
 import { SyncIndicator } from "@/components/SyncIndicator";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
@@ -64,6 +65,7 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
   const { data: allLeads = [], isLoading } = useLeads();
   const addLead = useAddLead();
   const updateLead = useUpdateLead();
+  const { deals: pipedriveDeals } = usePipedrive();
 
   const memberLeads = allLeads.filter(
     (l) => (l.responsavel_nome || "").toLowerCase().trim() === memberName.toLowerCase().trim()
@@ -113,13 +115,42 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
     .sort((a, b) => new Date(b.data_atualizacao).getTime() - new Date(a.data_atualizacao).getTime())
     .slice(0, 10);
 
-  // Funnel
-  const funnelData = stageOrder.map((status) => ({
-    status, name: getStatusDisplay(status),
-    count: memberLeads.filter((l) => l.status === status).length,
-  }));
-  const maxFunnelCount = Math.max(...funnelData.map((s) => s.count), 1);
-  const totalFunnel = funnelData.reduce((s, f) => s + f.count, 0);
+  // Pipedrive Funnel (same as Pré-Vendas page)
+  const PIPEDRIVE_STAGES = [
+    { key: "Entrada de Leads", label: "Entrada de Leads", merge: undefined as string[] | undefined },
+    { key: "Tentando Contato", label: "Tentando Contato", merge: ["Tentando Contato #A", "Tentando Contato #B"] },
+    { key: "Contato Realizado", label: "Contato Realizado", merge: ["Contato Realizado #A", "Contato Realizado #B"] },
+    { key: "Contato com o Decisor", label: "Contato c/ Decisor" },
+    { key: "Demo Agendada", label: "Demo Agendada" },
+  ];
+  const SIDE_STAGES = [
+    { key: "Hold", stages: ["Hold"], label: "Hold", sublabel: "Empreendimentos futuros" },
+    { key: "Recicláveis", stages: ["Recicláveis"], label: "Recicláveis", sublabel: "Prospectar no futuro" },
+    { key: "Porta Aberta", stages: ["Porta Aberta Decisores"], label: "Porta Aberta", sublabel: "Sem momento agora" },
+  ];
+  const pCnt = (names: string[]) => pipedriveDeals.filter(d => d.status === "open" && names.includes(d.pipedrive_stage)).length;
+  const pipeFunnel = PIPEDRIVE_STAGES.map(s => ({ ...s, count: pCnt(s.merge || [s.key]) }));
+  const pipeSide = SIDE_STAGES.map(s => ({ ...s, count: pCnt(s.stages) }));
+  const pipeTotalFunnel = pipeFunnel.reduce((s, f) => s + f.count, 0);
+  const pipeGradients = [
+    "from-[hsl(230,80%,65%)] to-[hsl(250,70%,55%)]",
+    "from-[hsl(260,70%,60%)] to-[hsl(280,65%,50%)]",
+    "from-[hsl(290,60%,55%)] to-[hsl(320,60%,50%)]",
+    "from-[hsl(330,65%,55%)] to-[hsl(350,60%,50%)]",
+    "from-[hsl(150,60%,40%)] to-[hsl(160,55%,35%)]",
+  ];
+  const BENCHMARKS = [null, 85, 70, 40, 50];
+  const pipeCumulative = [...pipeFunnel].map(f => f.count);
+  for (let i = pipeFunnel.length - 2; i >= 0; i--) {
+    pipeCumulative[i] = pipeFunnel[i].count + pipeCumulative[i + 1];
+  }
+  const pipeConvs = pipeFunnel.map((s, i) => {
+    if (i === 0) return null;
+    const totalPrev = pipeCumulative[i - 1];
+    const totalCur = pipeCumulative[i];
+    const pct = totalPrev > 0 ? (totalCur / totalPrev) * 100 : 0;
+    return { from: pipeFunnel[i - 1].label, to: s.label, pct, bench: BENCHMARKS[i] };
+  }).filter(Boolean) as { from: string; to: string; pct: number; bench: number | null }[];
 
   const handleAddLead = () => {
     if (!newLead.empresa) return;
@@ -259,25 +290,69 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
         </motion.div>
       </div>
 
-      {/* ROW 3 — Funnel */}
+      {/* ROW 3 — Pipedrive Funnel (same as Pré-Vendas) */}
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }} className="glass-card p-5">
-        <h2 className="text-sm font-semibold text-foreground mb-4">Funil de {memberName}</h2>
-        <div className="space-y-2">
-          {funnelData.map((stage) => {
-            const widthPct = maxFunnelCount > 0 ? (stage.count / maxFunnelCount) * 100 : 0;
-            const pct = totalFunnel > 0 ? ((stage.count / totalFunnel) * 100).toFixed(0) : "0";
-            return (
-              <div key={stage.status} className="flex items-center gap-3">
-                <span className="text-xs text-muted-foreground w-32 text-right truncate">{stage.name}</span>
-                <div className="flex-1 h-7 rounded-md bg-muted/20 overflow-hidden relative">
-                  <motion.div initial={{ width: 0 }} animate={{ width: `${Math.max(widthPct, 2)}%` }} transition={{ duration: 0.7, delay: 0.1 }} className={`h-full rounded-md ${stageColors[stage.status]}`} style={{ opacity: 0.85 }} />
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-foreground tabular-nums">{stage.count} <span className="text-muted-foreground font-normal">({pct}%)</span></span>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-foreground">Funil de Pré-Vendas</h2>
+          <span className="text-[10px] text-muted-foreground">ALINE'S PIPELINE · {pipedriveDeals.filter(d => d.status === "open").length} ativos</span>
+        </div>
+        <div className="grid grid-cols-[1fr_160px] gap-4 items-stretch">
+          {/* Funnel */}
+          <div className="flex flex-col gap-1">
+            {pipeFunnel.map((s, i) => {
+              const maxW = 100;
+              const minW = 40;
+              const stp = (maxW - minW) / Math.max(pipeFunnel.length - 1, 1);
+              const w = maxW - i * stp;
+              const convBetween = i > 0 && (i - 1) < pipeConvs.length ? pipeConvs[i - 1] : null;
+              return (
+                <div key={s.key} className="flex flex-col items-center">
+                  {convBetween && (
+                    <div className="flex items-center gap-2 py-0.5">
+                      <span className="text-muted-foreground/40 text-xs">↓</span>
+                      <span className="text-xs font-bold tabular-nums" style={{
+                        color: (convBetween.bench ? convBetween.pct / convBetween.bench : 1) >= 1
+                          ? "hsl(155,60%,45%)"
+                          : (convBetween.bench ? convBetween.pct / convBetween.bench : 1) >= 0.7
+                            ? "hsl(45,80%,55%)"
+                            : "hsl(0,70%,55%)"
+                      }}>
+                        {convBetween.pct.toFixed(1)}%
+                      </span>
+                      {convBetween.bench && (
+                        <span className="text-[9px] text-muted-foreground/50 tabular-nums">vs {convBetween.bench}%</span>
+                      )}
+                    </div>
+                  )}
+                  <div className={`relative rounded-lg overflow-hidden ${i === pipeFunnel.length - 1 ? "ring-1 ring-emerald-500/30" : ""}`}
+                    style={{ width: `${w}%`, height: "48px" }}>
+                    <div className={`absolute inset-0 bg-gradient-to-r ${pipeGradients[i]} opacity-85`} />
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/[0.06] to-transparent" />
+                    <div className="absolute inset-0 border border-white/[0.08] rounded-lg" />
+                    <div className="relative z-10 flex items-center justify-between h-full px-3">
+                      <span className="text-xs font-semibold text-white">{s.label}</span>
+                      <span className="text-xs font-bold bg-black/25 rounded-full px-2 py-0.5 text-white/90 tabular-nums">{s.count}</span>
+                    </div>
+                  </div>
                 </div>
+              );
+            })}
+          </div>
+          {/* Side cards */}
+          <div className="flex flex-col gap-2">
+            {pipeSide.map((c) => (
+              <div key={c.key} className="rounded-lg border border-border/40 backdrop-blur-md bg-secondary p-2.5 flex-1 flex items-center gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-semibold text-foreground">{c.label}</p>
+                  <p className="text-[9px] text-muted-foreground leading-tight">{c.sublabel}</p>
+                </div>
+                <p className="text-lg font-extrabold text-foreground tabular-nums">{c.count}</p>
               </div>
-            );
-          })}
+            ))}
+          </div>
         </div>
       </motion.div>
+
 
       {/* Add Lead Form */}
       {showForm && (
