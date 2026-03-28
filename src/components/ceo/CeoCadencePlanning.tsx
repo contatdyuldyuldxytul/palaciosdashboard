@@ -43,6 +43,8 @@ export function CeoCadencePlanning() {
   const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
   const [selectedDay, setSelectedDay] = useState<any>(null);
   const [editingDay, setEditingDay] = useState<any>(null);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ edgeFunction: "success" | "error" | null; ai: "success" | "error" | null }>({ edgeFunction: null, ai: null });
 
   const isApproved = planejamento.length > 0 && planejamento[0].aprovado;
   const hasPlan = planejamento.length > 0 || generatedPlan;
