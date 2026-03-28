@@ -252,11 +252,23 @@ export function CeoCadencePlanning() {
             </div>
           </div>
 
-          <button onClick={handleGenerate} disabled={generating}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all active:scale-[0.97] disabled:opacity-50"
-            style={{ background: AMBER, color: "hsl(225,15%,10%)" }}>
-            {generating ? <><Loader2 className="w-4 h-4 animate-spin" /> Analisando fluxo de cadência...</> : "🤖 Gerar Planejamento com I.A"}
-          </button>
+          <div className="flex items-center gap-3 flex-wrap">
+            <button onClick={handleGenerate} disabled={generating}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all active:scale-[0.97] disabled:opacity-50"
+              style={{ background: AMBER, color: "hsl(225,15%,10%)" }}>
+              {generating ? <><Loader2 className="w-4 h-4 animate-spin" /> Analisando fluxo de cadência...</> : "🤖 Gerar Planejamento com I.A"}
+            </button>
+            <button onClick={handleTestConnection} disabled={testing}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium bg-muted/30 border border-white/10 text-muted-foreground hover:text-foreground transition-all disabled:opacity-50">
+              {testing ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Testando...</> : "🔌 Testar Conexão"}
+            </button>
+            {testResult.edgeFunction && (
+              <div className="flex items-center gap-2 text-xs">
+                <span>{testResult.edgeFunction === "success" ? "✅" : "❌"} Edge Function</span>
+                <span>{testResult.ai === "success" ? "✅" : "❌"} AI Gateway</span>
+              </div>
+            )}
+          </div>
         </motion.div>
       )}
 
