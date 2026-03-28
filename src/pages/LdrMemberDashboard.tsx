@@ -13,6 +13,8 @@ import { useLeads, Lead } from "@/hooks/useLeads";
 import { RefinamentoDados } from "@/components/milena/RefinamentoDados";
 import { HistoricoPipedrive } from "@/components/milena/HistoricoPipedrive";
 import { AIDailyChecklist } from "@/components/AIDailyChecklist";
+import { CadenceChecklist } from "@/components/CadenceChecklist";
+import { usePlanejamentoHoje } from "@/hooks/usePlanejamento";
 
 interface LdrMemberDashboardProps {
   memberName: string;
