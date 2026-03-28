@@ -450,6 +450,29 @@ export function CalendarioPreVendas({ defaultFilter = "Todas" }: Props) {
               </div>
             )}
 
+            {/* Custom Activities */}
+            {(() => {
+              const dayStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, "0")}-${String(currentDate.getDate()).padStart(2, "0")}`;
+              const customs = getCustomActivitiesForDate(dayStr);
+              if (customs.length === 0) return null;
+              return (
+                <div className="glass-card p-5">
+                  <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                    <Star className="w-4 h-4 text-white/70" /> Atividades Personalizadas
+                  </h3>
+                  <div className="space-y-1.5">
+                    {customs.map(ca => (
+                      <div key={ca.id} className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                        <span>⭐</span>
+                        <span className="text-xs text-foreground flex-1">{ca.titulo}</span>
+                        <span className="text-[10px] text-muted-foreground">{ca.responsavel}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             {!info?.isWorkingDay && (
               <div className="glass-card p-8 text-center">
                 <Calendar className="w-8 h-8 mx-auto mb-3 text-muted-foreground" />
