@@ -109,6 +109,8 @@ interface ChecklistItem {
 }
 
 export default function LdrMemberDashboard({ memberName, initials, avatarColor = "hsl(45,80%,45%)" }: LdrMemberDashboardProps) {
+  const { data: cadencePlan = [] } = usePlanejamentoHoje(memberName);
+  const hasCadencePlan = cadencePlan.length > 0;
   const [activeTab, setActiveTab] = useState<"dashboard" | "refinamento" | "historico">("dashboard");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("Todos");
@@ -342,7 +344,11 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
 
       {/* ROW 2 — Checklist + Activity Feed */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <AIDailyChecklist colaborador={memberName} accentColor="hsl(45,80%,55%)" />
+        {hasCadencePlan ? (
+          <CadenceChecklist colaborador={memberName} accentColor="hsl(45,80%,55%)" />
+        ) : (
+          <AIDailyChecklist colaborador={memberName} accentColor="hsl(45,80%,55%)" />
+        )}
 
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.35 }} className="glass-card p-5">
           <div className="flex items-center gap-2 mb-4">
