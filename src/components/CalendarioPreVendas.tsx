@@ -118,14 +118,22 @@ export function CalendarioPreVendas({ defaultFilter = "Todas" }: Props) {
   }, [year, month]);
 
   // Filter activities
-  const filterActivities = (info: CycleDayInfo): CycleActivity[] => {
+  const filterActivities = (info: CycleDayInfo, forPerson?: "Aline" | "Milena"): CycleActivity[] => {
     if (!info.isWorkingDay) return [];
-    let acts = info.activities;
-    if (filter === "Aline") return acts; // Aline does cadence
-    if (filter === "Milena") return []; // Milena has lead gen, not cadence activities
-    if (filter === "Grupo A") return acts.filter(a => a.grupo === "A");
-    if (filter === "Grupo B") return acts.filter(a => a.grupo === "B");
-    return acts;
+    const person = forPerson || filter;
+    if (person === "Milena") return []; // Milena has lead gen, not cadence activities
+    if (person === "Aline") return info.activities;
+    if (filter === "Grupo A") return info.activities.filter(a => a.grupo === "A");
+    if (filter === "Grupo B") return info.activities.filter(a => a.grupo === "B");
+    return info.activities; // "Todas"
+  };
+
+  // Get custom activities for a specific date
+  const getCustomActivitiesForDate = (dateStr: string) => {
+    let filtered = customActivitiesMonth.filter(ca => ca.data === dateStr);
+    if (filter === "Aline") filtered = filtered.filter(ca => ca.responsavel === "Aline");
+    else if (filter === "Milena") filtered = filtered.filter(ca => ca.responsavel === "Milena");
+    return filtered;
   };
 
   // Selected day info
