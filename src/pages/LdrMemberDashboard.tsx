@@ -265,6 +265,7 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
 
       {activeTab === "refinamento" && <RefinamentoDados />}
       {activeTab === "historico" && <HistoricoPipedrive />}
+      {activeTab === "calendario" && <CalendarioPreVendas />}
       {activeTab === "dashboard" && (
       <>
       {/* Banner */}
