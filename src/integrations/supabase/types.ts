@@ -359,6 +359,7 @@ export type Database = {
           criado_em: string
           depreciacao: number | null
           diretoria_prolabore: number | null
+          educacao: number | null
           energia_agua_telefone: number | null
           financeiro_bancario: number | null
           gastos_variaveis_unitarios: number | null
@@ -370,6 +371,7 @@ export type Database = {
           pessoal: number | null
           preco_venda_unitario: number | null
           seguros: number | null
+          software: number | null
           veiculos: number | null
           volume_vendas: number | null
         }
@@ -381,6 +383,7 @@ export type Database = {
           criado_em?: string
           depreciacao?: number | null
           diretoria_prolabore?: number | null
+          educacao?: number | null
           energia_agua_telefone?: number | null
           financeiro_bancario?: number | null
           gastos_variaveis_unitarios?: number | null
@@ -392,6 +395,7 @@ export type Database = {
           pessoal?: number | null
           preco_venda_unitario?: number | null
           seguros?: number | null
+          software?: number | null
           veiculos?: number | null
           volume_vendas?: number | null
         }
@@ -403,6 +407,7 @@ export type Database = {
           criado_em?: string
           depreciacao?: number | null
           diretoria_prolabore?: number | null
+          educacao?: number | null
           energia_agua_telefone?: number | null
           financeiro_bancario?: number | null
           gastos_variaveis_unitarios?: number | null
@@ -414,6 +419,7 @@ export type Database = {
           pessoal?: number | null
           preco_venda_unitario?: number | null
           seguros?: number | null
+          software?: number | null
           veiculos?: number | null
           volume_vendas?: number | null
         }
