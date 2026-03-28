@@ -55,15 +55,44 @@ export function CeoCadencePlanning() {
       const { data, error } = await supabase.functions.invoke("generate-cadence-plan", {
         body: form,
       });
-      if (error) throw error;
+      if (error) {
+        const errorMsg = typeof error === "object" && error.message ? error.message : JSON.stringify(error);
+        throw new Error(errorMsg);
+      }
+      if (data?.error) throw new Error(data.error);
       if (data?.plan) {
         setGeneratedPlan(data.plan);
         toast({ title: "🤖 Planejamento gerado!", description: "Revise e aprove abaixo." });
       }
     } catch (e: any) {
-      toast({ title: "Erro ao gerar", description: e.message, variant: "destructive" });
+      toast({ title: "Erro ao gerar planejamento", description: e.message || "Erro desconhecido", variant: "destructive" });
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleTestConnection = async () => {
+    setTesting(true);
+    setTestResult({ edgeFunction: null, ai: null });
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-cadence-plan", {
+        body: { total_leads: 10, meta_demos: 1, meta_contratos: 1, meta_receita: 1000, minimo_viavel: 70 },
+      });
+      if (error) {
+        setTestResult({ edgeFunction: "error", ai: "error" });
+        toast({ title: "❌ Edge Function inacessível", description: error.message, variant: "destructive" });
+      } else if (data?.error) {
+        setTestResult({ edgeFunction: "success", ai: "error" });
+        toast({ title: "⚠️ Edge Function OK, mas AI falhou", description: data.error, variant: "destructive" });
+      } else if (data?.plan) {
+        setTestResult({ edgeFunction: "success", ai: "success" });
+        toast({ title: "✅ Tudo funcionando!", description: "Edge Function e AI estão conectados." });
+      }
+    } catch (e: any) {
+      setTestResult({ edgeFunction: "error", ai: "error" });
+      toast({ title: "❌ Erro de conexão", description: e.message, variant: "destructive" });
+    } finally {
+      setTesting(false);
     }
   };
 
