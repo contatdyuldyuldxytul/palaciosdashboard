@@ -100,8 +100,8 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
   const metaMensal = metaComercial ? Number(metaComercial.meta_receita) || 0 : 0;
   const metaReunioes = metaComercial ? Number(metaComercial.meta_demos) || 0 : 0;
 
-  // SDR Commission: R$2,000 fixed + R$30/meeting + 4% contracts
-  const commission = 2000 + (meetingsDone * 30) + (closedValue * 0.04);
+  // SDR Commission: R$2,000 fixed + R$30/meeting (from tracker) + 4% contracts
+  const commission = 2000 + (meetingsRealized * 30) + (closedValue * 0.04);
   const metaPct = metaMensal > 0 ? (closedValue / metaMensal) * 100 : 0;
   const reunioesRestantes = Math.max(metaReunioes - meetingsDone, 0);
 
