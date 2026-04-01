@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Target, CalendarCheck, DollarSign, AlertTriangle, PartyPopper } from "lucide-react";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { toast } from "@/hooks/use-toast";
 
 interface MeetingCheck {
   id: string;
