@@ -167,6 +167,7 @@ export function CeoCadencePlanning() {
     if (!plan?.dias?.length) return;
 
     try {
+      await saveGoalsToMetasComerciais();
       const dias = plan.dias.map((d: any) => ({
         mes_ano: mesAno,
         data: d.data,

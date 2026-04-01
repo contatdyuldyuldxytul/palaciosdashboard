@@ -68,6 +68,15 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
   const updateLead = useUpdateLead();
   const { deals: pipedriveDeals } = usePipedrive();
 
+  // Read goals from metas_comerciais (single source of truth)
+  const currentMesForMetas = (() => {
+    const now = new Date();
+    return `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+  })();
+  const { data: metasComerciais = [] } = useMetasComerciais(currentMesForMetas);
+  const metaComercial = metasComerciais[0] || null;
+  const hasGoals = !!metaComercial;
+
   const memberLeads = allLeads.filter(
     (l) => (l.responsavel_nome || "").toLowerCase().trim() === memberName.toLowerCase().trim()
   );
@@ -85,11 +94,13 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
   const closedValue = memberLeads.filter((l) => l.status === "fechado").reduce((s, l) => s + (l.valor_estimado || 0), 0);
   const conversionRate = memberLeads.length > 0 ? (closedCount / memberLeads.length) * 100 : 0;
 
+  // Goals from metas_comerciais
+  const metaMensal = metaComercial ? Number(metaComercial.meta_receita) || 0 : 0;
+  const metaReunioes = metaComercial ? Number(metaComercial.meta_demos) || 0 : 0;
+
   // SDR Commission: R$2,000 fixed + R$30/meeting + 4% contracts
   const commission = 2000 + (meetingsDone * 30) + (closedValue * 0.04);
-  const metaMensal = 20000;
   const metaPct = metaMensal > 0 ? (closedValue / metaMensal) * 100 : 0;
-  const metaReunioes = 15;
   const reunioesRestantes = Math.max(metaReunioes - meetingsDone, 0);
 
   // Fetch checklist
