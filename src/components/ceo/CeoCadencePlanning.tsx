@@ -265,7 +265,7 @@ export function CeoCadencePlanning() {
               <label className="text-xs text-muted-foreground mb-1 block">Total de leads para prospectar</label>
               <input type="number" value={form.total_leads} onChange={e => setForm(p => ({ ...p, total_leads: Number(e.target.value) }))}
                 className="w-full px-3 py-2 rounded-xl bg-muted/30 border border-white/10 text-sm text-foreground focus:outline-none focus:border-amber-500/50" />
-              <p className="text-[10px] text-muted-foreground mt-1">Serão divididos 50% Grupo A e 50% Grupo B</p>
+              <p className="text-[10px] text-muted-foreground mt-1">Serão divididos 50% Grupo A ({Math.ceil(form.total_leads / 2)}) e 50% Grupo B ({Math.floor(form.total_leads / 2)}) — Milena gera todos</p>
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Meta de demos agendadas</label>
