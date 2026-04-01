@@ -3,7 +3,7 @@ import { writeToSheets } from "@/hooks/useWriteSheets";
 import { SyncIndicator } from "@/components/SyncIndicator";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { CircularProgress } from "@/components/CircularProgress";
-import { Plus, Search, Users, Target, TrendingUp, CalendarCheck, CheckCircle2, Activity, RefreshCw } from "lucide-react";
+import { Plus, Search, Users, Target, TrendingUp, CalendarCheck, CheckCircle2, Activity, RefreshCw, AlertTriangle } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { motion } from "framer-motion";
@@ -14,6 +14,7 @@ import { RefinamentoDados } from "@/components/milena/RefinamentoDados";
 import { HistoricoPipedrive } from "@/components/milena/HistoricoPipedrive";
 import { CadenceChecklist } from "@/components/CadenceChecklist";
 import { CalendarioPreVendas } from "@/components/CalendarioPreVendas";
+import { useMetasComerciais } from "@/hooks/useMetasComerciais";
 
 interface LdrMemberDashboardProps {
   memberName: string;
@@ -117,6 +118,14 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
   // Use the EXACT same hook as the main Dashboard
   const { data: allLeads = [], isLoading: sheetsLoading, refetch: fetchSheetLeads } = useLeads();
 
+  // Read goals from metas_comerciais (single source of truth)
+  const currentMesForMetas = (() => {
+    const now = new Date();
+    return `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+  })();
+  const { data: metasComerciais = [] } = useMetasComerciais(currentMesForMetas);
+  const metaComercial = metasComerciais[0] || null;
+
   // Filter for Milena (case insensitive)
   const sheetLeads: SheetLead[] = allLeads
     .filter(l => (l.responsavel_nome || "").toLowerCase().includes("milena"))
@@ -157,11 +166,13 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
     return d && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   }).length;
 
-  const monthlyGoal = 300;
+  // Goals from metas_comerciais — Milena generates ALL leads (total_leads)
+  const monthlyGoal = metaComercial ? Number(metaComercial.total_leads) || 0 : 0;
+  const hasGoals = !!metaComercial;
   const goalPct = monthlyGoal > 0 ? (leadsThisMonth / monthlyGoal) * 100 : 0;
   const workingDays = getWorkingDaysInMonth(now);
   const daysPassed = getWorkingDaysPassed(now);
-  const dailyGoal = Math.ceil(monthlyGoal / workingDays);
+  const dailyGoal = monthlyGoal > 0 ? Math.ceil(monthlyGoal / workingDays) : 0;
 
   // Qualification rate: status != "lead"
   const qualifiedLeads = sheetLeads.filter(l => normalizeStatus(l.status) !== "lead").length;
@@ -264,6 +275,20 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
       {activeTab === "calendario" && <CalendarioPreVendas defaultFilter="Milena" />}
       {activeTab === "dashboard" && (
       <>
+      {/* No goals banner */}
+      {!hasGoals && (
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+          className="glass-card p-5 border-amber-500/30" style={{ background: "linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.03))" }}>
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-foreground">⚠️ Metas de {format(now, "MMMM yyyy", { locale: ptBR })} não definidas.</p>
+              <p className="text-xs text-muted-foreground">Aguardando configuração no painel CEO.</p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Banner */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
         className="glass-card p-5 flex items-center gap-4" style={{ background: "linear-gradient(135deg, rgba(245,158,11,0.08), rgba(245,158,11,0.02))", borderColor: "rgba(245,158,11,0.15)" }}>

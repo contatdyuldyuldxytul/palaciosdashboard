@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { usePlanejamentoMensal, useSavePlanejamento, useApprovePlanejamento, useUpdatePlanejamentoDia } from "@/hooks/usePlanejamento";
 import { supabase } from "@/integrations/supabase/client";
+import { useUpsertMetaComercial, useMetasComerciais } from "@/hooks/useMetasComerciais";
 import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, CheckCircle2, Loader2, Edit3, X, Eye, List } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -27,9 +28,13 @@ const typeIcons: Record<string, string> = {
 export function CeoCadencePlanning() {
   const mesAno = getCurrentMesAno();
   const { data: planejamento = [], isLoading } = usePlanejamentoMensal(mesAno);
+  const { data: metasComerciais = [] } = useMetasComerciais(mesAno);
+  const upsertMeta = useUpsertMetaComercial();
   const savePlan = useSavePlanejamento();
   const approvePlan = useApprovePlanejamento();
   const updateDia = useUpdatePlanejamentoDia();
+
+  const existingMeta = metasComerciais[0] || null;
 
   const [form, setForm] = useState({
     total_leads: 600,
@@ -38,6 +43,7 @@ export function CeoCadencePlanning() {
     meta_receita: 20000,
     minimo_viavel: 70,
   });
+  const [formInitialized, setFormInitialized] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState<any>(null);
   const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
@@ -46,12 +52,42 @@ export function CeoCadencePlanning() {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ edgeFunction: "success" | "error" | null; ai: "success" | "error" | null }>({ edgeFunction: null, ai: null });
 
+  // Pre-fill form from existing metas_comerciais
+  if (existingMeta && !formInitialized) {
+    setForm({
+      total_leads: Number(existingMeta.total_leads) || 600,
+      meta_demos: Number(existingMeta.meta_demos) || 15,
+      meta_contratos: Number(existingMeta.meta_contratos) || 2,
+      meta_receita: Number(existingMeta.meta_receita) || 20000,
+      minimo_viavel: Number(existingMeta.minimo_viavel) || 70,
+    });
+    setFormInitialized(true);
+  }
+
   const isApproved = planejamento.length > 0 && planejamento[0].aprovado;
   const hasPlan = planejamento.length > 0 || generatedPlan;
+
+  // Save goals to metas_comerciais (single source of truth)
+  const saveGoalsToMetasComerciais = async () => {
+    const grupoA = Math.ceil(form.total_leads / 2);
+    const grupoB = Math.floor(form.total_leads / 2);
+    await upsertMeta.mutateAsync({
+      mes: mesAno,
+      total_leads: form.total_leads,
+      grupo_a_leads: grupoA,
+      grupo_b_leads: grupoB,
+      meta_demos: form.meta_demos,
+      meta_contratos: form.meta_contratos,
+      meta_receita: form.meta_receita,
+      minimo_viavel: form.minimo_viavel,
+    });
+  };
 
   const handleGenerate = async () => {
     setGenerating(true);
     try {
+      // Save goals to single source of truth first
+      await saveGoalsToMetasComerciais();
       const { data, error } = await supabase.functions.invoke("generate-cadence-plan", {
         body: form,
       });
@@ -101,6 +137,7 @@ export function CeoCadencePlanning() {
     if (!plan?.dias?.length) return;
 
     try {
+      await saveGoalsToMetasComerciais();
       const dias = plan.dias.map((d: any) => ({
         mes_ano: mesAno,
         data: d.data,
@@ -130,6 +167,7 @@ export function CeoCadencePlanning() {
     if (!plan?.dias?.length) return;
 
     try {
+      await saveGoalsToMetasComerciais();
       const dias = plan.dias.map((d: any) => ({
         mes_ano: mesAno,
         data: d.data,
@@ -227,7 +265,7 @@ export function CeoCadencePlanning() {
               <label className="text-xs text-muted-foreground mb-1 block">Total de leads para prospectar</label>
               <input type="number" value={form.total_leads} onChange={e => setForm(p => ({ ...p, total_leads: Number(e.target.value) }))}
                 className="w-full px-3 py-2 rounded-xl bg-muted/30 border border-white/10 text-sm text-foreground focus:outline-none focus:border-amber-500/50" />
-              <p className="text-[10px] text-muted-foreground mt-1">Serão divididos 50% Grupo A e 50% Grupo B</p>
+              <p className="text-[10px] text-muted-foreground mt-1">Serão divididos 50% Grupo A ({Math.ceil(form.total_leads / 2)}) e 50% Grupo B ({Math.floor(form.total_leads / 2)}) — Milena gera todos</p>
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Meta de demos agendadas</label>

@@ -5,7 +5,7 @@ import { writeToSheets } from "@/hooks/useWriteSheets";
 import { SyncIndicator } from "@/components/SyncIndicator";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { CircularProgress } from "@/components/CircularProgress";
-import { Plus, Search, Phone, FileText, TrendingUp, Users, Target, CalendarCheck, CheckCircle2, Activity } from "lucide-react";
+import { Plus, Search, Phone, FileText, TrendingUp, Users, Target, CalendarCheck, CheckCircle2, Activity, AlertTriangle } from "lucide-react";
 import { CadenceChecklist } from "@/components/CadenceChecklist";
 import { CalendarioPreVendas } from "@/components/CalendarioPreVendas";
 import { format, formatDistanceToNow } from "date-fns";
@@ -13,6 +13,7 @@ import { ptBR } from "date-fns/locale";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useMetasComerciais } from "@/hooks/useMetasComerciais";
 
 const stageOrder: LeadStatus[] = ["lead", "contatado", "reuniao_agendada", "reuniao_realizada", "proposta", "fechado"];
 const stageColors: Record<LeadStatus, string> = {
@@ -67,6 +68,15 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
   const updateLead = useUpdateLead();
   const { deals: pipedriveDeals } = usePipedrive();
 
+  // Read goals from metas_comerciais (single source of truth)
+  const currentMesForMetas = (() => {
+    const now = new Date();
+    return `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+  })();
+  const { data: metasComerciais = [] } = useMetasComerciais(currentMesForMetas);
+  const metaComercial = metasComerciais[0] || null;
+  const hasGoals = !!metaComercial;
+
   const memberLeads = allLeads.filter(
     (l) => (l.responsavel_nome || "").toLowerCase().trim() === memberName.toLowerCase().trim()
   );
@@ -84,11 +94,13 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
   const closedValue = memberLeads.filter((l) => l.status === "fechado").reduce((s, l) => s + (l.valor_estimado || 0), 0);
   const conversionRate = memberLeads.length > 0 ? (closedCount / memberLeads.length) * 100 : 0;
 
+  // Goals from metas_comerciais
+  const metaMensal = metaComercial ? Number(metaComercial.meta_receita) || 0 : 0;
+  const metaReunioes = metaComercial ? Number(metaComercial.meta_demos) || 0 : 0;
+
   // SDR Commission: R$2,000 fixed + R$30/meeting + 4% contracts
   const commission = 2000 + (meetingsDone * 30) + (closedValue * 0.04);
-  const metaMensal = 20000;
   const metaPct = metaMensal > 0 ? (closedValue / metaMensal) * 100 : 0;
-  const metaReunioes = 15;
   const reunioesRestantes = Math.max(metaReunioes - meetingsDone, 0);
 
   // Fetch checklist
@@ -191,6 +203,20 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
       {activeTab === "calendario" && <CalendarioPreVendas defaultFilter="Aline" />}
       {activeTab === "dashboard" && (
       <>
+      {/* No goals banner */}
+      {!hasGoals && (
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+          className="glass-card p-5 border-amber-500/30" style={{ background: "linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.03))" }}>
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-foreground">⚠️ Metas de {format(now, "MMMM yyyy", { locale: ptBR })} não definidas.</p>
+              <p className="text-xs text-muted-foreground">Aguardando configuração no painel CEO.</p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Banner */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
         className="glass-card p-5 flex items-center gap-4" style={{ background: "linear-gradient(135deg, rgba(0,200,150,0.08), rgba(0,200,150,0.02))", borderColor: "rgba(0,200,150,0.15)" }}>
@@ -215,7 +241,7 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
           </CircularProgress>
           <div>
             <p className="text-lg font-bold text-foreground"><AnimatedNumber value={closedValue} formatAsCurrency /></p>
-            <p className="text-[11px] text-muted-foreground">Meta: {formatCurrency(metaMensal)}</p>
+            <p className="text-[11px] text-muted-foreground">Meta: {hasGoals ? formatCurrency(metaMensal) : "—"}</p>
             <p className="text-xs text-muted-foreground mt-0.5">Meta do Mês</p>
           </div>
         </motion.div>
