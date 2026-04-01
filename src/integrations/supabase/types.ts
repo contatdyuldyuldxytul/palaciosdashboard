@@ -689,6 +689,42 @@ export type Database = {
         }
         Relationships: []
       }
+      meeting_checks: {
+        Row: {
+          agendada: boolean
+          agendada_em: string | null
+          colaborador: string
+          criado_em: string
+          id: string
+          mes: string
+          numero_reuniao: number
+          realizada: boolean
+          realizada_em: string | null
+        }
+        Insert: {
+          agendada?: boolean
+          agendada_em?: string | null
+          colaborador: string
+          criado_em?: string
+          id?: string
+          mes: string
+          numero_reuniao: number
+          realizada?: boolean
+          realizada_em?: string | null
+        }
+        Update: {
+          agendada?: boolean
+          agendada_em?: string | null
+          colaborador?: string
+          criado_em?: string
+          id?: string
+          mes?: string
+          numero_reuniao?: number
+          realizada?: boolean
+          realizada_em?: string | null
+        }
+        Relationships: []
+      }
       metas: {
         Row: {
           ano: number

@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useLeads, getStatusDisplay, LeadStatus, useAddLead, useUpdateLead } from "@/hooks/useLeads";
 import { usePipedrive, PipedriveDeal } from "@/hooks/usePipedrive";
 import { writeToSheets } from "@/hooks/useWriteSheets";
 import { SyncIndicator } from "@/components/SyncIndicator";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { CircularProgress } from "@/components/CircularProgress";
+import { MeetingTracker } from "@/components/MeetingTracker";
 import { Plus, Search, Phone, FileText, TrendingUp, Users, Target, CalendarCheck, CheckCircle2, Activity, AlertTriangle } from "lucide-react";
 import { CadenceChecklist } from "@/components/CadenceChecklist";
 import { CalendarioPreVendas } from "@/components/CalendarioPreVendas";
@@ -62,6 +63,7 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
   const [newLead, setNewLead] = useState({ empresa: "", contato: "", cargo: "", cidade: "", telefone: "", email: "" });
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [checklistLoading, setChecklistLoading] = useState(true);
+  const [meetingsRealized, setMeetingsRealized] = useState(0);
 
   const { data: allLeads = [], isLoading } = useLeads();
   const addLead = useAddLead();
@@ -98,8 +100,8 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
   const metaMensal = metaComercial ? Number(metaComercial.meta_receita) || 0 : 0;
   const metaReunioes = metaComercial ? Number(metaComercial.meta_demos) || 0 : 0;
 
-  // SDR Commission: R$2,000 fixed + R$30/meeting + 4% contracts
-  const commission = 2000 + (meetingsDone * 30) + (closedValue * 0.04);
+  // SDR Commission: R$2,000 fixed + R$30/meeting (from tracker) + 4% contracts
+  const commission = 2000 + (meetingsRealized * 30) + (closedValue * 0.04);
   const metaPct = metaMensal > 0 ? (closedValue / metaMensal) * 100 : 0;
   const reunioesRestantes = Math.max(metaReunioes - meetingsDone, 0);
 
@@ -254,7 +256,7 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
             </div>
           </div>
           <p className="text-xl font-bold text-foreground"><AnimatedNumber value={commission} formatAsCurrency /></p>
-          <p className="text-[10px] text-muted-foreground mt-1">R$2.000 + ({meetingsDone}×R$30) + (4%×{formatCurrency(closedValue)})</p>
+          <p className="text-[10px] text-muted-foreground mt-1">R$2.000 + ({meetingsRealized}×R$30) + (4%×{formatCurrency(closedValue)})</p>
           <p className="text-xs text-muted-foreground mt-0.5">Comissão Acumulada</p>
         </motion.div>
 
@@ -290,30 +292,8 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
         {/* Checklist */}
         <CadenceChecklist colaborador={memberName} accentColor="hsl(160,100%,39%)" />
 
-        {/* Activity Feed */}
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.35 }} className="glass-card p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Activity className="w-4 h-4 text-primary" />
-            <h2 className="text-sm font-semibold text-foreground">Metas ✅</h2>
-          </div>
-          {activityFeed.length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center py-4">Nenhuma atividade recente</p>
-          ) : (
-            <div className="space-y-2 max-h-[240px] overflow-y-auto scrollbar-thin">
-              {activityFeed.map((lead) => (
-                <div key={lead.id} className="flex items-start gap-3 px-3 py-2 rounded-lg hover:bg-white/[0.03] transition-all">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs text-foreground">
-                      <span className="font-medium">{lead.empresa}</span> → <span className={statusBadgeColors[lead.status]?.text || "text-muted-foreground"}>{getStatusDisplay(lead.status)}</span>
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(lead.data_atualizacao), { addSuffix: true, locale: ptBR })}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </motion.div>
+        {/* Meeting Tracker */}
+        <MeetingTracker colaborador={memberName} onCommissionChange={setMeetingsRealized} />
       </div>
 
       {/* ROW 3 — Pipedrive Funnel (same as Pré-Vendas) */}
