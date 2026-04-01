@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { usePlanejamentoMensal, useSavePlanejamento, useApprovePlanejamento, useUpdatePlanejamentoDia } from "@/hooks/usePlanejamento";
 import { supabase } from "@/integrations/supabase/client";
+import { useUpsertMetaComercial, useMetasComerciais } from "@/hooks/useMetasComerciais";
 import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, CheckCircle2, Loader2, Edit3, X, Eye, List } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
