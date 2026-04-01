@@ -291,7 +291,7 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
             </div>
           </div>
           <p className="text-xl font-bold text-foreground"><AnimatedNumber value={leadsToday} /> <span className="text-sm text-muted-foreground font-normal">/ {dailyGoal}</span></p>
-          <p className="text-xs text-muted-foreground mt-0.5">Leads Gerados Hoje</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Leads Gerados</p>
           <div className="mt-2 h-1.5 rounded-full bg-muted/30 overflow-hidden">
             <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min((leadsToday / dailyGoal) * 100, 100)}%` }} transition={{ duration: 0.8 }}
               className="h-full rounded-full" style={{ background: leadsToday >= dailyGoal ? "hsl(160,100%,39%)" : "hsl(45,80%,55%)" }} />
