@@ -256,7 +256,7 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
             </div>
           </div>
           <p className="text-xl font-bold text-foreground"><AnimatedNumber value={commission} formatAsCurrency /></p>
-          <p className="text-[10px] text-muted-foreground mt-1">R$2.000 + ({meetingsDone}×R$30) + (4%×{formatCurrency(closedValue)})</p>
+          <p className="text-[10px] text-muted-foreground mt-1">R$2.000 + ({meetingsRealized}×R$30) + (4%×{formatCurrency(closedValue)})</p>
           <p className="text-xs text-muted-foreground mt-0.5">Comissão Acumulada</p>
         </motion.div>
 
