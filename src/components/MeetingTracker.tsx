@@ -21,6 +21,7 @@ interface MeetingCheck {
 interface MeetingTrackerProps {
   colaborador: string;
   onCommissionChange?: (meetingsRealized: number) => void;
+  onAgendadasChange?: (meetingsAgendadas: number) => void;
 }
 
 function formatCurrency(v: number) {
