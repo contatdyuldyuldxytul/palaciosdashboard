@@ -28,9 +28,13 @@ const typeIcons: Record<string, string> = {
 export function CeoCadencePlanning() {
   const mesAno = getCurrentMesAno();
   const { data: planejamento = [], isLoading } = usePlanejamentoMensal(mesAno);
+  const { data: metasComerciais = [] } = useMetasComerciais(mesAno);
+  const upsertMeta = useUpsertMetaComercial();
   const savePlan = useSavePlanejamento();
   const approvePlan = useApprovePlanejamento();
   const updateDia = useUpdatePlanejamentoDia();
+
+  const existingMeta = metasComerciais[0] || null;
 
   const [form, setForm] = useState({
     total_leads: 600,
@@ -39,6 +43,7 @@ export function CeoCadencePlanning() {
     meta_receita: 20000,
     minimo_viavel: 70,
   });
+  const [formInitialized, setFormInitialized] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState<any>(null);
   const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");

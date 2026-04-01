@@ -119,12 +119,11 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
   const { data: allLeads = [], isLoading: sheetsLoading, refetch: fetchSheetLeads } = useLeads();
 
   // Read goals from metas_comerciais (single source of truth)
-  const currentMesAno = (() => {
+  const currentMesForMetas = (() => {
     const now = new Date();
-    const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-    return `${months[now.getMonth()]}/${now.getFullYear()}`;
+    return `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
   })();
-  const { data: metasComerciais = [] } = useMetasComerciais(currentMesAno);
+  const { data: metasComerciais = [] } = useMetasComerciais(currentMesForMetas);
   const metaComercial = metasComerciais[0] || null;
 
   // Filter for Milena (case insensitive)
