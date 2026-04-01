@@ -28,7 +28,7 @@ function formatCurrency(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
 }
 
-export function MeetingTracker({ colaborador, onCommissionChange }: MeetingTrackerProps) {
+export function MeetingTracker({ colaborador, onCommissionChange, onAgendadasChange }: MeetingTrackerProps) {
   const [checks, setChecks] = useState<MeetingCheck[]>([]);
   const [loading, setLoading] = useState(true);
 
