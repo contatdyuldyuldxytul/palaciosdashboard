@@ -3,7 +3,7 @@ import { writeToSheets } from "@/hooks/useWriteSheets";
 import { SyncIndicator } from "@/components/SyncIndicator";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { CircularProgress } from "@/components/CircularProgress";
-import { Plus, Search, Users, Target, TrendingUp, CalendarCheck, CheckCircle2, Activity, RefreshCw } from "lucide-react";
+import { Plus, Search, Users, Target, TrendingUp, CalendarCheck, CheckCircle2, Activity, RefreshCw, AlertTriangle } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { motion } from "framer-motion";
@@ -14,6 +14,7 @@ import { RefinamentoDados } from "@/components/milena/RefinamentoDados";
 import { HistoricoPipedrive } from "@/components/milena/HistoricoPipedrive";
 import { CadenceChecklist } from "@/components/CadenceChecklist";
 import { CalendarioPreVendas } from "@/components/CalendarioPreVendas";
+import { useMetasComerciais } from "@/hooks/useMetasComerciais";
 
 interface LdrMemberDashboardProps {
   memberName: string;
