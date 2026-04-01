@@ -64,6 +64,7 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [checklistLoading, setChecklistLoading] = useState(true);
   const [meetingsRealized, setMeetingsRealized] = useState(0);
+  const [meetingsAgendadas, setMeetingsAgendadas] = useState(0);
 
   const { data: allLeads = [], isLoading } = useLeads();
   const addLead = useAddLead();
