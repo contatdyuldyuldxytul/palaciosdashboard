@@ -256,17 +256,26 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
 
       {/* ROW 1 — 4 Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Meta do Mês */}
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0 }} className="glass-card p-4 flex items-center gap-4">
-          <CircularProgress value={metaPct} size={64} strokeWidth={5} color="hsl(160,100%,39%)">
-            <span className="text-xs font-bold text-primary"><AnimatedNumber value={metaPct} suffix="%" decimals={0} /></span>
-          </CircularProgress>
-          <div>
-            <p className="text-lg font-bold text-foreground"><AnimatedNumber value={closedValue} formatAsCurrency /></p>
-            <p className="text-[11px] text-muted-foreground">Meta: {hasGoals ? formatCurrency(metaMensal) : "—"}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Meta do Mês</p>
-          </div>
-        </motion.div>
+        {/* Meta de Reuniões */}
+        {(() => {
+          const metaReunioesVal = metaComercial ? Number(metaComercial.meta_demos) || 0 : 0;
+          const reunioesPct = metaReunioesVal > 0 ? (meetingsAgendadas / metaReunioesVal) * 100 : 0;
+          const progressColor = reunioesPct >= 70 ? "hsl(160,100%,39%)" : "hsl(45,93%,47%)";
+          const statusLabel = reunioesPct >= 80 ? "✦ Excelente" : reunioesPct >= 50 ? "◈ No Caminho" : "◇ Atenção";
+          const statusColor = reunioesPct >= 80 ? "text-primary" : reunioesPct >= 50 ? "text-amber-400" : "text-destructive";
+          return (
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0 }} className="glass-card p-4 flex items-center gap-4">
+              <CircularProgress value={Math.min(reunioesPct, 100)} size={64} strokeWidth={5} color={progressColor}>
+                <span className="text-xs font-bold" style={{ color: progressColor }}><AnimatedNumber value={reunioesPct} suffix="%" decimals={0} /></span>
+              </CircularProgress>
+              <div>
+                <p className="text-lg font-bold text-foreground"><AnimatedNumber value={meetingsAgendadas} decimals={0} /> <span className="text-sm text-muted-foreground font-normal">/ {metaReunioesVal}</span></p>
+                <p className="text-[11px] text-muted-foreground">META DE REUNIÕES</p>
+                <span className={`text-[10px] font-medium ${statusColor}`}>{statusLabel}</span>
+              </div>
+            </motion.div>
+          );
+        })()}
 
         {/* Comissão */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.08 }} className="glass-card p-4">
