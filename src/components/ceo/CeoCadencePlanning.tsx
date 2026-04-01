@@ -52,8 +52,36 @@ export function CeoCadencePlanning() {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ edgeFunction: "success" | "error" | null; ai: "success" | "error" | null }>({ edgeFunction: null, ai: null });
 
+  // Pre-fill form from existing metas_comerciais
+  if (existingMeta && !formInitialized) {
+    setForm({
+      total_leads: Number(existingMeta.total_leads) || 600,
+      meta_demos: Number(existingMeta.meta_demos) || 15,
+      meta_contratos: Number(existingMeta.meta_contratos) || 2,
+      meta_receita: Number(existingMeta.meta_receita) || 20000,
+      minimo_viavel: Number(existingMeta.minimo_viavel) || 70,
+    });
+    setFormInitialized(true);
+  }
+
   const isApproved = planejamento.length > 0 && planejamento[0].aprovado;
   const hasPlan = planejamento.length > 0 || generatedPlan;
+
+  // Save goals to metas_comerciais (single source of truth)
+  const saveGoalsToMetasComerciais = async () => {
+    const grupoA = Math.ceil(form.total_leads / 2);
+    const grupoB = Math.floor(form.total_leads / 2);
+    await upsertMeta.mutateAsync({
+      mes: mesAno,
+      total_leads: form.total_leads,
+      grupo_a_leads: grupoA,
+      grupo_b_leads: grupoB,
+      meta_demos: form.meta_demos,
+      meta_contratos: form.meta_contratos,
+      meta_receita: form.meta_receita,
+      minimo_viavel: form.minimo_viavel,
+    });
+  };
 
   const handleGenerate = async () => {
     setGenerating(true);
