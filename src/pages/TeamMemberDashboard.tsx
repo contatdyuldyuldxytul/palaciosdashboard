@@ -292,30 +292,8 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
         {/* Checklist */}
         <CadenceChecklist colaborador={memberName} accentColor="hsl(160,100%,39%)" />
 
-        {/* Activity Feed */}
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.35 }} className="glass-card p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Activity className="w-4 h-4 text-primary" />
-            <h2 className="text-sm font-semibold text-foreground">Metas ✅</h2>
-          </div>
-          {activityFeed.length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center py-4">Nenhuma atividade recente</p>
-          ) : (
-            <div className="space-y-2 max-h-[240px] overflow-y-auto scrollbar-thin">
-              {activityFeed.map((lead) => (
-                <div key={lead.id} className="flex items-start gap-3 px-3 py-2 rounded-lg hover:bg-white/[0.03] transition-all">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs text-foreground">
-                      <span className="font-medium">{lead.empresa}</span> → <span className={statusBadgeColors[lead.status]?.text || "text-muted-foreground"}>{getStatusDisplay(lead.status)}</span>
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(lead.data_atualizacao), { addSuffix: true, locale: ptBR })}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </motion.div>
+        {/* Meeting Tracker */}
+        <MeetingTracker colaborador={memberName} onCommissionChange={setMeetingsRealized} />
       </div>
 
       {/* ROW 3 — Pipedrive Funnel (same as Pré-Vendas) */}
