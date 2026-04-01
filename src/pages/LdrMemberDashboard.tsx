@@ -118,6 +118,15 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
   // Use the EXACT same hook as the main Dashboard
   const { data: allLeads = [], isLoading: sheetsLoading, refetch: fetchSheetLeads } = useLeads();
 
+  // Read goals from metas_comerciais (single source of truth)
+  const currentMesAno = (() => {
+    const now = new Date();
+    const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+    return `${months[now.getMonth()]}/${now.getFullYear()}`;
+  })();
+  const { data: metasComerciais = [] } = useMetasComerciais(currentMesAno);
+  const metaComercial = metasComerciais[0] || null;
+
   // Filter for Milena (case insensitive)
   const sheetLeads: SheetLead[] = allLeads
     .filter(l => (l.responsavel_nome || "").toLowerCase().includes("milena"))
@@ -158,11 +167,13 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
     return d && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   }).length;
 
-  const monthlyGoal = 300;
+  // Goals from metas_comerciais — Milena generates ALL leads (total_leads)
+  const monthlyGoal = metaComercial ? Number(metaComercial.total_leads) || 0 : 0;
+  const hasGoals = !!metaComercial;
   const goalPct = monthlyGoal > 0 ? (leadsThisMonth / monthlyGoal) * 100 : 0;
   const workingDays = getWorkingDaysInMonth(now);
   const daysPassed = getWorkingDaysPassed(now);
-  const dailyGoal = Math.ceil(monthlyGoal / workingDays);
+  const dailyGoal = monthlyGoal > 0 ? Math.ceil(monthlyGoal / workingDays) : 0;
 
   // Qualification rate: status != "lead"
   const qualifiedLeads = sheetLeads.filter(l => normalizeStatus(l.status) !== "lead").length;
