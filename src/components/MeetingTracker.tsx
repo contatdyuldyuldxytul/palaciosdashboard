@@ -87,7 +87,8 @@ export function MeetingTracker({ colaborador, onCommissionChange, onAgendadasCha
       }
 
       setChecks(prev => prev.map(c => c.numero_reuniao === reuniao ? { ...c, ...updates } : c));
-      await supabase.from("meeting_checks" as any).update(updates).eq("id", existing.id);
+      const { error } = await supabase.from("meeting_checks" as any).update(updates).eq("id", existing.id);
+      if (error) toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
     } else {
       const newRow: any = {
         mes: currentMes,
@@ -99,7 +100,8 @@ export function MeetingTracker({ colaborador, onCommissionChange, onAgendadasCha
         realizada_em: null,
       };
       setChecks(prev => [...prev, { ...newRow, id: "temp-" + reuniao }]);
-      const { data } = await supabase.from("meeting_checks" as any).upsert([newRow] as any, { onConflict: "mes,numero_reuniao,colaborador" }).select().single();
+      const { data, error } = await supabase.from("meeting_checks" as any).upsert([newRow] as any, { onConflict: "mes,numero_reuniao,colaborador" }).select().single();
+      if (error) toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
       if (data) {
         setChecks(prev => prev.map(c => c.numero_reuniao === reuniao ? (data as any as MeetingCheck) : c));
       }
