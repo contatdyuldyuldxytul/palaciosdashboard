@@ -241,7 +241,7 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
           </CircularProgress>
           <div>
             <p className="text-lg font-bold text-foreground"><AnimatedNumber value={closedValue} formatAsCurrency /></p>
-            <p className="text-[11px] text-muted-foreground">Meta: {formatCurrency(metaMensal)}</p>
+            <p className="text-[11px] text-muted-foreground">Meta: {hasGoals ? formatCurrency(metaMensal) : "—"}</p>
             <p className="text-xs text-muted-foreground mt-0.5">Meta do Mês</p>
           </div>
         </motion.div>
