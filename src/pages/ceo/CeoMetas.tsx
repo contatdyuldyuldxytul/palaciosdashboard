@@ -85,8 +85,6 @@ export default function CeoMetas() {
       {/* Cadence Planning Section */}
       <CeoCadencePlanning />
 
-      {/* Goal Setting Section */}
-      <CeoGoalSetting />
 
       <div className="flex items-center justify-between">
         <div>
