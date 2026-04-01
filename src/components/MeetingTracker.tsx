@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Target, CalendarCheck, DollarSign, AlertTriangle, PartyPopper } from "lucide-react";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { toast } from "@/hooks/use-toast";
 
 interface MeetingCheck {
   id: string;
@@ -20,13 +21,14 @@ interface MeetingCheck {
 interface MeetingTrackerProps {
   colaborador: string;
   onCommissionChange?: (meetingsRealized: number) => void;
+  onAgendadasChange?: (meetingsAgendadas: number) => void;
 }
 
 function formatCurrency(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
 }
 
-export function MeetingTracker({ colaborador, onCommissionChange }: MeetingTrackerProps) {
+export function MeetingTracker({ colaborador, onCommissionChange, onAgendadasChange }: MeetingTrackerProps) {
   const [checks, setChecks] = useState<MeetingCheck[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -62,6 +64,10 @@ export function MeetingTracker({ colaborador, onCommissionChange }: MeetingTrack
     onCommissionChange?.(realizedCount);
   }, [realizedCount, onCommissionChange]);
 
+  useEffect(() => {
+    onAgendadasChange?.(scheduledCount);
+  }, [scheduledCount, onAgendadasChange]);
+
   const commissionMeetings = realizedCount * 30;
 
   const handleToggle = async (reuniao: number, field: "agendada" | "realizada") => {
@@ -81,7 +87,8 @@ export function MeetingTracker({ colaborador, onCommissionChange }: MeetingTrack
       }
 
       setChecks(prev => prev.map(c => c.numero_reuniao === reuniao ? { ...c, ...updates } : c));
-      await supabase.from("meeting_checks" as any).update(updates).eq("id", existing.id);
+      const { error } = await supabase.from("meeting_checks" as any).update(updates).eq("id", existing.id);
+      if (error) toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
     } else {
       const newRow: any = {
         mes: currentMes,
@@ -93,7 +100,8 @@ export function MeetingTracker({ colaborador, onCommissionChange }: MeetingTrack
         realizada_em: null,
       };
       setChecks(prev => [...prev, { ...newRow, id: "temp-" + reuniao }]);
-      const { data } = await supabase.from("meeting_checks" as any).upsert([newRow] as any, { onConflict: "mes,numero_reuniao,colaborador" }).select().single();
+      const { data, error } = await supabase.from("meeting_checks" as any).upsert([newRow] as any, { onConflict: "mes,numero_reuniao,colaborador" }).select().single();
+      if (error) toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
       if (data) {
         setChecks(prev => prev.map(c => c.numero_reuniao === reuniao ? (data as any as MeetingCheck) : c));
       }

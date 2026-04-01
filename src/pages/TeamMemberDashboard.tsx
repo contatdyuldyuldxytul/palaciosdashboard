@@ -322,7 +322,7 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
         <CadenceChecklist colaborador={memberName} accentColor="hsl(160,100%,39%)" />
 
         {/* Meeting Tracker */}
-        <MeetingTracker colaborador={memberName} onCommissionChange={setMeetingsRealized} />
+        <MeetingTracker colaborador={memberName} onCommissionChange={setMeetingsRealized} onAgendadasChange={setMeetingsAgendadas} />
       </div>
 
       {/* ROW 3 — Pipedrive Funnel (same as Pré-Vendas) */}
