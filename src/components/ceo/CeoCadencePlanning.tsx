@@ -256,7 +256,7 @@ export function CeoCadencePlanning() {
       </div>
 
       {/* Goal Setting Form */}
-      {!isApproved && (
+      {(
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6">
           <h3 className="text-sm font-semibold text-foreground mb-4">Definir Metas — {getMonthName(mesAno)}</h3>
           
