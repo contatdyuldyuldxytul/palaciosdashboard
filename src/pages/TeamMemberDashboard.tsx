@@ -294,7 +294,7 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.35 }} className="glass-card p-5">
           <div className="flex items-center gap-2 mb-4">
             <Activity className="w-4 h-4 text-primary" />
-            <h2 className="text-sm font-semibold text-foreground">Feedback</h2>
+            <h2 className="text-sm font-semibold text-foreground">Metas ✅</h2>
           </div>
           {activityFeed.length === 0 ? (
             <p className="text-xs text-muted-foreground text-center py-4">Nenhuma atividade recente</p>
