@@ -64,6 +64,10 @@ export function MeetingTracker({ colaborador, onCommissionChange, onAgendadasCha
     onCommissionChange?.(realizedCount);
   }, [realizedCount, onCommissionChange]);
 
+  useEffect(() => {
+    onAgendadasChange?.(scheduledCount);
+  }, [scheduledCount, onAgendadasChange]);
+
   const commissionMeetings = realizedCount * 30;
 
   const handleToggle = async (reuniao: number, field: "agendada" | "realizada") => {
