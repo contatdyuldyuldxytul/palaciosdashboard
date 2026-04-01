@@ -86,6 +86,8 @@ export function CeoCadencePlanning() {
   const handleGenerate = async () => {
     setGenerating(true);
     try {
+      // Save goals to single source of truth first
+      await saveGoalsToMetasComerciais();
       const { data, error } = await supabase.functions.invoke("generate-cadence-plan", {
         body: form,
       });
