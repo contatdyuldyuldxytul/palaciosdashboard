@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLeads, Lead } from "@/hooks/useLeads";
 import { RefinamentoDados } from "@/components/milena/RefinamentoDados";
 import { HistoricoPipedrive } from "@/components/milena/HistoricoPipedrive";
+import { LockedCommission } from "@/components/LockedCommission";
 import { CadenceChecklist } from "@/components/CadenceChecklist";
 import { CalendarioPreVendas } from "@/components/CalendarioPreVendas";
 import { useMetasComerciais } from "@/hooks/useMetasComerciais";
@@ -337,19 +338,21 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
           </>}
         </motion.div>
 
-        {/* Comissão */}
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.16 }} className="glass-card p-4">
-          {sheetsLoading ? <div className="h-20 bg-muted/30 rounded-lg animate-pulse" /> : <>
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(249,115,22,0.12)", border: "1px solid rgba(249,115,22,0.2)" }}>
-              <TrendingUp className="w-4 h-4" style={{ color: "hsl(20,80%,55%)" }} />
+        {/* Comissão — Protected */}
+        <LockedCommission password="Milena#2">
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.16 }} className="glass-card p-4">
+            {sheetsLoading ? <div className="h-20 bg-muted/30 rounded-lg animate-pulse" /> : <>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(249,115,22,0.12)", border: "1px solid rgba(249,115,22,0.2)" }}>
+                <TrendingUp className="w-4 h-4" style={{ color: "hsl(20,80%,55%)" }} />
+              </div>
             </div>
-          </div>
-          <p className="text-xl font-bold text-foreground"><AnimatedNumber value={totalCommission} formatAsCurrency /></p>
-          <p className="text-[10px] text-muted-foreground mt-1">({sheetLeads.length}×R$1) + (1%×{formatCurrency(closedContractsValue)})</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Comissão Acumulada</p>
-          </>}
-        </motion.div>
+            <p className="text-xl font-bold text-foreground"><AnimatedNumber value={totalCommission} formatAsCurrency /></p>
+            <p className="text-[10px] text-muted-foreground mt-1">({sheetLeads.length}×R$1) + (1%×{formatCurrency(closedContractsValue)})</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Comissão Acumulada</p>
+            </>}
+          </motion.div>
+        </LockedCommission>
 
         {/* Qualificação */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.24 }} className="glass-card p-4">
