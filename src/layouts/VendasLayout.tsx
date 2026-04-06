@@ -3,7 +3,7 @@ import { SectionTabs } from "@/components/SectionTabs";
 
 const tabs = [
   { label: "Funil de Vendas", path: "/vendas/funil" },
-  { label: "Metas", path: "/vendas/metas" },
+  
   { label: "Meus Leads", path: "/vendas" },
   { label: "Scripts", path: "/vendas/scripts" },
   { label: "Ligações", path: "/vendas/ligacoes" },

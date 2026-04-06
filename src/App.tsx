@@ -51,7 +51,7 @@ const App = () => (
               <Route path="/vendas" element={<VendasLayout />}>
                 <Route index element={<Leads />} />
                 <Route path="funil" element={<Funil />} />
-                <Route path="metas" element={<Metas />} />
+                
                 <Route path="scripts" element={<Scripts />} />
                 <Route path="ligacoes" element={<Placeholder title="Ligações" />} />
                 <Route path="assistente" element={<AssistenteVendas />} />
