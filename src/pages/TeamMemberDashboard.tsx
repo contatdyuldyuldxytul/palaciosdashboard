@@ -6,6 +6,7 @@ import { SyncIndicator } from "@/components/SyncIndicator";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { CircularProgress } from "@/components/CircularProgress";
 import { MeetingTracker } from "@/components/MeetingTracker";
+import { LockedCommission } from "@/components/LockedCommission";
 import { Plus, Search, Phone, FileText, TrendingUp, Users, Target, CalendarCheck, CheckCircle2, Activity, AlertTriangle } from "lucide-react";
 import { CadenceChecklist } from "@/components/CadenceChecklist";
 import { CalendarioPreVendas } from "@/components/CalendarioPreVendas";
@@ -277,17 +278,19 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
           );
         })()}
 
-        {/* Comissão */}
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.08 }} className="glass-card p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(249,115,22,0.12)", border: "1px solid rgba(249,115,22,0.2)" }}>
-              <TrendingUp className="w-4 h-4" style={{ color: "hsl(20,80%,55%)" }} />
+        {/* Comissão — Protected */}
+        <LockedCommission password="Aline#2524#">
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.08 }} className="glass-card p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(249,115,22,0.12)", border: "1px solid rgba(249,115,22,0.2)" }}>
+                <TrendingUp className="w-4 h-4" style={{ color: "hsl(20,80%,55%)" }} />
+              </div>
             </div>
-          </div>
-          <p className="text-xl font-bold text-foreground"><AnimatedNumber value={commission} formatAsCurrency /></p>
-          <p className="text-[10px] text-muted-foreground mt-1">R$2.000 + ({meetingsRealized}×R$30) + (4%×{formatCurrency(closedValue)})</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Comissão Acumulada</p>
-        </motion.div>
+            <p className="text-xl font-bold text-foreground"><AnimatedNumber value={commission} formatAsCurrency /></p>
+            <p className="text-[10px] text-muted-foreground mt-1">R$2.000 + ({meetingsRealized}×R$30) + (4%×{formatCurrency(closedValue)})</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Comissão Acumulada</p>
+          </motion.div>
+        </LockedCommission>
 
         {/* Reuniões */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.16 }} className="glass-card p-4">
