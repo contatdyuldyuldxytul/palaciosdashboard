@@ -79,11 +79,9 @@ export default function Dashboard() {
         <CalendarioPreVendas />
       ) : (
         <>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <MetricCard title="Receita fechada" value={`R$ ${receita.toLocaleString("pt-BR")}`} icon={DollarSign} delay={0} />
-            <MetricCard title="Leads gerados" value={String(leadsCount)} icon={Users} delay={80} />
-            <MetricCard title="Reuniões realizadas" value={String(reunioesCount)} icon={CalendarIcon} delay={160} />
-            <MetricCard title="Contratos fechados" value={String(fechados.length)} icon={Target} delay={240} />
+          <div className="grid grid-cols-2 gap-4">
+            <MetricCard title="Leads gerados" value={String(leadsCount)} icon={Users} delay={0} />
+            <MetricCard title="Reuniões realizadas" value={String(reunioesCount)} icon={CalendarIcon} delay={80} />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
