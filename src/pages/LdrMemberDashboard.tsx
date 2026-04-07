@@ -129,6 +129,14 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
     staleTime: 2 * 60 * 1000,
   });
 
+  // Read goals from metas_comerciais (single source of truth)
+  const currentMesForMetas = (() => {
+    const now = new Date();
+    return `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+  })();
+  const { data: metasComerciais = [] } = useMetasComerciais(currentMesForMetas);
+  const metaComercial = metasComerciais[0] || null;
+
   const sheetLeads = sheetLeadsRaw;
 
   const lastSync = new Date();
