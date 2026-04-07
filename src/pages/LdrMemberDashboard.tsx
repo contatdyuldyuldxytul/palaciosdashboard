@@ -117,40 +117,19 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [checklistLoading, setChecklistLoading] = useState(true);
 
-  // Use the EXACT same hook as the main Dashboard
-  const { data: allLeads = [], isLoading: sheetsLoading, refetch: fetchSheetLeads } = useLeads();
+  // Fetch leads directly from Google Sheets via edge function
+  const { data: sheetLeadsRaw = [], isLoading: sheetsLoading, refetch: fetchSheetLeads } = useQuery({
+    queryKey: ["milena-leads-sheets"],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("milena-leads-sheets");
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || "Erro ao buscar leads");
+      return (data.leads || []) as SheetLead[];
+    },
+    staleTime: 2 * 60 * 1000,
+  });
 
-  // Read goals from metas_comerciais (single source of truth)
-  const currentMesForMetas = (() => {
-    const now = new Date();
-    return `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
-  })();
-  const { data: metasComerciais = [] } = useMetasComerciais(currentMesForMetas);
-  const metaComercial = metasComerciais[0] || null;
-
-  // Filter for Milena (case insensitive)
-  const sheetLeads: SheetLead[] = allLeads
-    .filter(l => (l.responsavel_nome || "").toLowerCase().includes("milena"))
-    .map(l => ({
-      id: l.id,
-      empresa: l.empresa,
-      contato_nome: l.contato || "",
-      cargo: l.cargo || "",
-      telefone: l.telefone || "",
-      email: l.email || "",
-      cidade: l.cidade || "",
-      status: l.status,
-      data_primeiro_contato: l.data_criacao,
-      data_ultima_interacao: l.data_atualizacao,
-      data_reuniao: "",
-      valor_contrato: String(l.valor_estimado || 0),
-      observacoes: l.notas || "",
-      origem_lead: l.origem || "Outros",
-      perdido_motivo: l.motivo_perda || "",
-      responsavel: l.responsavel_nome || "",
-      row_index: 0,
-      _raw: [],
-    }));
+  const sheetLeads = sheetLeadsRaw;
 
   const lastSync = new Date();
 
