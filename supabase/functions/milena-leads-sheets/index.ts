@@ -102,10 +102,8 @@ serve(async (req) => {
     // Data starts from row index 2 (0-based) = row 3 in sheet
     for (let i = 2; i < rows.length; i++) {
       const row = rows[i];
-      const responsavel = normalize(row[colResponsavel] || "");
       const status = normalize(row[colStatus] || "");
 
-      if (!responsavel.includes("milena")) continue;
       if (filterStatusOnly && status !== "lead") continue;
 
       const getVal = (col: number) => col >= 0 ? (row[col] || "") : "";
