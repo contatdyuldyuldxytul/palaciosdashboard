@@ -150,10 +150,7 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
     return d && format(d, "yyyy-MM-dd") === todayStr;
   }).length;
 
-  const leadsThisMonth = sheetLeads.filter(l => {
-    const d = parseSheetDate(l.data_primeiro_contato);
-    return d && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-  }).length;
+  const leadsThisMonth = sheetLeads.length;
 
   // Goals from metas_comerciais — Milena generates ALL leads (total_leads)
   const monthlyGoal = metaComercial ? Number(metaComercial.total_leads) || 0 : 0;
