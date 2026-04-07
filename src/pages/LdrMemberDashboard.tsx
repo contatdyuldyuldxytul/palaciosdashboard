@@ -10,7 +10,7 @@ import { ptBR } from "date-fns/locale";
 import { motion } from "framer-motion";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
-import { Lead } from "@/hooks/useLeads";
+
 import { RefinamentoDados } from "@/components/milena/RefinamentoDados";
 import { HistoricoPipedrive } from "@/components/milena/HistoricoPipedrive";
 import { LockedCommission } from "@/components/LockedCommission";
