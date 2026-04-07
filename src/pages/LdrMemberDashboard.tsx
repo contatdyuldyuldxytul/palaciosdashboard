@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { writeToSheets } from "@/hooks/useWriteSheets";
 import { SyncIndicator } from "@/components/SyncIndicator";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
