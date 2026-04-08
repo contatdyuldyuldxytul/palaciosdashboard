@@ -5,7 +5,7 @@ import { CeoStrategicInsights } from "@/components/ceo/CeoStrategicInsights";
 import { DollarSign, Target, HeartPulse, TrendingUp, Scale, Settings, Brain, Lock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const CEO_PASSWORD = "PalaciosTigo#";
+const CEO_PASSWORD = "Cristine#1972#";
 
 const navItems = [
   { label: "Financeiro", path: "/ceo", icon: DollarSign, emoji: "💰" },
