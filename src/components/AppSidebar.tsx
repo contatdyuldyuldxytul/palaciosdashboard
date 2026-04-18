@@ -1,6 +1,6 @@
 import { useLocation, Link } from "react-router-dom";
 import {
-  LayoutDashboard, TrendingUp, Users, MessageSquare,
+  LayoutDashboard, TrendingUp, Users, MessageSquare, Target,
   ChevronLeft, ChevronRight, ChevronDown, LogOut, Crown, User
 } from "lucide-react";
 import { useState } from "react";
@@ -12,6 +12,7 @@ const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Pré-Vendas", url: "/vendas/funil", icon: TrendingUp, hasChildren: true },
   { title: "Clientes", url: "/clientes", icon: Users },
+  { title: "Hunter de Negócios", url: "/hunter", icon: Target },
   { title: "CEO", url: "/ceo", icon: Crown, requireRole: "fundador" as const, isCeo: true },
   { title: "Assistente IA", url: "/assistente", icon: MessageSquare },
 ];
