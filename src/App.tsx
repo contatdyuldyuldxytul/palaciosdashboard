@@ -21,6 +21,7 @@ import AssistenteVendas from "@/pages/AssistenteVendas";
 
 import AssistenteGeral from "@/pages/AssistenteGeral";
 import ClientesAtivos from "@/pages/ClientesAtivos";
+import HunterNegocios from "@/pages/HunterNegocios";
 
 import Login from "@/pages/Login";
 import Placeholder from "@/pages/Placeholder";
@@ -82,6 +83,9 @@ const App = () => (
 
               {/* Assistente IA */}
               <Route path="/assistente" element={<AssistenteGeral />} />
+
+              {/* Hunter de Negócios */}
+              <Route path="/hunter" element={<HunterNegocios />} />
 
               {/* Redirects */}
               <Route path="/leads" element={<Navigate to="/vendas" replace />} />
