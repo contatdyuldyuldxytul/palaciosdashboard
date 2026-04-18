@@ -84,6 +84,9 @@ const App = () => (
               {/* Assistente IA */}
               <Route path="/assistente" element={<AssistenteGeral />} />
 
+              {/* Hunter de Negócios */}
+              <Route path="/hunter" element={<HunterNegocios />} />
+
               {/* Redirects */}
               <Route path="/leads" element={<Navigate to="/vendas" replace />} />
               <Route path="/funil" element={<Navigate to="/vendas/funil" replace />} />
