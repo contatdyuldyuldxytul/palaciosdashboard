@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { PasswordGate } from "@/components/PasswordGate";
 import { AppLayout } from "@/layouts/AppLayout";
 import { VendasLayout } from "@/layouts/VendasLayout";
 
