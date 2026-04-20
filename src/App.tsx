@@ -66,7 +66,7 @@ const App = () => (
 
 
               {/* Clientes */}
-              <Route path="/clientes" element={<ClientesLayout />}>
+              <Route path="/clientes" element={<PasswordGate title="Clientes"><ClientesLayout /></PasswordGate>}>
                 <Route index element={<ClientesAtivos />} />
                 <Route path="anteriores" element={<Placeholder title="Clientes Anteriores" />} />
               </Route>
