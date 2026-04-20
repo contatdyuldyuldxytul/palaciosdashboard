@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { PasswordGate } from "@/components/PasswordGate";
 import { AppLayout } from "@/layouts/AppLayout";
 import { VendasLayout } from "@/layouts/VendasLayout";
 
@@ -65,7 +66,7 @@ const App = () => (
 
 
               {/* Clientes */}
-              <Route path="/clientes" element={<ClientesLayout />}>
+              <Route path="/clientes" element={<PasswordGate title="Clientes"><ClientesLayout /></PasswordGate>}>
                 <Route index element={<ClientesAtivos />} />
                 <Route path="anteriores" element={<Placeholder title="Clientes Anteriores" />} />
               </Route>
@@ -85,7 +86,7 @@ const App = () => (
               <Route path="/assistente" element={<AssistenteGeral />} />
 
               {/* Hunter de Negócios */}
-              <Route path="/hunter" element={<HunterNegocios />} />
+              <Route path="/hunter" element={<PasswordGate title="Hunter de Negócios"><HunterNegocios /></PasswordGate>} />
 
               {/* Redirects */}
               <Route path="/leads" element={<Navigate to="/vendas" replace />} />
