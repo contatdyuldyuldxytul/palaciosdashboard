@@ -78,13 +78,13 @@ export default function Comissoes() {
       id: crypto.randomUUID(),
       comissao: c.valor * COMISSAO_PCT,
     };
-    setContratos((prev) => [novo, ...prev]);
+    persist([novo, ...contratos]);
     setShowModal(false);
   };
 
   const handleDelete = (id: string) => {
     if (!confirm("Excluir este contrato?")) return;
-    setContratos((prev) => prev.filter((c) => c.id !== id));
+    persist(contratos.filter((c) => c.id !== id));
   };
 
   return (
