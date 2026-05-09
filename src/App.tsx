@@ -24,6 +24,7 @@ import AssistenteGeral from "@/pages/AssistenteGeral";
 import ClientesAtivos from "@/pages/ClientesAtivos";
 import HunterNegocios from "@/pages/HunterNegocios";
 import Comissoes from "@/pages/Comissoes";
+import Estrategias from "@/pages/Estrategias";
 
 import Login from "@/pages/Login";
 import Placeholder from "@/pages/Placeholder";
@@ -91,6 +92,9 @@ const App = () => (
 
               {/* Comissões */}
               <Route path="/comissoes" element={<Comissoes />} />
+
+              {/* Estratégias */}
+              <Route path="/estrategias" element={<Estrategias />} />
 
               {/* Redirects */}
               <Route path="/leads" element={<Navigate to="/vendas" replace />} />
