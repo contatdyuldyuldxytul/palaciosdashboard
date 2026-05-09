@@ -160,6 +160,28 @@ export default function Dashboard() {
           </div>
         </>
       )}
+
+      {/* FAB Nova Venda */}
+      <button
+        onClick={() => setShowVendaModal(true)}
+        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-5 py-3 rounded-full text-sm font-semibold transition-all hover:scale-105 shadow-[0_8px_30px_hsla(160,100%,39%,0.4)]"
+        style={{ background: "hsl(160,100%,39%)", color: "#001a14" }}
+      >
+        <Plus className="w-4 h-4" />
+        Nova Venda
+      </button>
+
+      <AnimatePresence>
+        {showVendaModal && (
+          <RegistrarVendaModal
+            onClose={() => setShowVendaModal(false)}
+            onSave={(c) => {
+              addContrato(c);
+              setShowVendaModal(false);
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
