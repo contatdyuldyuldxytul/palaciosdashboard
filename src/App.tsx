@@ -91,10 +91,10 @@ const App = () => (
               <Route path="/hunter" element={<PasswordGate title="Hunter de Negócios"><HunterNegocios /></PasswordGate>} />
 
               {/* Comissões */}
-              <Route path="/comissoes" element={<Comissoes />} />
+              <Route path="/comissoes" element={<PasswordGate title="Comissões"><Comissoes /></PasswordGate>} />
 
               {/* Estratégias */}
-              <Route path="/estrategias" element={<Estrategias />} />
+              <Route path="/estrategias" element={<PasswordGate title="Estratégias"><Estrategias /></PasswordGate>} />
 
               {/* Redirects */}
               <Route path="/leads" element={<Navigate to="/vendas" replace />} />
