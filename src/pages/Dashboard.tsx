@@ -96,9 +96,11 @@ export default function Dashboard() {
         <CalendarioPreVendas />
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <MetricCard title="Leads gerados" value={String(leadsCount)} icon={Users} delay={0} />
             <MetricCard title="Reuniões realizadas" value={String(reunioesCount)} icon={CalendarIcon} delay={80} />
+            <MetricCard title="Receita do Mês" value={fmtBRL(receitaMes)} subtitle="Contratos pagos" icon={DollarSign} delay={160} />
+            <MetricCard title="Comissões a Pagar" value={fmtBRL(comissoesMes)} subtitle="4% do mês atual" icon={Wallet} delay={240} />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
