@@ -1,11 +1,14 @@
-import { useState } from "react";
-import { DollarSign, Users, Calendar as CalendarIcon, TrendingUp, Target, CalendarDays } from "lucide-react";
+import { useEffect, useState } from "react";
+import { DollarSign, Users, Calendar as CalendarIcon, TrendingUp, Wallet, CalendarDays, Plus } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
 import { MetricCard } from "@/components/MetricCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SyncIndicator } from "@/components/SyncIndicator";
 import { useLeads, getStatusDisplay, LeadStatus } from "@/hooks/useLeads";
 import { format } from "date-fns";
 import { CalendarioPreVendas } from "@/components/CalendarioPreVendas";
+import { RegistrarVendaModal } from "@/components/RegistrarVendaModal";
+import { Contrato, addContrato, currentMonthKey, fmtBRL, loadContratos } from "@/lib/contratos";
 
 const stageOrder: LeadStatus[] = ["lead", "contatado", "reuniao_agendada", "reuniao_realizada", "proposta", "fechado"];
 
