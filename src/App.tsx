@@ -89,6 +89,9 @@ const App = () => (
               {/* Hunter de Negócios */}
               <Route path="/hunter" element={<PasswordGate title="Hunter de Negócios"><HunterNegocios /></PasswordGate>} />
 
+              {/* Comissões */}
+              <Route path="/comissoes" element={<PasswordGate title="Comissões"><Comissoes /></PasswordGate>} />
+
               {/* Redirects */}
               <Route path="/leads" element={<Navigate to="/vendas" replace />} />
               <Route path="/funil" element={<Navigate to="/vendas/funil" replace />} />
