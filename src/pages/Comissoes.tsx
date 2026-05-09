@@ -29,15 +29,22 @@ export default function Comissoes() {
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setContratos(JSON.parse(raw));
-    } catch {}
+    const load = () => {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        setContratos(raw ? JSON.parse(raw) : []);
+      } catch {}
+    };
+    load();
+    window.addEventListener("palacios:contratos-updated", load);
+    return () => window.removeEventListener("palacios:contratos-updated", load);
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(contratos));
-  }, [contratos]);
+  const persist = (next: Contrato[]) => {
+    setContratos(next);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    window.dispatchEvent(new Event("palacios:contratos-updated"));
+  };
 
   const vendedoresList = useMemo(() => {
     const extras = contratos.map((c) => c.vendedor).filter((v) => !VENDEDORES_PADRAO.includes(v));
