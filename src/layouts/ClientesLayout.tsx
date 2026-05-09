@@ -4,6 +4,7 @@ import { SectionTabs } from "@/components/SectionTabs";
 const tabs = [
   { label: "Clientes Ativos", path: "/clientes" },
   { label: "Clientes Anteriores", path: "/clientes/anteriores" },
+  { label: "Comissões", path: "/clientes/comissoes" },
 ];
 
 export function ClientesLayout() {
