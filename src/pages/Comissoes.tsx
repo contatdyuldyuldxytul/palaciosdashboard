@@ -1,35 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
-import { DollarSign, Plus, Trash2, X } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-
-type Status = "Pago" | "Pendente" | "Parcelado";
-
-interface Contrato {
-  id: string;
-  empresa: string;
-  vendedor: string;
-  valor: number;
-  comissao: number;
-  data: string; // YYYY-MM-DD
-  status: Status;
-}
-
-const STORAGE_KEY = "palacios_comissoes_v1";
-const VENDEDORES_PADRAO = ["Thiago Palacios", "Cristine"];
-const COMISSAO_PCT = 0.04;
-
-const fmtBRL = (n: number) =>
-  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+import { DollarSign, Plus, Trash2 } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
+import { RegistrarVendaModal } from "@/components/RegistrarVendaModal";
+import {
+  COMISSAO_PCT,
+  Contrato,
+  STORAGE_KEY,
+  Status,
+  VENDEDORES_PADRAO,
+  currentMonthKey,
+  fmtBRL,
+} from "@/lib/contratos";
 
 const fmtDate = (iso: string) => {
   if (!iso) return "—";
   const [y, m, d] = iso.split("-");
   return `${d}/${m}/${y}`;
-};
-
-const currentMonthKey = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 };
 
 const statusStyle: Record<Status, { bg: string; border: string; color: string }> = {
