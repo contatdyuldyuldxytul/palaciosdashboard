@@ -15,6 +15,20 @@ const stageOrder: LeadStatus[] = ["lead", "contatado", "reuniao_agendada", "reun
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<"dashboard" | "calendario">("dashboard");
   const { data: leads = [], isLoading } = useLeads();
+  const [contratos, setContratos] = useState<Contrato[]>([]);
+  const [showVendaModal, setShowVendaModal] = useState(false);
+
+  useEffect(() => {
+    const load = () => setContratos(loadContratos());
+    load();
+    window.addEventListener("palacios:contratos-updated", load);
+    return () => window.removeEventListener("palacios:contratos-updated", load);
+  }, []);
+
+  const monthKey = currentMonthKey();
+  const contratosMes = contratos.filter((c) => c.data?.startsWith(monthKey));
+  const receitaMes = contratosMes.filter((c) => c.status === "Pago").reduce((s, c) => s + c.valor, 0);
+  const comissoesMes = contratosMes.reduce((s, c) => s + c.comissao, 0);
 
   const leadsCount = leads.length;
   const reunioesCount = leads.filter((l) => ["reuniao_realizada", "proposta", "fechado"].includes(l.status)).length;
