@@ -1,17 +1,34 @@
-import { useState } from "react";
-import { DollarSign, Users, Calendar as CalendarIcon, TrendingUp, Target, CalendarDays } from "lucide-react";
+import { useEffect, useState } from "react";
+import { DollarSign, Users, Calendar as CalendarIcon, TrendingUp, Wallet, CalendarDays, Plus } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
 import { MetricCard } from "@/components/MetricCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SyncIndicator } from "@/components/SyncIndicator";
 import { useLeads, getStatusDisplay, LeadStatus } from "@/hooks/useLeads";
 import { format } from "date-fns";
 import { CalendarioPreVendas } from "@/components/CalendarioPreVendas";
+import { RegistrarVendaModal } from "@/components/RegistrarVendaModal";
+import { Contrato, addContrato, currentMonthKey, fmtBRL, loadContratos } from "@/lib/contratos";
 
 const stageOrder: LeadStatus[] = ["lead", "contatado", "reuniao_agendada", "reuniao_realizada", "proposta", "fechado"];
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<"dashboard" | "calendario">("dashboard");
   const { data: leads = [], isLoading } = useLeads();
+  const [contratos, setContratos] = useState<Contrato[]>([]);
+  const [showVendaModal, setShowVendaModal] = useState(false);
+
+  useEffect(() => {
+    const load = () => setContratos(loadContratos());
+    load();
+    window.addEventListener("palacios:contratos-updated", load);
+    return () => window.removeEventListener("palacios:contratos-updated", load);
+  }, []);
+
+  const monthKey = currentMonthKey();
+  const contratosMes = contratos.filter((c) => c.data?.startsWith(monthKey));
+  const receitaMes = contratosMes.filter((c) => c.status === "Pago").reduce((s, c) => s + c.valor, 0);
+  const comissoesMes = contratosMes.reduce((s, c) => s + c.comissao, 0);
 
   const leadsCount = leads.length;
   const reunioesCount = leads.filter((l) => ["reuniao_realizada", "proposta", "fechado"].includes(l.status)).length;
@@ -79,9 +96,11 @@ export default function Dashboard() {
         <CalendarioPreVendas />
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <MetricCard title="Leads gerados" value={String(leadsCount)} icon={Users} delay={0} />
             <MetricCard title="Reuniões realizadas" value={String(reunioesCount)} icon={CalendarIcon} delay={80} />
+            <MetricCard title="Receita do Mês" value={fmtBRL(receitaMes)} subtitle="Contratos pagos" icon={DollarSign} delay={160} />
+            <MetricCard title="Comissões a Pagar" value={fmtBRL(comissoesMes)} subtitle="4% do mês atual" icon={Wallet} delay={240} />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -141,6 +160,28 @@ export default function Dashboard() {
           </div>
         </>
       )}
+
+      {/* FAB Nova Venda */}
+      <button
+        onClick={() => setShowVendaModal(true)}
+        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-5 py-3 rounded-full text-sm font-semibold transition-all hover:scale-105 shadow-[0_8px_30px_hsla(160,100%,39%,0.4)]"
+        style={{ background: "hsl(160,100%,39%)", color: "#001a14" }}
+      >
+        <Plus className="w-4 h-4" />
+        Nova Venda
+      </button>
+
+      <AnimatePresence>
+        {showVendaModal && (
+          <RegistrarVendaModal
+            onClose={() => setShowVendaModal(false)}
+            onSave={(c) => {
+              addContrato(c);
+              setShowVendaModal(false);
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
