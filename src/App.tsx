@@ -23,6 +23,7 @@ import AssistenteVendas from "@/pages/AssistenteVendas";
 import AssistenteGeral from "@/pages/AssistenteGeral";
 import ClientesAtivos from "@/pages/ClientesAtivos";
 import HunterNegocios from "@/pages/HunterNegocios";
+import Comissoes from "@/pages/Comissoes";
 
 import Login from "@/pages/Login";
 import Placeholder from "@/pages/Placeholder";
@@ -87,6 +88,9 @@ const App = () => (
 
               {/* Hunter de Negócios */}
               <Route path="/hunter" element={<PasswordGate title="Hunter de Negócios"><HunterNegocios /></PasswordGate>} />
+
+              {/* Comissões */}
+              <Route path="/comissoes" element={<PasswordGate title="Comissões"><Comissoes /></PasswordGate>} />
 
               {/* Redirects */}
               <Route path="/leads" element={<Navigate to="/vendas" replace />} />
