@@ -71,6 +71,7 @@ const App = () => (
               <Route path="/clientes" element={<PasswordGate title="Clientes"><ClientesLayout /></PasswordGate>}>
                 <Route index element={<ClientesAtivos />} />
                 <Route path="anteriores" element={<Placeholder title="Clientes Anteriores" />} />
+                <Route path="comissoes" element={<Comissoes />} />
               </Route>
 
               {/* CEO — Fundador only */}
@@ -82,6 +83,7 @@ const App = () => (
                 <Route path="juridico" element={<CeoJuridico />} />
                 <Route path="processos" element={<CeoProcessos />} />
                 <Route path="memoria" element={<CeoMemoria />} />
+                <Route path="estrategias" element={<Estrategias />} />
               </Route>
 
               {/* Assistente IA */}
@@ -90,18 +92,13 @@ const App = () => (
               {/* Hunter de Negócios */}
               <Route path="/hunter" element={<PasswordGate title="Hunter de Negócios"><HunterNegocios /></PasswordGate>} />
 
-              {/* Comissões */}
-              <Route path="/comissoes" element={<PasswordGate title="Comissões"><Comissoes /></PasswordGate>} />
-
-              {/* Estratégias */}
-              <Route path="/estrategias" element={<PasswordGate title="Estratégias"><Estrategias /></PasswordGate>} />
-
               {/* Redirects */}
               <Route path="/leads" element={<Navigate to="/vendas" replace />} />
               <Route path="/funil" element={<Navigate to="/vendas/funil" replace />} />
               <Route path="/metas" element={<Navigate to="/vendas/metas" replace />} />
               <Route path="/scripts" element={<Navigate to="/vendas/scripts" replace />} />
-              
+              <Route path="/comissoes" element={<Navigate to="/clientes/comissoes" replace />} />
+              <Route path="/estrategias" element={<Navigate to="/ceo/estrategias" replace />} />
               <Route path="/clientes-ativos" element={<Navigate to="/clientes" replace />} />
             </Route>
             <Route path="*" element={<NotFound />} />
