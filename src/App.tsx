@@ -23,6 +23,7 @@ import AssistenteVendas from "@/pages/AssistenteVendas";
 import AssistenteGeral from "@/pages/AssistenteGeral";
 import ClientesAtivos from "@/pages/ClientesAtivos";
 import HunterNegocios from "@/pages/HunterNegocios";
+import Comissoes from "@/pages/Comissoes";
 
 import Login from "@/pages/Login";
 import Placeholder from "@/pages/Placeholder";
