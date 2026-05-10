@@ -1,6 +1,6 @@
 import { useLocation, Link } from "react-router-dom";
 import {
-  LayoutDashboard, TrendingUp, Users, MessageSquare, Target, Command,
+  LayoutDashboard, TrendingUp, Users, MessageSquare, Target,
   ChevronLeft, ChevronRight, ChevronDown, LogOut, Crown, User
 } from "lucide-react";
 import { useState } from "react";
@@ -10,7 +10,6 @@ import logoPalaciosIcon from "@/assets/logo-palacios-icon.png";
 
 const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Comando", url: "/comando", icon: Command },
   { title: "Vendas", url: "/vendas/funil", icon: TrendingUp, hasChildren: true },
   { title: "Clientes", url: "/clientes", icon: Users },
   { title: "Hunter de Negócios", url: "/hunter", icon: Target },
