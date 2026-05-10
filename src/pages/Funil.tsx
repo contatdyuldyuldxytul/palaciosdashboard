@@ -131,7 +131,7 @@ export default function Funil() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Funil de Pré-Vendas</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Funil de Vendas</h1>
           <p className="text-xs text-muted-foreground mt-0.5">ALINE'S PIPELINE · {deals.filter(d => d.status === "open").length} ativos</p>
         </div>
         <button onClick={manualSync} disabled={isSyncing}

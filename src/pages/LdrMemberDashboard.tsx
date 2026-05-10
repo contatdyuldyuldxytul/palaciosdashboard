@@ -15,7 +15,7 @@ import { RefinamentoDados } from "@/components/milena/RefinamentoDados";
 import { HistoricoPipedrive } from "@/components/milena/HistoricoPipedrive";
 import { LockedCommission } from "@/components/LockedCommission";
 import { CadenceChecklist } from "@/components/CadenceChecklist";
-import { CalendarioPreVendas } from "@/components/CalendarioPreVendas";
+import { CalendarioVendas } from "@/components/CalendarioVendas";
 import { useMetasComerciais } from "@/hooks/useMetasComerciais";
 
 interface LdrMemberDashboardProps {
@@ -258,7 +258,7 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
 
       {activeTab === "refinamento" && <RefinamentoDados />}
       {activeTab === "historico" && <HistoricoPipedrive />}
-      {activeTab === "calendario" && <CalendarioPreVendas defaultFilter="Milena" />}
+      {activeTab === "calendario" && <CalendarioVendas defaultFilter="Milena" />}
       {activeTab === "dashboard" && (
       <>
       {/* No goals banner */}

@@ -9,7 +9,7 @@ import { MeetingTracker } from "@/components/MeetingTracker";
 import { LockedCommission } from "@/components/LockedCommission";
 import { Plus, Search, Phone, FileText, TrendingUp, Users, Target, CalendarCheck, CheckCircle2, Activity, AlertTriangle } from "lucide-react";
 import { CadenceChecklist } from "@/components/CadenceChecklist";
-import { CalendarioPreVendas } from "@/components/CalendarioPreVendas";
+import { CalendarioVendas } from "@/components/CalendarioVendas";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { motion } from "framer-motion";
@@ -150,7 +150,7 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
     .sort((a, b) => new Date(b.data_atualizacao).getTime() - new Date(a.data_atualizacao).getTime())
     .slice(0, 10);
 
-  // Pipedrive Funnel (same as Pré-Vendas page)
+  // Pipedrive Funnel (same as Vendas page)
   const PIPEDRIVE_STAGES = [
     { key: "Entrada de Leads", label: "Entrada de Leads", merge: undefined as string[] | undefined },
     { key: "Tentando Contato", label: "Tentando Contato", merge: ["Tentando Contato #A", "Tentando Contato #B"] },
@@ -223,7 +223,7 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
         ))}
       </div>
 
-      {activeTab === "calendario" && <CalendarioPreVendas defaultFilter="Aline" />}
+      {activeTab === "calendario" && <CalendarioVendas defaultFilter="Aline" />}
       {activeTab === "dashboard" && (
       <>
       {/* No goals banner */}
@@ -328,10 +328,10 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
         <MeetingTracker colaborador={memberName} onCommissionChange={setMeetingsRealized} onAgendadasChange={setMeetingsAgendadas} />
       </div>
 
-      {/* ROW 3 — Pipedrive Funnel (same as Pré-Vendas) */}
+      {/* ROW 3 — Pipedrive Funnel (same as Vendas) */}
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }} className="glass-card p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-foreground">Funil de Pré-Vendas</h2>
+          <h2 className="text-sm font-semibold text-foreground">Funil de Vendas</h2>
           <span className="text-[10px] text-muted-foreground">ALINE'S PIPELINE · {pipedriveDeals.filter(d => d.status === "open").length} ativos</span>
         </div>
         <div className="grid grid-cols-[1fr_160px] gap-4 items-stretch">

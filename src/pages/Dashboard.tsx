@@ -6,7 +6,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { SyncIndicator } from "@/components/SyncIndicator";
 import { useLeads, getStatusDisplay, LeadStatus } from "@/hooks/useLeads";
 import { format } from "date-fns";
-import { CalendarioPreVendas } from "@/components/CalendarioPreVendas";
+import { CalendarioVendas } from "@/components/CalendarioVendas";
 import { RegistrarVendaModal } from "@/components/RegistrarVendaModal";
 import { Contrato, addContrato, currentMonthKey, fmtBRL, loadContratos } from "@/lib/contratos";
 
@@ -93,7 +93,7 @@ export default function Dashboard() {
       </div>
 
       {activeTab === "calendario" ? (
-        <CalendarioPreVendas />
+        <CalendarioVendas />
       ) : (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
