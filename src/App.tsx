@@ -15,6 +15,8 @@ import Dashboard from "@/pages/Dashboard";
 import Leads from "@/pages/Leads";
 import TeamMemberDashboard from "@/pages/TeamMemberDashboard";
 import LdrMemberDashboard from "@/pages/LdrMemberDashboard";
+import MemberDashboard from "@/pages/MemberDashboard";
+import Comando from "@/pages/Comando";
 import Funil from "@/pages/Funil";
 import Metas from "@/pages/Metas";
 import Scripts from "@/pages/Scripts";
@@ -63,10 +65,12 @@ const App = () => (
 
               {/* Team member dashboards */}
               <Route path="/equipe/aline" element={<TeamMemberDashboard memberName="Aline" initials="AL" />} />
-              
               <Route path="/equipe/milena" element={<LdrMemberDashboard memberName="Milena" initials="MI" avatarColor="hsl(45,80%,45%)" />} />
+              <Route path="/equipe/thiago" element={<MemberDashboard memberName="Thiago" initials="TH" color="#0a3a5c" role="CEO / Closer" />} />
+              <Route path="/equipe/felipe" element={<MemberDashboard memberName="Felipe" initials="FE" color="#f97316" role="BDR Júnior" />} />
 
-
+              {/* Centro de Comando */}
+              <Route path="/comando" element={<Comando />} />
               {/* Clientes */}
               <Route path="/clientes" element={<PasswordGate title="Clientes"><ClientesLayout /></PasswordGate>}>
                 <Route index element={<ClientesAtivos />} />

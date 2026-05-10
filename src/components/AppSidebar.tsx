@@ -1,6 +1,6 @@
 import { useLocation, Link } from "react-router-dom";
 import {
-  LayoutDashboard, TrendingUp, Users, MessageSquare, Target,
+  LayoutDashboard, TrendingUp, Users, MessageSquare, Target, Command,
   ChevronLeft, ChevronRight, ChevronDown, LogOut, Crown, User
 } from "lucide-react";
 import { useState } from "react";
@@ -10,6 +10,7 @@ import logoPalaciosIcon from "@/assets/logo-palacios-icon.png";
 
 const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Comando", url: "/comando", icon: Command },
   { title: "Vendas", url: "/vendas/funil", icon: TrendingUp, hasChildren: true },
   { title: "Clientes", url: "/clientes", icon: Users },
   { title: "Hunter de Negócios", url: "/hunter", icon: Target },
@@ -18,8 +19,10 @@ const navItems = [
 ];
 
 const subItems = [
+  { title: "Thiago", url: "/equipe/thiago", parentUrl: "/vendas", initials: "TH", color: "#0a3a5c" },
   { title: "Aline", url: "/equipe/aline", parentUrl: "/vendas", initials: "AL" },
   { title: "Milena", url: "/equipe/milena", parentUrl: "/vendas", initials: "MI", color: "hsl(45,80%,45%)" },
+  { title: "Felipe", url: "/equipe/felipe", parentUrl: "/vendas", initials: "FE", color: "#f97316" },
 ];
 
 export function AppSidebar() {
