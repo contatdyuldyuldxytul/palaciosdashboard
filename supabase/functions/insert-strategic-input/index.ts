@@ -36,12 +36,12 @@ Deno.serve(async (req) => {
   );
 
   const { data, error } = await supabase.rpc("insert_strategic_input", {
-    _target_user_id: body.target_user_id ?? null,
-    _target_assignee_label: body.target_assignee_label ?? null,
-    _task_description: body.task_description,
-    _priority: body.priority ?? 5,
-    _source_type: body.source_type ?? "custom",
-    _related_deal_id: body.related_deal_id ?? null,
+    api_key: expected,
+    target_user_id: body.target_user_id ?? null,
+    task_description: body.task_description,
+    priority: body.priority ?? 5,
+    source_type: body.source_type ?? "custom",
+    related_deal_id: body.related_deal_id ?? null,
   });
 
   if (error) {
