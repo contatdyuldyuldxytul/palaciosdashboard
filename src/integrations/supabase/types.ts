@@ -1464,17 +1464,20 @@ export type Database = {
         }
         Returns: boolean
       }
-      import_monthly_strategy: { Args: { _payload: Json }; Returns: Json }
+      import_monthly_strategy: {
+        Args: { api_key: string; payload: Json }
+        Returns: Json
+      }
       insert_strategic_input: {
         Args: {
-          _priority: number
-          _related_deal_id: number
-          _source_type: Database["public"]["Enums"]["strategic_input_source"]
-          _target_assignee_label: string
-          _target_user_id: string
-          _task_description: string
+          api_key: string
+          priority: number
+          related_deal_id?: number
+          source_type: string
+          target_user_id: string
+          task_description: string
         }
-        Returns: string
+        Returns: Json
       }
     }
     Enums: {
