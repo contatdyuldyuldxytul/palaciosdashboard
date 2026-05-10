@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
-  const { data, error } = await supabase.rpc("import_monthly_strategy", { _payload: payload });
+  const { data, error } = await supabase.rpc("import_monthly_strategy", { api_key: expected, payload });
   if (error) {
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
