@@ -16,6 +16,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useMetasComerciais } from "@/hooks/useMetasComerciais";
+import { DailyTasksPanel } from "@/components/DailyTasksPanel";
 
 const stageOrder: LeadStatus[] = ["lead", "contatado", "reuniao_agendada", "reuniao_realizada", "proposta", "fechado"];
 const stageColors: Record<LeadStatus, string> = {
