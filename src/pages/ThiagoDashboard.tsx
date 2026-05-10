@@ -13,6 +13,9 @@ import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { CircularProgress } from "@/components/CircularProgress";
 import { SyncIndicator } from "@/components/SyncIndicator";
 import { useDailyActivities, useToggleActivity } from "@/hooks/useDailyActivities";
+import { DailyTasksPanel } from "@/components/DailyTasksPanel";
+
+const THIAGO_PIPEDRIVE_ID = 23830611;
 
 const CASH_GOAL = 20000;
 const CASH_MIN = 7000;
@@ -181,53 +184,11 @@ export default function ThiagoDashboard() {
       {/* Two columns */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Checklist do Dia (Thiago) */}
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.32 }} className="glass-card p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-sm font-semibold text-foreground">Checklist do Dia</h2>
-              <p className="text-[11px] text-muted-foreground">Reuniões · Propostas · Ligações estratégicas</p>
-            </div>
-            <span className="text-[10px] text-muted-foreground">{format(now, "EEEE, dd 'de' MMM", { locale: ptBR })}</span>
-          </div>
-          {checklist.length === 0 ? (
-            <div className="py-10 text-center">
-              <CheckCircle2 className="w-8 h-8 text-muted-foreground/40 mx-auto mb-3" />
-              <p className="text-sm text-foreground font-medium">Sem reuniões hoje.</p>
-              <p className="text-xs text-muted-foreground mt-1">Boa janela pra trabalhar o pipeline.</p>
-            </div>
-          ) : (
-            <ul className="space-y-2">
-              {checklist.map(item => {
-                const Icon = item.kind === "meeting" ? CalendarCheck : item.kind === "proposal" ? FileText : Flame;
-                const color = item.kind === "meeting" ? accent : item.kind === "proposal" ? "hsl(20,80%,55%)" : "hsl(340,70%,55%)";
-                return (
-                  <li key={item.id}
-                    className={`flex items-start gap-3 p-3 rounded-xl transition-all hover:bg-white/[0.03] ${item.completed ? "opacity-50" : ""}`}
-                    style={{ border: '1px solid var(--glass-border)' }}>
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${color.replace(')', ',0.12)').replace('hsl', 'hsla')}`, border: `1px solid ${color.replace(')', ',0.2)').replace('hsl', 'hsla')}` }}>
-                      <Icon className="w-4 h-4" style={{ color }} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm text-foreground ${item.completed ? "line-through" : ""}`}>{item.title}</p>
-                      {item.deal && (
-                        <a href={`https://palacios3dstudio.pipedrive.com/deal/${item.deal}`} target="_blank" rel="noreferrer"
-                          className="text-[10px] text-primary hover:underline inline-flex items-center gap-1 mt-1">
-                          Pipedrive <ExternalLink className="w-3 h-3" />
-                        </a>
-                      )}
-                    </div>
-                    {item.kind === "strategic" && !item.completed && (
-                      <button onClick={() => toggle.mutate({ id: item.id, completed: true })}
-                        className="text-[10px] text-muted-foreground hover:text-primary px-2 py-1 rounded-lg" style={{ border: '1px solid var(--glass-border)' }}>
-                        Concluir
-                      </button>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </motion.div>
+        <DailyTasksPanel
+          mode={{ kind: "pipedrive", pipedriveUserId: THIAGO_PIPEDRIVE_ID }}
+          title="Checklist do Dia"
+          subtitle="Reuniões · Propostas · Ligações estratégicas"
+        />
 
         {/* Pipeline Quente */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }} className="glass-card p-5">
