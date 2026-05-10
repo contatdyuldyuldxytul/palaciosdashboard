@@ -1,0 +1,2 @@
+ALTER TABLE public.daily_activities ADD COLUMN IF NOT EXISTS user_pipedrive_id bigint;
+CREATE INDEX IF NOT EXISTS idx_daily_activities_pipedrive_date ON public.daily_activities(user_pipedrive_id, scheduled_date);
