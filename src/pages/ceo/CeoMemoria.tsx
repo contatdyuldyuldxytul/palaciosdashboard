@@ -189,10 +189,11 @@ export default function CeoMemoria() {
           style={{ background: "rgba(245,158,11,0.15)", color: AMBER, border: "1px solid rgba(245,158,11,0.3)" }}
         >
           <Plus className="w-4 h-4" /> Novo Registro
-        </button>
       </div>
 
-      {/* Form */}
+      <ArchivedStrategies />
+
+
       {showForm && (
         <div className="glass-card p-6 border-amber-500/20 space-y-4">
           <div className="flex gap-2">
