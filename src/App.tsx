@@ -15,7 +15,7 @@ import Dashboard from "@/pages/Dashboard";
 import Leads from "@/pages/Leads";
 import TeamMemberDashboard from "@/pages/TeamMemberDashboard";
 import LdrMemberDashboard from "@/pages/LdrMemberDashboard";
-import MemberDashboard from "@/pages/MemberDashboard";
+import ThiagoDashboard from "@/pages/ThiagoDashboard";
 import Comando from "@/pages/Comando";
 import Funil from "@/pages/Funil";
 import Metas from "@/pages/Metas";
