@@ -36,7 +36,7 @@ interface Props {
   defaultFilter?: FilterMode;
 }
 
-export function CalendarioPreVendas({ defaultFilter = "Todas" }: Props) {
+export function CalendarioVendas({ defaultFilter = "Todas" }: Props) {
   const today = todaySP();
   const [currentDate, setCurrentDate] = useState(() => {
     const [y, m, d] = today.split("-").map(Number);
