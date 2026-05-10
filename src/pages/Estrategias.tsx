@@ -1,26 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
-import { Rocket, Target, Users2, BookOpen, TrendingUp, Save } from "lucide-react";
-import { motion } from "framer-motion";
+import { Rocket, Target, Users2, BookOpen, TrendingUp, Save, Calendar, Download, ChevronRight, Lock } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Link } from "react-router-dom";
+import { z } from "zod";
+import { toast } from "sonner";
 import { useLeads } from "@/hooks/useLeads";
+import { useMonthlyStrategy, useCampaigns, useImportStrategy } from "@/hooks/useStrategy";
+import { supabase } from "@/integrations/supabase/client";
 
-type TabKey = "previsibilidade" | "leads" | "playbook" | "equipe";
+type TabKey = "estrategia_mes" | "previsibilidade" | "leads" | "playbook" | "equipe";
 
-interface ContratoLS {
-  vendedor: string;
-  valor: number;
-  comissao: number;
-  data: string;
-}
-
-interface MetaEquipe {
-  vendedor: string;
-  meta: number;
-}
+interface ContratoLS { vendedor: string; valor: number; comissao: number; data: string; }
+interface MetaEquipe { vendedor: string; meta: number; }
 
 const STORAGE_KEY = "palacios_estrategias_v1";
 const COMISSOES_KEY = "palacios_comissoes_v1";
 const COMISSAO_PCT = 0.04;
-const VENDEDORES_PADRAO = ["Thiago Palacios", "Cristine"];
 
 interface EstrategiasState {
   metaMensalRS: number;
@@ -45,6 +40,12 @@ const currentMonthKey = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 };
 
+const monthLabel = (yyyymm: string) => {
+  const [y, m] = yyyymm.split("-").map(Number);
+  const d = new Date(y, (m || 1) - 1, 1);
+  return d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" }).replace(/^./, (c) => c.toUpperCase());
+};
+
 const card: React.CSSProperties = {
   background: "rgba(255,255,255,0.04)",
   border: "1px solid rgba(255,255,255,0.08)",
@@ -63,9 +64,13 @@ const inputStyle: React.CSSProperties = {
 };
 
 export default function Estrategias() {
-  const [tab, setTab] = useState<TabKey>("previsibilidade");
+  const [tab, setTab] = useState<TabKey>("estrategia_mes");
   const [state, setState] = useState<EstrategiasState>(defaultState);
   const leadsQ = useLeads();
+
+  const monthIso = currentMonthKey();
+  const { data: strategy } = useMonthlyStrategy(`${monthIso}-01`);
+  const { data: campaigns = [] } = useCampaigns(strategy?.id ?? null);
 
   // Load
   useEffect(() => {
@@ -74,12 +79,11 @@ export default function Estrategias() {
       if (raw) setState({ ...defaultState, ...JSON.parse(raw) });
     } catch {}
   }, []);
-  // Save
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [state]);
 
-  // Read contratos do mês do localStorage de Comissões
+  // Contratos do mês
   const contratosMes = useMemo<ContratoLS[]>(() => {
     try {
       const raw = localStorage.getItem(COMISSOES_KEY);
@@ -89,12 +93,15 @@ export default function Estrategias() {
     } catch {
       return [];
     }
-  }, [state]); // refresh quando salvar algo
+  }, [state]);
 
   const realizadoMes = contratosMes.reduce((s, c) => s + Number(c.valor || 0), 0);
-  const pctMeta = state.metaMensalRS > 0 ? (realizadoMes / state.metaMensalRS) * 100 : 0;
 
-  // Projeção linear baseada nos dias decorridos
+  // Override meta de receita pela estratégia mensal quando existir
+  const cashTarget = strategy?.cash_target ? Number(strategy.cash_target) : null;
+  const metaReceitaEfetiva = cashTarget ?? state.metaMensalRS;
+  const pctMeta = metaReceitaEfetiva > 0 ? (realizadoMes / metaReceitaEfetiva) * 100 : 0;
+
   const proj = useMemo(() => {
     const now = new Date();
     const dia = now.getDate();
@@ -103,7 +110,6 @@ export default function Estrategias() {
     return { projecao, dia, ultimoDia };
   }, [realizadoMes]);
 
-  // Leads
   const leadsMes = useMemo(() => {
     const list = leadsQ.data || [];
     const mk = currentMonthKey();
@@ -116,7 +122,6 @@ export default function Estrategias() {
   const leadsFaltam = Math.max(0, state.metaLeadsMes - leadsMes);
   const leadsPorSemana = Math.ceil(leadsFaltam / semanasRestantes);
 
-  // Realizado por vendedor
   const realizadoPorVendedor = useMemo(() => {
     const map = new Map<string, number>();
     contratosMes.forEach((c) => map.set(c.vendedor, (map.get(c.vendedor) || 0) + Number(c.valor || 0)));
@@ -124,6 +129,7 @@ export default function Estrategias() {
   }, [contratosMes]);
 
   const tabs: { key: TabKey; label: string; icon: any }[] = [
+    { key: "estrategia_mes", label: "Estratégia do Mês", icon: Calendar },
     { key: "previsibilidade", label: "Previsibilidade", icon: TrendingUp },
     { key: "leads", label: "Volume de Leads", icon: Users2 },
     { key: "playbook", label: "Playbook", icon: BookOpen },
@@ -132,7 +138,6 @@ export default function Estrategias() {
 
   return (
     <div className="p-6 space-y-6 min-h-screen" style={{ background: "transparent" }}>
-      {/* Header */}
       <div className="flex items-center gap-3">
         <div
           className="w-11 h-11 rounded-xl flex items-center justify-center"
@@ -142,11 +147,10 @@ export default function Estrategias() {
         </div>
         <div>
           <h1 className="text-2xl font-semibold text-white">Estratégias Comerciais</h1>
-          <p className="text-sm text-muted-foreground">Previsibilidade, leads, playbook e metas da equipe</p>
+          <p className="text-sm text-muted-foreground">Estratégia mensal, previsibilidade, playbook e metas da equipe</p>
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="flex flex-wrap gap-2">
         {tabs.map((t) => {
           const active = tab === t.key;
@@ -168,26 +172,30 @@ export default function Estrategias() {
         })}
       </div>
 
-      {/* Content */}
-      <motion.div
-        key={tab}
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.25 }}
-        className="space-y-5"
-      >
+      <motion.div key={tab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="space-y-5">
+        {tab === "estrategia_mes" && <EstrategiaDoMes strategy={strategy} campaigns={campaigns} monthIso={monthIso} />}
+
         {tab === "previsibilidade" && (
           <div style={card} className="p-6 space-y-6">
             <div className="flex flex-wrap items-end gap-4">
               <div className="flex-1 min-w-[220px]">
-                <label className="text-xs text-muted-foreground">Meta mensal de receita (R$)</label>
+                <label className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  Meta mensal de receita (R$)
+                  {cashTarget !== null && <Lock className="w-3 h-3" style={{ color: "hsl(160,100%,55%)" }} />}
+                </label>
                 <input
                   type="number"
-                  value={state.metaMensalRS}
+                  value={metaReceitaEfetiva}
+                  disabled={cashTarget !== null}
                   onChange={(e) => setState({ ...state, metaMensalRS: Number(e.target.value) || 0 })}
-                  style={inputStyle}
+                  style={{ ...inputStyle, opacity: cashTarget !== null ? 0.7 : 1 }}
                   className="mt-1.5"
                 />
+                {cashTarget !== null && (
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Definido na estratégia importada de {monthLabel(monthIso)}.
+                  </p>
+                )}
               </div>
               <div className="flex gap-3">
                 <Stat label="Realizado" value={fmtBRL(realizadoMes)} accent="hsl(160,100%,45%)" />
@@ -252,137 +260,393 @@ export default function Estrategias() {
           </div>
         )}
 
-        {tab === "playbook" && <Playbook />}
+        {tab === "playbook" && <Playbook campaigns={campaigns} />}
 
         {tab === "equipe" && (
-          <div style={card} className="p-6">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-muted-foreground" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-                    <th className="py-3 px-2">Vendedor</th>
-                    <th className="py-3 px-2">Meta (R$)</th>
-                    <th className="py-3 px-2">Realizado</th>
-                    <th className="py-3 px-2">% Atingido</th>
-                    <th className="py-3 px-2">Comissão projetada (4%)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {state.metasEquipe.map((m, idx) => {
-                    const realizado = realizadoPorVendedor.get(m.vendedor) || 0;
-                    const pct = m.meta > 0 ? (realizado / m.meta) * 100 : 0;
-                    const comissaoProj = realizado * COMISSAO_PCT;
-                    return (
-                      <tr key={idx} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                        <td className="py-3 px-2">
-                          <input
-                            value={m.vendedor}
-                            onChange={(e) => {
-                              const arr = [...state.metasEquipe];
-                              arr[idx] = { ...arr[idx], vendedor: e.target.value };
-                              setState({ ...state, metasEquipe: arr });
-                            }}
-                            style={inputStyle}
-                          />
-                        </td>
-                        <td className="py-3 px-2 w-[180px]">
-                          <input
-                            type="number"
-                            value={m.meta}
-                            onChange={(e) => {
-                              const arr = [...state.metasEquipe];
-                              arr[idx] = { ...arr[idx], meta: Number(e.target.value) || 0 };
-                              setState({ ...state, metasEquipe: arr });
-                            }}
-                            style={inputStyle}
-                          />
-                        </td>
-                        <td className="py-3 px-2 text-white">{fmtBRL(realizado)}</td>
-                        <td className="py-3 px-2">
-                          <span
-                            className="px-2 py-1 rounded-md text-xs font-medium"
-                            style={{
-                              color: pct >= 100 ? "hsl(160,100%,55%)" : pct >= 60 ? "hsl(45,100%,60%)" : "hsl(0,80%,65%)",
-                              background:
-                                pct >= 100
-                                  ? "rgba(0,200,150,0.12)"
-                                  : pct >= 60
-                                  ? "rgba(245,158,11,0.12)"
-                                  : "rgba(239,68,68,0.12)",
-                            }}
-                          >
-                            {pct.toFixed(1)}%
-                          </span>
-                        </td>
-                        <td className="py-3 px-2" style={{ color: "hsl(160,100%,55%)" }}>
-                          {fmtBRL(comissaoProj)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <div className="flex gap-2 mt-4">
-              <button
-                onClick={() =>
-                  setState({
-                    ...state,
-                    metasEquipe: [...state.metasEquipe, { vendedor: "Novo Vendedor", meta: 0 }],
-                  })
-                }
-                className="px-3 py-2 rounded-lg text-sm"
-                style={{
-                  background: "rgba(255,255,255,0.06)",
-                  border: "1px solid rgba(255,255,255,0.10)",
-                  color: "white",
-                }}
-              >
-                + Adicionar vendedor
-              </button>
-              {state.metasEquipe.length > 0 && (
-                <button
-                  onClick={() =>
-                    setState({ ...state, metasEquipe: state.metasEquipe.slice(0, -1) })
-                  }
-                  className="px-3 py-2 rounded-lg text-sm text-muted-foreground"
-                  style={{
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                  }}
-                >
-                  Remover último
-                </button>
-              )}
-              <div
-                className="ml-auto flex items-center gap-2 px-3 py-2 rounded-lg text-xs"
-                style={{ color: "hsl(160,100%,55%)" }}
-              >
-                <Save className="w-3.5 h-3.5" /> Salvo automaticamente
-              </div>
-            </div>
-          </div>
+          <MetasEquipe
+            state={state}
+            setState={setState}
+            campaigns={campaigns}
+            realizadoPorVendedor={realizadoPorVendedor}
+          />
         )}
       </motion.div>
     </div>
   );
 }
 
-function Stat({ label, value, accent }: { label: string; value: string; accent: string }) {
+/* ===== Sub-aba: Estratégia do Mês ===== */
+
+const ImportSchema = z.object({
+  month: z.string().regex(/^\d{4}-\d{2}$/, "month deve ser YYYY-MM"),
+  monthly_strategy: z.object({
+    cash_target: z.number({ invalid_type_error: "cash_target deve ser número" }),
+    operational_minimum: z.number().optional(),
+    key_priorities: z.array(z.string()).optional(),
+    strategic_focus: z.string().optional(),
+    allocation: z.record(z.any()).optional(),
+    session_notes: z.string().optional(),
+  }),
+  campaigns: z.array(z.object({
+    name: z.string().min(1, "campaign.name obrigatório"),
+    description: z.string().optional(),
+    owner_user_id: z.union([z.number(), z.string()]).optional(),
+    start_date: z.string().optional(),
+    end_date: z.string().optional(),
+    playbook_type: z.enum(["cadence_2_0", "reactivation", "custom"]).optional(),
+    target_description: z.string().optional(),
+    kpis: z.record(z.any()).optional(),
+    current_day_in_flow: z.number().optional(),
+    custom_templates: z.record(z.any()).optional(),
+    leads: z.array(z.object({
+      pipedrive_deal_id: z.union([z.number(), z.string()]).optional(),
+      lead_name: z.string().optional(),
+      lead_company: z.string().optional(),
+      group: z.enum(["A", "B"]).optional(),
+    })).optional(),
+  })).default([]),
+});
+
+function EstrategiaDoMes({ strategy, campaigns, monthIso }: { strategy: any; campaigns: any[]; monthIso: string }) {
+  const [importOpen, setImportOpen] = useState(false);
+  const [drillCampaignId, setDrillCampaignId] = useState<string | null>(null);
+
   return (
-    <div
-      className="px-4 py-3 rounded-xl min-w-[140px]"
-      style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
-    >
-      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="text-xl font-semibold mt-0.5" style={{ color: accent }}>
-        {value}
-      </p>
+    <div className="space-y-5">
+      {/* Header card */}
+      <div style={card} className="p-6">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex-1 min-w-[260px]">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wide">
+              <Calendar className="w-3.5 h-3.5" />
+              Estratégia · {monthLabel(monthIso)}
+            </div>
+            <h2 className="text-2xl font-semibold text-white mt-1">
+              {strategy?.strategic_focus || "Sem foco estratégico definido"}
+            </h2>
+          </div>
+          <button
+            onClick={() => setImportOpen(true)}
+            className="flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-medium transition-all hover:opacity-90"
+            style={{
+              background: "linear-gradient(135deg, hsl(160,100%,38%), hsl(160,100%,45%))",
+              color: "white",
+              boxShadow: "0 4px 20px rgba(0,200,150,0.25)",
+            }}
+          >
+            <Download className="w-4 h-4" />
+            📥 Importar Estratégia
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-5">
+          <Stat label="Meta de caixa" value={strategy ? fmtBRL(Number(strategy.cash_target || 0)) : "—"} accent="hsl(160,100%,55%)" />
+          <Stat label="Mínimo operacional" value={strategy ? fmtBRL(Number(strategy.operational_minimum || 0)) : "—"} accent="hsl(45,100%,55%)" />
+          <Stat label="Origem" value={strategy?.source || "—"} accent="hsl(238,80%,70%)" />
+        </div>
+
+        {Array.isArray(strategy?.key_priorities) && strategy.key_priorities.length > 0 && (
+          <div className="mt-5">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Prioridades-chave</p>
+            <ul className="space-y-1.5">
+              {(strategy.key_priorities as string[]).map((p, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-white/90">
+                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "hsl(160,100%,55%)" }} />
+                  {p}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {!strategy && (
+          <p className="text-sm text-muted-foreground mt-4">
+            Nenhuma estratégia importada para este mês. Clique em "Importar Estratégia" para começar.
+          </p>
+        )}
+      </div>
+
+      {/* Campanhas */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-semibold text-white px-1">Campanhas ativas ({campaigns.length})</h3>
+        {campaigns.length === 0 && (
+          <div style={card} className="p-6 text-center text-sm text-muted-foreground">
+            Nenhuma campanha ativa neste mês.
+          </div>
+        )}
+        {campaigns.map((c: any) => (
+          <CampaignCard key={c.id} campaign={c} expanded={drillCampaignId === c.id} onToggle={() => setDrillCampaignId(drillCampaignId === c.id ? null : c.id)} />
+        ))}
+      </div>
+
+      {/* Histórico */}
+      <div className="flex justify-end">
+        <Link
+          to="/ceo/memoria"
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-white transition-colors"
+        >
+          Ver histórico de estratégias
+          <ChevronRight className="w-4 h-4" />
+        </Link>
+      </div>
+
+      <ImportModal open={importOpen} onClose={() => setImportOpen(false)} />
     </div>
   );
 }
 
-function Playbook() {
+function CampaignCard({ campaign, expanded, onToggle }: { campaign: any; expanded: boolean; onToggle: () => void }) {
+  const kpis = campaign.kpis || {};
+  const leadsTarget = Number(kpis.leads_target || 0);
+  const meetingsTarget = Number(kpis.meetings_target || 0);
+  const proposalsTarget = Number(kpis.proposals_target || 0);
+  const wonTarget = Number(kpis.won_target || 0);
+  const leadCount = campaign.campaign_leads?.[0]?.count ?? 0;
+  const pctLeads = leadsTarget ? Math.min(100, Math.round((leadCount / leadsTarget) * 100)) : 0;
+
+  const dayCurrent = Number(campaign.current_day_in_flow || 0);
+  const totalDays = (() => {
+    if (!campaign.start_date || !campaign.end_date) return 0;
+    const s = new Date(campaign.start_date), e = new Date(campaign.end_date);
+    return Math.max(1, Math.ceil((+e - +s) / (1000 * 60 * 60 * 24)) + 1);
+  })();
+  const elapsedDays = (() => {
+    if (!campaign.start_date) return 0;
+    const s = new Date(campaign.start_date);
+    return Math.max(0, Math.ceil((+new Date() - +s) / (1000 * 60 * 60 * 24)));
+  })();
+
+  return (
+    <div style={card} className="overflow-hidden">
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div className="flex-1 min-w-[200px]">
+            <div className="flex items-center gap-2 mb-1">
+              <h4 className="text-base font-semibold text-white">{campaign.name}</h4>
+              <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "rgba(0,200,150,0.15)", color: "hsl(160,100%,55%)" }}>
+                {campaign.playbook_type}
+              </span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.7)" }}>
+                {campaign.status}
+              </span>
+            </div>
+            {campaign.description && <p className="text-xs text-muted-foreground">{campaign.description}</p>}
+            <div className="flex flex-wrap gap-3 mt-2 text-xs text-muted-foreground">
+              {campaign.owner_user_id && <span>Owner: {campaign.owner_user_id}</span>}
+              {campaign.start_date && (
+                <span>{campaign.start_date} → {campaign.end_date || "—"}</span>
+              )}
+              {totalDays > 0 && <span>Dia {Math.min(elapsedDays, totalDays)} de {totalDays}</span>}
+            </div>
+          </div>
+          <button
+            onClick={onToggle}
+            className="px-3 py-1.5 rounded-lg text-xs"
+            style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "white" }}
+          >
+            {expanded ? "Ocultar" : "Ver detalhes"}
+          </button>
+        </div>
+
+        {(leadsTarget > 0 || meetingsTarget > 0 || proposalsTarget > 0 || wonTarget > 0) && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+            <KpiBar label="Leads tocados" current={leadCount} target={leadsTarget} />
+            <KpiBar label="Reuniões" current={Number(kpis.meetings_done || 0)} target={meetingsTarget} />
+            <KpiBar label="Propostas" current={Number(kpis.proposals_done || 0)} target={proposalsTarget} />
+            <KpiBar label="Fechados" current={Number(kpis.won_done || 0)} target={wonTarget} />
+          </div>
+        )}
+      </div>
+
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}
+          >
+            <CampaignLeadsList campaignId={campaign.id} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function CampaignLeadsList({ campaignId }: { campaignId: string }) {
+  const [leads, setLeads] = useState<any[] | null>(null);
+  useEffect(() => {
+    let mounted = true;
+    supabase
+      .from("campaign_leads")
+      .select("*")
+      .eq("campaign_id", campaignId)
+      .order("entered_flow_at", { ascending: false })
+      .limit(200)
+      .then(({ data }) => { if (mounted) setLeads(data || []); });
+    return () => { mounted = false; };
+  }, [campaignId]);
+
+  if (leads === null) return <div className="p-4 text-xs text-muted-foreground">Carregando…</div>;
+  if (leads.length === 0) return <div className="p-4 text-xs text-muted-foreground">Sem leads associados.</div>;
+
+  return (
+    <div className="p-4 space-y-1">
+      {leads.map((l) => (
+        <div key={l.id} className="flex items-center justify-between gap-3 text-xs py-1.5 px-2 rounded-md hover:bg-white/[0.03]">
+          <div className="flex-1 min-w-0">
+            <p className="text-white truncate">{l.lead_company || l.lead_name || `Deal ${l.pipedrive_deal_id || ""}`}</p>
+            {l.lead_name && l.lead_company && <p className="text-muted-foreground truncate">{l.lead_name}</p>}
+          </div>
+          {l.group_label && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.7)" }}>
+              Grupo {l.group_label}
+            </span>
+          )}
+          <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "rgba(0,200,150,0.10)", color: "hsl(160,100%,55%)" }}>
+            D{l.current_day_in_flow}
+          </span>
+          <span className="text-[10px] text-muted-foreground">{l.status}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function KpiBar({ label, current, target }: { label: string; current: number; target: number }) {
+  const pct = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
+  return (
+    <div>
+      <div className="flex justify-between text-[11px] text-muted-foreground mb-1">
+        <span>{label}</span>
+        <span className="text-white font-medium">{current}/{target}</span>
+      </div>
+      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+        <div className="h-full transition-all" style={{ width: `${pct}%`, background: "linear-gradient(90deg, hsl(160,100%,45%), hsl(160,100%,55%))" }} />
+      </div>
+    </div>
+  );
+}
+
+function ImportModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const importMut = useImportStrategy();
+  const [jsonText, setJsonText] = useState(SAMPLE_JSON);
+  const [validation, setValidation] = useState<{ ok: boolean; preview?: string; errors?: string[] }>({ ok: false });
+
+  if (!open) return null;
+
+  function validate() {
+    try {
+      const parsed = JSON.parse(jsonText);
+      const r = ImportSchema.safeParse(parsed);
+      if (!r.success) {
+        setValidation({ ok: false, errors: r.error.issues.map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`) });
+        return;
+      }
+      const totalLeads = r.data.campaigns.reduce((s, c) => s + (c.leads?.length || 0), 0);
+      const newCount = r.data.campaigns.length;
+      setValidation({
+        ok: true,
+        preview: `Mês ${r.data.month} · ${newCount} campanha(s) (upsert) · ${totalLeads} lead(s)`,
+      });
+    } catch (e: any) {
+      setValidation({ ok: false, errors: [`JSON inválido: ${e.message}`] });
+    }
+  }
+
+  async function confirmImport() {
+    try {
+      const payload = JSON.parse(jsonText);
+      const result: any = await importMut.mutateAsync(payload);
+      toast.success("Estratégia importada", {
+        description: `${result?.campaigns ?? 0} campanhas · ${result?.leads ?? 0} leads`,
+      });
+      onClose();
+      setValidation({ ok: false });
+    } catch (e: any) {
+      toast.error("Erro ao importar", { description: e.message });
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)" }} onClick={onClose}>
+      <div onClick={(e) => e.stopPropagation()} style={{ ...card, maxWidth: 720, width: "100%" }} className="p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-white">📥 Importar Estratégia (JSON)</h3>
+          <button onClick={onClose} className="text-muted-foreground hover:text-white text-2xl leading-none">×</button>
+        </div>
+        <textarea
+          value={jsonText}
+          onChange={(e) => { setJsonText(e.target.value); setValidation({ ok: false }); }}
+          className="w-full font-mono text-xs h-72 p-3 rounded-lg"
+          style={inputStyle}
+        />
+        {validation.errors && (
+          <div className="rounded-lg p-3 text-xs" style={{ background: "rgba(239,68,68,0.10)", border: "1px solid rgba(239,68,68,0.3)", color: "hsl(0,80%,75%)" }}>
+            {validation.errors.map((e, i) => <p key={i}>• {e}</p>)}
+          </div>
+        )}
+        {validation.ok && validation.preview && (
+          <div className="rounded-lg p-3 text-xs" style={{ background: "rgba(0,200,150,0.10)", border: "1px solid rgba(0,200,150,0.3)", color: "hsl(160,100%,65%)" }}>
+            ✓ {validation.preview}
+          </div>
+        )}
+        <div className="flex justify-end gap-2">
+          <button onClick={validate} className="px-4 py-2 rounded-lg text-sm" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "white" }}>
+            Validar
+          </button>
+          <button
+            onClick={confirmImport}
+            disabled={!validation.ok || importMut.isPending}
+            className="px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
+            style={{ background: "hsl(160,100%,40%)", color: "white" }}
+          >
+            {importMut.isPending ? "Importando..." : "Confirmar Importação"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const SAMPLE_JSON = `{
+  "month": "${currentMonthKey()}",
+  "monthly_strategy": {
+    "cash_target": 200000,
+    "operational_minimum": 70000,
+    "key_priorities": ["Reativar relacionamentos", "Validar hunter freela"],
+    "strategic_focus": "Caixa via reativação",
+    "allocation": {"thiago": {"hunting": 60}, "aline": {"cadencia": 100}},
+    "session_notes": "Sessão estratégica do mês"
+  },
+  "campaigns": [
+    {
+      "name": "Reativação Q2",
+      "description": "Reativar leads frios dos últimos 6 meses",
+      "owner_user_id": 23830611,
+      "start_date": "2026-05-01",
+      "end_date": "2026-05-31",
+      "playbook_type": "reactivation",
+      "target_description": "50 leads do CRM",
+      "kpis": {"leads_target": 50, "meetings_target": 10, "proposals_target": 4, "won_target": 1},
+      "leads": []
+    }
+  ]
+}`;
+
+/* ===== Stat ===== */
+function Stat({ label, value, accent }: { label: string; value: string; accent: string }) {
+  return (
+    <div className="px-4 py-3 rounded-xl min-w-[140px]" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="text-xl font-semibold mt-0.5" style={{ color: accent }}>{value}</p>
+    </div>
+  );
+}
+
+/* ===== Playbook (templates da cadência) ===== */
+function Playbook({ campaigns }: { campaigns: any[] }) {
   const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
     <div style={card} className="p-5">
       <h3 className="text-sm font-semibold text-white mb-3">{title}</h3>
@@ -390,43 +654,208 @@ function Playbook() {
     </div>
   );
 
+  const camWithTemplates = campaigns.filter((c: any) => c.custom_templates && Object.keys(c.custom_templates).length > 0);
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <Section title="Funil ideal (benchmark)">
-        <ul className="space-y-1.5 list-disc pl-5">
-          <li>100 leads qualificados → 40 contatos efetivos</li>
-          <li>40 contatos → 20 reuniões agendadas</li>
-          <li>20 reuniões → 10 demos realizadas</li>
-          <li>10 demos → 4 propostas enviadas</li>
-          <li>4 propostas → 1–2 contratos fechados (R$20k cada)</li>
-        </ul>
-      </Section>
+    <div className="space-y-4">
+      {camWithTemplates.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-white px-1 mb-2">Templates por campanha ativa</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {camWithTemplates.map((c: any) => (
+              <div key={c.id} style={card} className="p-5">
+                <h4 className="text-sm font-semibold text-white mb-3">{c.name}</h4>
+                <div className="space-y-2">
+                  {Object.entries(c.custom_templates as Record<string, any>).map(([k, v]) => (
+                    <div key={k} className="text-xs">
+                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">{k}</p>
+                      <p className="text-white/80 whitespace-pre-wrap">{typeof v === "string" ? v : JSON.stringify(v, null, 2)}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-      <Section title="Roteiro de abordagem — Construtoras">
-        <ol className="space-y-1.5 list-decimal pl-5">
-          <li><b>Abertura:</b> apresente-se e mencione um lançamento ou obra recente da construtora.</li>
-          <li><b>Diagnóstico:</b> "Como vocês estão materializando os projetos para o cliente final hoje?"</li>
-          <li><b>Dor:</b> conecte com prazos de venda na planta, taxa de conversão do stand e diferenciação.</li>
-          <li><b>Prova:</b> cite cases (tour 3D, plantas humanizadas, vídeos) com resultado.</li>
-          <li><b>CTA:</b> agendar demo de 30 min com decisor (marketing/comercial/incorporador).</li>
-        </ol>
-      </Section>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Section title="Funil ideal (benchmark)">
+          <ul className="space-y-1.5 list-disc pl-5">
+            <li>100 leads qualificados → 40 contatos efetivos</li>
+            <li>40 contatos → 20 reuniões agendadas</li>
+            <li>20 reuniões → 10 demos realizadas</li>
+            <li>10 demos → 4 propostas enviadas</li>
+            <li>4 propostas → 1–2 contratos fechados (R$20k cada)</li>
+          </ul>
+        </Section>
 
-      <Section title="Checklist BANT">
-        <ul className="space-y-1.5">
-          <li>✅ <b>Budget:</b> ticket compatível com R$15k–R$60k por projeto?</li>
-          <li>✅ <b>Authority:</b> falando com decisor (sócio, diretor de marketing/comercial)?</li>
-          <li>✅ <b>Need:</b> existe lançamento, VGV ou projeto ativo nos próximos 90 dias?</li>
-          <li>✅ <b>Timing:</b> material precisa estar pronto em até 60 dias?</li>
-        </ul>
-      </Section>
+        <Section title="Roteiro de abordagem — Construtoras">
+          <ol className="space-y-1.5 list-decimal pl-5">
+            <li><b>Abertura:</b> apresente-se e mencione um lançamento ou obra recente da construtora.</li>
+            <li><b>Diagnóstico:</b> "Como vocês estão materializando os projetos para o cliente final hoje?"</li>
+            <li><b>Dor:</b> conecte com prazos de venda na planta, taxa de conversão do stand e diferenciação.</li>
+            <li><b>Prova:</b> cite cases (tour 3D, plantas humanizadas, vídeos) com resultado.</li>
+            <li><b>CTA:</b> agendar demo de 30 min com decisor (marketing/comercial/incorporador).</li>
+          </ol>
+        </Section>
 
-      <Section title="Scripts de follow-up">
-        <p><b>D+1 (sem resposta):</b> "Oi [nome], passando rapidinho aqui — tudo bem? Consegue me dar 10 min essa semana pra eu te mostrar como reduzimos o ciclo de venda em obras como a [empreendimento]?"</p>
-        <p><b>D+3:</b> envie um case relevante (link/vídeo) e pergunte: "Faz sentido pra realidade da [construtora]?"</p>
-        <p><b>D+7:</b> "Quero respeitar seu tempo — prefere que eu retome em [mês que vem] ou encerro o assunto por aqui?"</p>
-        <p><b>Pós-demo:</b> "Resumo do que combinamos + próximos passos + data de retorno."</p>
-      </Section>
+        <Section title="Checklist BANT">
+          <ul className="space-y-1.5">
+            <li>✅ <b>Budget:</b> ticket compatível com R$15k–R$60k por projeto?</li>
+            <li>✅ <b>Authority:</b> falando com decisor (sócio, diretor de marketing/comercial)?</li>
+            <li>✅ <b>Need:</b> existe lançamento, VGV ou projeto ativo nos próximos 90 dias?</li>
+            <li>✅ <b>Timing:</b> material precisa estar pronto em até 60 dias?</li>
+          </ul>
+        </Section>
+
+        <Section title="Scripts de follow-up">
+          <p><b>D+1 (sem resposta):</b> "Oi [nome], passando rapidinho aqui — tudo bem? Consegue me dar 10 min essa semana pra eu te mostrar como reduzimos o ciclo de venda em obras como a [empreendimento]?"</p>
+          <p><b>D+3:</b> envie um case relevante (link/vídeo) e pergunte: "Faz sentido pra realidade da [construtora]?"</p>
+          <p><b>D+7:</b> "Quero respeitar seu tempo — prefere que eu retome em [mês que vem] ou encerro o assunto por aqui?"</p>
+          <p><b>Pós-demo:</b> "Resumo do que combinamos + próximos passos + data de retorno."</p>
+        </Section>
+      </div>
+    </div>
+  );
+}
+
+/* ===== Metas da Equipe (com KPIs por owner) ===== */
+function MetasEquipe({ state, setState, campaigns, realizadoPorVendedor }: {
+  state: EstrategiasState;
+  setState: (s: EstrategiasState) => void;
+  campaigns: any[];
+  realizadoPorVendedor: Map<string, number>;
+}) {
+  // Agregar kpis por owner_user_id
+  const kpisPorOwner = useMemo(() => {
+    const map = new Map<string, { leads: number; meetings: number; proposals: number; won: number }>();
+    campaigns.forEach((c: any) => {
+      const owner = String(c.owner_user_id || "—");
+      const cur = map.get(owner) || { leads: 0, meetings: 0, proposals: 0, won: 0 };
+      const k = c.kpis || {};
+      cur.leads += Number(k.leads_target || 0);
+      cur.meetings += Number(k.meetings_target || 0);
+      cur.proposals += Number(k.proposals_target || 0);
+      cur.won += Number(k.won_target || 0);
+      map.set(owner, cur);
+    });
+    return map;
+  }, [campaigns]);
+
+  return (
+    <div className="space-y-5">
+      {kpisPorOwner.size > 0 && (
+        <div style={card} className="p-5">
+          <h3 className="text-sm font-semibold text-white mb-3">Metas das campanhas ativas (por owner)</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-muted-foreground" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                  <th className="py-2 px-2">Owner ID</th>
+                  <th className="py-2 px-2">Leads</th>
+                  <th className="py-2 px-2">Reuniões</th>
+                  <th className="py-2 px-2">Propostas</th>
+                  <th className="py-2 px-2">Fechados</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from(kpisPorOwner.entries()).map(([owner, k]) => (
+                  <tr key={owner} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                    <td className="py-2 px-2 text-white font-medium">{owner}</td>
+                    <td className="py-2 px-2 text-white/80">{k.leads}</td>
+                    <td className="py-2 px-2 text-white/80">{k.meetings}</td>
+                    <td className="py-2 px-2 text-white/80">{k.proposals}</td>
+                    <td className="py-2 px-2" style={{ color: "hsl(160,100%,55%)" }}>{k.won}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      <div style={card} className="p-6">
+        <h3 className="text-sm font-semibold text-white mb-3">Metas individuais de receita (R$)</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-muted-foreground" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                <th className="py-3 px-2">Vendedor</th>
+                <th className="py-3 px-2">Meta (R$)</th>
+                <th className="py-3 px-2">Realizado</th>
+                <th className="py-3 px-2">% Atingido</th>
+                <th className="py-3 px-2">Comissão projetada (4%)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {state.metasEquipe.map((m, idx) => {
+                const realizado = realizadoPorVendedor.get(m.vendedor) || 0;
+                const pct = m.meta > 0 ? (realizado / m.meta) * 100 : 0;
+                const comissaoProj = realizado * COMISSAO_PCT;
+                return (
+                  <tr key={idx} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                    <td className="py-3 px-2">
+                      <input
+                        value={m.vendedor}
+                        onChange={(e) => {
+                          const arr = [...state.metasEquipe];
+                          arr[idx] = { ...arr[idx], vendedor: e.target.value };
+                          setState({ ...state, metasEquipe: arr });
+                        }}
+                        style={inputStyle}
+                      />
+                    </td>
+                    <td className="py-3 px-2 w-[180px]">
+                      <input
+                        type="number"
+                        value={m.meta}
+                        onChange={(e) => {
+                          const arr = [...state.metasEquipe];
+                          arr[idx] = { ...arr[idx], meta: Number(e.target.value) || 0 };
+                          setState({ ...state, metasEquipe: arr });
+                        }}
+                        style={inputStyle}
+                      />
+                    </td>
+                    <td className="py-3 px-2 text-white">{fmtBRL(realizado)}</td>
+                    <td className="py-3 px-2">
+                      <span className="px-2 py-1 rounded-md text-xs font-medium" style={{
+                        color: pct >= 100 ? "hsl(160,100%,55%)" : pct >= 60 ? "hsl(45,100%,60%)" : "hsl(0,80%,65%)",
+                        background: pct >= 100 ? "rgba(0,200,150,0.12)" : pct >= 60 ? "rgba(245,158,11,0.12)" : "rgba(239,68,68,0.12)",
+                      }}>
+                        {pct.toFixed(1)}%
+                      </span>
+                    </td>
+                    <td className="py-3 px-2" style={{ color: "hsl(160,100%,55%)" }}>{fmtBRL(comissaoProj)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div className="flex gap-2 mt-4">
+          <button
+            onClick={() => setState({ ...state, metasEquipe: [...state.metasEquipe, { vendedor: "Novo Vendedor", meta: 0 }] })}
+            className="px-3 py-2 rounded-lg text-sm"
+            style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.10)", color: "white" }}
+          >
+            + Adicionar vendedor
+          </button>
+          {state.metasEquipe.length > 0 && (
+            <button
+              onClick={() => setState({ ...state, metasEquipe: state.metasEquipe.slice(0, -1) })}
+              className="px-3 py-2 rounded-lg text-sm text-muted-foreground"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+            >
+              Remover último
+            </button>
+          )}
+          <div className="ml-auto flex items-center gap-2 px-3 py-2 rounded-lg text-xs" style={{ color: "hsl(160,100%,55%)" }}>
+            <Save className="w-3.5 h-3.5" /> Salvo automaticamente
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
