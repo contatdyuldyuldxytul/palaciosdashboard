@@ -92,6 +92,142 @@ export type Database = {
         }
         Relationships: []
       }
+      cadence_templates: {
+        Row: {
+          channel: Database["public"]["Enums"]["cadence_channel"]
+          day_in_flow: number
+          id: string
+          period: Database["public"]["Enums"]["cadence_period"]
+          playbook_type: Database["public"]["Enums"]["campaign_playbook"]
+          task_template: string
+        }
+        Insert: {
+          channel: Database["public"]["Enums"]["cadence_channel"]
+          day_in_flow: number
+          id?: string
+          period: Database["public"]["Enums"]["cadence_period"]
+          playbook_type: Database["public"]["Enums"]["campaign_playbook"]
+          task_template: string
+        }
+        Update: {
+          channel?: Database["public"]["Enums"]["cadence_channel"]
+          day_in_flow?: number
+          id?: string
+          period?: Database["public"]["Enums"]["cadence_period"]
+          playbook_type?: Database["public"]["Enums"]["campaign_playbook"]
+          task_template?: string
+        }
+        Relationships: []
+      }
+      campaign_leads: {
+        Row: {
+          campaign_id: string
+          current_day_in_flow: number
+          entered_flow_at: string
+          group_label: string | null
+          id: string
+          last_synced_at: string | null
+          lead_company: string | null
+          lead_name: string | null
+          notes: string | null
+          pipedrive_deal_id: number | null
+          status: Database["public"]["Enums"]["campaign_lead_status"]
+        }
+        Insert: {
+          campaign_id: string
+          current_day_in_flow?: number
+          entered_flow_at?: string
+          group_label?: string | null
+          id?: string
+          last_synced_at?: string | null
+          lead_company?: string | null
+          lead_name?: string | null
+          notes?: string | null
+          pipedrive_deal_id?: number | null
+          status?: Database["public"]["Enums"]["campaign_lead_status"]
+        }
+        Update: {
+          campaign_id?: string
+          current_day_in_flow?: number
+          entered_flow_at?: string
+          group_label?: string | null
+          id?: string
+          last_synced_at?: string | null
+          lead_company?: string | null
+          lead_name?: string | null
+          notes?: string | null
+          pipedrive_deal_id?: number | null
+          status?: Database["public"]["Enums"]["campaign_lead_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_leads_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaigns: {
+        Row: {
+          created_at: string
+          custom_templates: Json | null
+          description: string | null
+          end_date: string | null
+          id: string
+          kpis: Json | null
+          monthly_strategy_id: string | null
+          name: string
+          owner_user_id: number | null
+          playbook_type: Database["public"]["Enums"]["campaign_playbook"]
+          start_date: string | null
+          status: Database["public"]["Enums"]["campaign_status"]
+          target_description: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          custom_templates?: Json | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          kpis?: Json | null
+          monthly_strategy_id?: string | null
+          name: string
+          owner_user_id?: number | null
+          playbook_type?: Database["public"]["Enums"]["campaign_playbook"]
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["campaign_status"]
+          target_description?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          custom_templates?: Json | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          kpis?: Json | null
+          monthly_strategy_id?: string | null
+          name?: string
+          owner_user_id?: number | null
+          playbook_type?: Database["public"]["Enums"]["campaign_playbook"]
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["campaign_status"]
+          target_description?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_monthly_strategy_id_fkey"
+            columns: ["monthly_strategy_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_strategies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_messages: {
         Row: {
           assistant: string
@@ -424,6 +560,65 @@ export type Database = {
           volume_vendas?: number | null
         }
         Relationships: []
+      }
+      daily_activities: {
+        Row: {
+          assignee_label: string | null
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          priority: number
+          related_campaign_id: string | null
+          related_deal_id: number | null
+          scheduled_date: string
+          source: Database["public"]["Enums"]["activity_source"]
+          task_description: string
+          task_type: Database["public"]["Enums"]["activity_type"]
+          user_id: string | null
+        }
+        Insert: {
+          assignee_label?: string | null
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          priority?: number
+          related_campaign_id?: string | null
+          related_deal_id?: number | null
+          scheduled_date?: string
+          source?: Database["public"]["Enums"]["activity_source"]
+          task_description: string
+          task_type?: Database["public"]["Enums"]["activity_type"]
+          user_id?: string | null
+        }
+        Update: {
+          assignee_label?: string | null
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          priority?: number
+          related_campaign_id?: string | null
+          related_deal_id?: number | null
+          scheduled_date?: string
+          source?: Database["public"]["Enums"]["activity_source"]
+          task_description?: string
+          task_type?: Database["public"]["Enums"]["activity_type"]
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_activities_related_campaign_id_fkey"
+            columns: ["related_campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       financeiro_clientes: {
         Row: {
@@ -890,6 +1085,48 @@ export type Database = {
         }
         Relationships: []
       }
+      monthly_strategies: {
+        Row: {
+          allocation: Json | null
+          cash_target: number | null
+          created_at: string
+          id: string
+          key_priorities: Json | null
+          locked: boolean
+          month: string
+          operational_minimum: number | null
+          session_notes: string | null
+          source: Database["public"]["Enums"]["strategy_source"]
+          strategic_focus: string | null
+        }
+        Insert: {
+          allocation?: Json | null
+          cash_target?: number | null
+          created_at?: string
+          id?: string
+          key_priorities?: Json | null
+          locked?: boolean
+          month: string
+          operational_minimum?: number | null
+          session_notes?: string | null
+          source?: Database["public"]["Enums"]["strategy_source"]
+          strategic_focus?: string | null
+        }
+        Update: {
+          allocation?: Json | null
+          cash_target?: number | null
+          created_at?: string
+          id?: string
+          key_priorities?: Json | null
+          locked?: boolean
+          month?: string
+          operational_minimum?: number | null
+          session_notes?: string | null
+          source?: Database["public"]["Enums"]["strategy_source"]
+          strategic_focus?: string | null
+        }
+        Relationships: []
+      }
       planejamento_mensal: {
         Row: {
           aprovado: boolean
@@ -1120,6 +1357,45 @@ export type Database = {
         }
         Relationships: []
       }
+      strategic_inputs: {
+        Row: {
+          created_at: string
+          id: string
+          priority: number
+          processed: boolean
+          processed_at: string | null
+          related_deal_id: number | null
+          source_type: Database["public"]["Enums"]["strategic_input_source"]
+          target_assignee_label: string | null
+          target_user_id: string | null
+          task_description: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          priority?: number
+          processed?: boolean
+          processed_at?: string | null
+          related_deal_id?: number | null
+          source_type?: Database["public"]["Enums"]["strategic_input_source"]
+          target_assignee_label?: string | null
+          target_user_id?: string | null
+          task_description: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          priority?: number
+          processed?: boolean
+          processed_at?: string | null
+          related_deal_id?: number | null
+          source_type?: Database["public"]["Enums"]["strategic_input_source"]
+          target_assignee_label?: string | null
+          target_user_id?: string | null
+          task_description?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -1138,6 +1414,44 @@ export type Database = {
         }
         Relationships: []
       }
+      weekly_reports: {
+        Row: {
+          generated_at: string
+          id: string
+          metrics: Json | null
+          monthly_strategy_id: string | null
+          narrative_text: string | null
+          week_end: string
+          week_start: string
+        }
+        Insert: {
+          generated_at?: string
+          id?: string
+          metrics?: Json | null
+          monthly_strategy_id?: string | null
+          narrative_text?: string | null
+          week_end: string
+          week_start: string
+        }
+        Update: {
+          generated_at?: string
+          id?: string
+          metrics?: Json | null
+          monthly_strategy_id?: string | null
+          narrative_text?: string | null
+          week_end?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_reports_monthly_strategy_id_fkey"
+            columns: ["monthly_strategy_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_strategies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1150,9 +1464,38 @@ export type Database = {
         }
         Returns: boolean
       }
+      import_monthly_strategy: { Args: { _payload: Json }; Returns: Json }
+      insert_strategic_input: {
+        Args: {
+          _priority: number
+          _related_deal_id: number
+          _source_type: Database["public"]["Enums"]["strategic_input_source"]
+          _target_assignee_label: string
+          _target_user_id: string
+          _task_description: string
+        }
+        Returns: string
+      }
     }
     Enums: {
+      activity_source: "auto" | "manual" | "claude_briefing"
+      activity_type:
+        | "cadence"
+        | "strategic"
+        | "reactivation"
+        | "followup"
+        | "meeting"
+        | "custom"
       app_role: "fundador" | "vendedor"
+      cadence_channel: "email" | "whatsapp" | "linkedin" | "call"
+      cadence_period: "morning" | "afternoon"
+      campaign_lead_status: "active" | "paused" | "done" | "won" | "lost"
+      campaign_playbook:
+        | "cadence_2_0"
+        | "reactivation"
+        | "freela_hunter"
+        | "custom"
+      campaign_status: "active" | "paused" | "done" | "cancelled"
       lead_status:
         | "lead"
         | "contatado"
@@ -1162,6 +1505,12 @@ export type Database = {
         | "fechado"
         | "perdido"
       payment_status: "pendente" | "pago" | "atrasado" | "cancelado"
+      strategic_input_source:
+        | "stale_proposal"
+        | "hot_lead"
+        | "varredura"
+        | "custom"
+      strategy_source: "manual" | "claude_session"
       vendedor_sub_role: "sdr" | "ldr"
     }
     CompositeTypes: {
@@ -1290,7 +1639,26 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      activity_source: ["auto", "manual", "claude_briefing"],
+      activity_type: [
+        "cadence",
+        "strategic",
+        "reactivation",
+        "followup",
+        "meeting",
+        "custom",
+      ],
       app_role: ["fundador", "vendedor"],
+      cadence_channel: ["email", "whatsapp", "linkedin", "call"],
+      cadence_period: ["morning", "afternoon"],
+      campaign_lead_status: ["active", "paused", "done", "won", "lost"],
+      campaign_playbook: [
+        "cadence_2_0",
+        "reactivation",
+        "freela_hunter",
+        "custom",
+      ],
+      campaign_status: ["active", "paused", "done", "cancelled"],
       lead_status: [
         "lead",
         "contatado",
@@ -1301,6 +1669,13 @@ export const Constants = {
         "perdido",
       ],
       payment_status: ["pendente", "pago", "atrasado", "cancelado"],
+      strategic_input_source: [
+        "stale_proposal",
+        "hot_lead",
+        "varredura",
+        "custom",
+      ],
+      strategy_source: ["manual", "claude_session"],
       vendedor_sub_role: ["sdr", "ldr"],
     },
   },
