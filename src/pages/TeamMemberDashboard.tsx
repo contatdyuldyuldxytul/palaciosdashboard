@@ -9,7 +9,7 @@ import { MeetingTracker } from "@/components/MeetingTracker";
 import { LockedCommission } from "@/components/LockedCommission";
 import { Plus, Search, Phone, FileText, TrendingUp, Users, Target, CalendarCheck, CheckCircle2, Activity, AlertTriangle } from "lucide-react";
 import { CadenceChecklist } from "@/components/CadenceChecklist";
-import { CalendarioPreVendas } from "@/components/CalendarioPreVendas";
+import { CalendarioVendas } from "@/components/CalendarioVendas";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { motion } from "framer-motion";
@@ -150,7 +150,7 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
     .sort((a, b) => new Date(b.data_atualizacao).getTime() - new Date(a.data_atualizacao).getTime())
     .slice(0, 10);
 
-  // Pipedrive Funnel (same as Pré-Vendas page)
+  // Pipedrive Funnel (same as Vendas page)
   const PIPEDRIVE_STAGES = [
     { key: "Entrada de Leads", label: "Entrada de Leads", merge: undefined as string[] | undefined },
     { key: "Tentando Contato", label: "Tentando Contato", merge: ["Tentando Contato #A", "Tentando Contato #B"] },
@@ -223,7 +223,7 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
         ))}
       </div>
 
-      {activeTab === "calendario" && <CalendarioPreVendas defaultFilter="Aline" />}
+      {activeTab === "calendario" && <CalendarioVendas defaultFilter="Aline" />}
       {activeTab === "dashboard" && (
       <>
       {/* No goals banner */}
