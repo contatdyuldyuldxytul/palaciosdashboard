@@ -255,6 +255,17 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
         </div>
       </motion.div>
 
+      {/* Checklist Hoje/Semana */}
+      <DailyTasksPanel
+        mode={
+          memberName === "Aline"
+            ? { kind: "pipedrive", pipedriveUserId: 24578358 }
+            : { kind: "disabled", emptyMessage: `${memberName} ainda não tem tarefas.` }
+        }
+        title="Checklist"
+        subtitle="Tarefas atribuídas · cadência, follow-ups, estratégia"
+      />
+
       {/* ROW 1 — 4 Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Meta de Reuniões */}
