@@ -328,10 +328,10 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
         <MeetingTracker colaborador={memberName} onCommissionChange={setMeetingsRealized} onAgendadasChange={setMeetingsAgendadas} />
       </div>
 
-      {/* ROW 3 — Pipedrive Funnel (same as Pré-Vendas) */}
+      {/* ROW 3 — Pipedrive Funnel (same as Vendas) */}
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }} className="glass-card p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-foreground">Funil de Pré-Vendas</h2>
+          <h2 className="text-sm font-semibold text-foreground">Funil de Vendas</h2>
           <span className="text-[10px] text-muted-foreground">ALINE'S PIPELINE · {pipedriveDeals.filter(d => d.status === "open").length} ativos</span>
         </div>
         <div className="grid grid-cols-[1fr_160px] gap-4 items-stretch">
