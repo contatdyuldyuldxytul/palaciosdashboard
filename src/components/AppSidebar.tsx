@@ -1,6 +1,6 @@
 import { useLocation, Link } from "react-router-dom";
 import {
-  LayoutDashboard, TrendingUp, Users, MessageSquare, Target,
+  LayoutDashboard, TrendingUp, Users, MessageSquare, Target, Command,
   ChevronLeft, ChevronRight, ChevronDown, LogOut, Crown, User
 } from "lucide-react";
 import { useState } from "react";
