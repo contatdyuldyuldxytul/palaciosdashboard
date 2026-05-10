@@ -189,6 +189,7 @@ export default function CeoMemoria() {
           style={{ background: "rgba(245,158,11,0.15)", color: AMBER, border: "1px solid rgba(245,158,11,0.3)" }}
         >
           <Plus className="w-4 h-4" /> Novo Registro
+        </button>
       </div>
 
       <ArchivedStrategies />
