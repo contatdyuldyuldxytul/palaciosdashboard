@@ -10,7 +10,6 @@ import logoPalaciosIcon from "@/assets/logo-palacios-icon.png";
 
 const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Comando", url: "/comando", icon: Command },
   { title: "Vendas", url: "/vendas/funil", icon: TrendingUp, hasChildren: true },
   { title: "Clientes", url: "/clientes", icon: Users },
   { title: "Hunter de Negócios", url: "/hunter", icon: Target },

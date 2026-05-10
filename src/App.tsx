@@ -68,8 +68,7 @@ const App = () => (
               <Route path="/equipe/thiago" element={<ThiagoDashboard />} />
               <Route path="/equipe/felipe" element={<TeamMemberDashboard memberName="Felipe" initials="FE" />} />
 
-              {/* Centro de Comando */}
-              <Route path="/comando" element={<Comando />} />
+              {/* Clientes */}
               {/* Clientes */}
               <Route path="/clientes" element={<PasswordGate title="Clientes"><ClientesLayout /></PasswordGate>}>
                 <Route index element={<ClientesAtivos />} />
