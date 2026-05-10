@@ -16,6 +16,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useMetasComerciais } from "@/hooks/useMetasComerciais";
+import { DailyTasksPanel } from "@/components/DailyTasksPanel";
 
 const stageOrder: LeadStatus[] = ["lead", "contatado", "reuniao_agendada", "reuniao_realizada", "proposta", "fechado"];
 const stageColors: Record<LeadStatus, string> = {
@@ -254,6 +255,17 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
           <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 active:scale-[0.97] transition-all"><Plus className="w-4 h-4" /> Novo Lead</button>
         </div>
       </motion.div>
+
+      {/* Checklist Hoje/Semana */}
+      <DailyTasksPanel
+        mode={
+          memberName === "Aline"
+            ? { kind: "pipedrive", pipedriveUserId: 24578358 }
+            : { kind: "disabled", emptyMessage: `${memberName} ainda não tem tarefas.` }
+        }
+        title="Checklist"
+        subtitle="Tarefas atribuídas · cadência, follow-ups, estratégia"
+      />
 
       {/* ROW 1 — 4 Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

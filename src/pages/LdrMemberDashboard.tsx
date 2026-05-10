@@ -17,6 +17,7 @@ import { LockedCommission } from "@/components/LockedCommission";
 import { CadenceChecklist } from "@/components/CadenceChecklist";
 import { CalendarioVendas } from "@/components/CalendarioVendas";
 import { useMetasComerciais } from "@/hooks/useMetasComerciais";
+import { DailyTasksPanel } from "@/components/DailyTasksPanel";
 
 interface LdrMemberDashboardProps {
   memberName: string;
@@ -290,6 +291,13 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
           </p>
         </div>
       </motion.div>
+
+      {/* Checklist Hoje/Semana — Milena (mapeamento temporário sem pipedrive_user_id) */}
+      <DailyTasksPanel
+        mode={{ kind: "milena" }}
+        title="Checklist"
+        subtitle="Tarefas atribuídas · cadência, follow-ups, estratégia"
+      />
 
       {/* ROW 1 — 4 Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

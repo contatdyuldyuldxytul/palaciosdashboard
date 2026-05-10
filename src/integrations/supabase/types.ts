@@ -577,6 +577,7 @@ export type Database = {
           task_description: string
           task_type: Database["public"]["Enums"]["activity_type"]
           user_id: string | null
+          user_pipedrive_id: number | null
         }
         Insert: {
           assignee_label?: string | null
@@ -593,6 +594,7 @@ export type Database = {
           task_description: string
           task_type?: Database["public"]["Enums"]["activity_type"]
           user_id?: string | null
+          user_pipedrive_id?: number | null
         }
         Update: {
           assignee_label?: string | null
@@ -609,6 +611,7 @@ export type Database = {
           task_description?: string
           task_type?: Database["public"]["Enums"]["activity_type"]
           user_id?: string | null
+          user_pipedrive_id?: number | null
         }
         Relationships: [
           {
