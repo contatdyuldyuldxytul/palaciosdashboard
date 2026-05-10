@@ -223,7 +223,7 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
         ))}
       </div>
 
-      {activeTab === "calendario" && <CalendarioVendas defaultFilter="Aline" />}
+      {activeTab === "calendario" && <CalendarioVendas defaultFilter={(memberName === "Aline" || memberName === "Milena") ? memberName : "Todas"} />}
       {activeTab === "dashboard" && (
       <>
       {/* No goals banner */}
@@ -279,7 +279,7 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
         })()}
 
         {/* Comissão — Protected */}
-        <LockedCommission password="Aline#2524#">
+        <LockedCommission password={memberName === "Aline" ? "Aline#2524#" : `${memberName}#1#`}>
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.08 }} className="glass-card p-4">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(249,115,22,0.12)", border: "1px solid rgba(249,115,22,0.2)" }}>
