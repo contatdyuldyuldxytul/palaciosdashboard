@@ -223,7 +223,7 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
         ))}
       </div>
 
-      {activeTab === "calendario" && <CalendarioVendas defaultFilter={memberName} />}
+      {activeTab === "calendario" && <CalendarioVendas defaultFilter={(memberName === "Aline" || memberName === "Milena") ? memberName : "Todas"} />}
       {activeTab === "dashboard" && (
       <>
       {/* No goals banner */}
