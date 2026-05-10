@@ -1,9 +1,116 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStrategicDecisions, useAddStrategicDecision } from "@/hooks/useCeoData";
-import { format, parseISO, subDays } from "date-fns";
+import { useAllMonthlyStrategies, useCampaigns } from "@/hooks/useStrategy";
+import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Plus, Search, X } from "lucide-react";
+import { Plus, Search, Calendar, ChevronDown } from "lucide-react";
+
+const fmtBRL = (n: number) => Number(n || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+
+const monthLabel = (monthIso: string) => {
+  const [y, m] = monthIso.slice(0, 7).split("-").map(Number);
+  return new Date(y, (m || 1) - 1, 1)
+    .toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
+    .replace(/^./, (c) => c.toUpperCase());
+};
+
+function StrategySnapshot({ strategy }: { strategy: any }) {
+  const { data: campaigns = [] } = useCampaigns(strategy.id);
+  return (
+    <div className="mt-3 space-y-3 border-t pt-3" style={{ borderColor: "var(--glass-border)" }}>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="rounded-xl p-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Meta de caixa</p>
+          <p className="text-base font-semibold" style={{ color: "hsl(160,100%,55%)" }}>{fmtBRL(strategy.cash_target)}</p>
+        </div>
+        <div className="rounded-xl p-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Mínimo operacional</p>
+          <p className="text-base font-semibold" style={{ color: "hsl(45,100%,55%)" }}>{fmtBRL(strategy.operational_minimum)}</p>
+        </div>
+        <div className="rounded-xl p-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Origem</p>
+          <p className="text-sm">{strategy.source}</p>
+        </div>
+      </div>
+      {strategy.strategic_focus && (
+        <div>
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Foco</p>
+          <p className="text-sm text-white/90">{strategy.strategic_focus}</p>
+        </div>
+      )}
+      {Array.isArray(strategy.key_priorities) && strategy.key_priorities.length > 0 && (
+        <div>
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Prioridades</p>
+          <ul className="text-sm space-y-1">
+            {(strategy.key_priorities as string[]).map((p, i) => (
+              <li key={i} className="flex gap-2"><span className="text-muted-foreground">•</span>{p}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {campaigns.length > 0 && (
+        <div>
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Campanhas ({campaigns.length})</p>
+          <div className="space-y-1">
+            {campaigns.map((c: any) => (
+              <div key={c.id} className="text-xs flex items-center gap-2 py-1">
+                <span className="px-2 py-0.5 rounded-full" style={{ background: "rgba(0,200,150,0.12)", color: "hsl(160,100%,55%)" }}>{c.playbook_type}</span>
+                <span className="text-white/90 font-medium">{c.name}</span>
+                {c.target_description && <span className="text-muted-foreground">— {c.target_description}</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {strategy.session_notes && (
+        <div>
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Notas da sessão</p>
+          <p className="text-xs text-muted-foreground whitespace-pre-wrap">{strategy.session_notes}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ArchivedStrategies() {
+  const { data: strategies = [], isLoading } = useAllMonthlyStrategies();
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  if (isLoading) return <Skeleton className="h-32" />;
+  if (strategies.length === 0) return null;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <Calendar className="w-4 h-4" style={{ color: "hsl(160,100%,55%)" }} />
+        <h2 className="text-base font-semibold text-white">Histórico de estratégias mensais</h2>
+        <span className="text-xs text-muted-foreground">({strategies.length})</span>
+      </div>
+      {strategies.map((s: any) => {
+        const expanded = openId === s.id;
+        return (
+          <div
+            key={s.id}
+            className="glass-card p-4 cursor-pointer transition-all hover:bg-white/[0.03]"
+            onClick={() => setOpenId(expanded ? null : s.id)}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-white">{monthLabel(s.month)}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {s.strategic_focus || "Sem foco definido"} · meta {fmtBRL(s.cash_target)}
+                </p>
+              </div>
+              <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${expanded ? "rotate-180" : ""}`} />
+            </div>
+            {expanded && <StrategySnapshot strategy={s} />}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 const AMBER = "hsl(45, 100%, 55%)";
 
