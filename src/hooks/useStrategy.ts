@@ -84,7 +84,7 @@ export function useImportStrategy() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: any) => {
-      const { data, error } = await supabase.rpc("import_monthly_strategy", { _payload: payload });
+      const { data, error } = await supabase.functions.invoke("import-monthly-strategy", { body: payload });
       if (error) throw error;
       return data;
     },
