@@ -90,7 +90,7 @@ export function CeoLayout() {
               }`
             }
           >
-            <span className="text-base leading-none">{item.emoji}</span>
+            <item.icon className="w-4 h-4" />
             <span className="truncate">{item.label}</span>
           </NavLink>
         ))}
