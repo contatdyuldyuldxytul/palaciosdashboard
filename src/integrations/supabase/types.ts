@@ -887,6 +887,30 @@ export type Database = {
         }
         Relationships: []
       }
+      login_events: {
+        Row: {
+          email: string | null
+          id: string
+          logged_in_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          email?: string | null
+          id?: string
+          logged_in_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          email?: string | null
+          id?: string
+          logged_in_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       meeting_checks: {
         Row: {
           agendada: boolean
