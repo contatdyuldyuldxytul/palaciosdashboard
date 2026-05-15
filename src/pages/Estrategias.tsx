@@ -131,6 +131,7 @@ export default function Estrategias() {
 
   const tabs: { key: TabKey; label: string; icon: any }[] = [
     { key: "estrategia_mes", label: "Estratégia do Mês", icon: Calendar },
+    { key: "metas_comerciais", label: "Metas Comerciais", icon: Target },
     { key: "previsibilidade", label: "Previsibilidade", icon: TrendingUp },
     { key: "leads", label: "Volume de Leads", icon: Users2 },
     { key: "playbook", label: "Playbook", icon: BookOpen },
