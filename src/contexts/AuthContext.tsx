@@ -53,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select("role")
       .eq("user_id", userId);
     setRoles((data || []).map((r: any) => r.role as AppRole));
+    setRolesLoaded(true);
   };
 
   useEffect(() => {
@@ -69,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setProfile(null);
           setRoles([]);
+          setRolesLoaded(true);
         }
         setLoading(false);
       }
@@ -80,6 +82,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session?.user) {
         fetchProfile(session.user.id);
         fetchRoles(session.user.id);
+      } else {
+        setRolesLoaded(true);
       }
       setLoading(false);
     });
