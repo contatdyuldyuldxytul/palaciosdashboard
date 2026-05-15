@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useLancamentos } from "@/hooks/useLancamentos";
 import { useBalanco } from "@/hooks/useBalanco";
 import { useFluxoCaixa } from "@/hooks/useFluxoCaixa";
@@ -6,7 +6,6 @@ import { useCustosConfig } from "@/hooks/useCustosConfig";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, subMonths, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 function fmt(v: number) {
@@ -19,7 +18,14 @@ function fmtSign(v: number) {
 }
 
 export default function CeoFinResumo() {
+  // Auto-rotate através dos últimos 6 meses (de -5 a 0), trocando a cada 5s
   const [monthOffset, setMonthOffset] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => {
+      setMonthOffset((o) => (o <= -5 ? 0 : o - 1));
+    }, 5000);
+    return () => clearInterval(id);
+  }, []);
   const baseDate = addMonths(new Date(), monthOffset);
   const mes = format(baseDate, "MM/yyyy");
   const mesLabel = format(baseDate, "MMMM yyyy", { locale: ptBR });
@@ -109,14 +115,10 @@ export default function CeoFinResumo() {
 
   return (
     <div className="space-y-6">
-      {/* Month nav */}
+      {/* Month label (auto-rotativo) */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-amber-400">📊 Resumo do Negócio</h2>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setMonthOffset(o => o - 1)} className="p-1.5 rounded-lg hover:bg-white/5 text-muted-foreground"><ChevronLeft className="w-4 h-4" /></button>
-          <span className="text-sm font-medium capitalize min-w-[120px] text-center">{mesLabel}</span>
-          <button onClick={() => setMonthOffset(o => o + 1)} className="p-1.5 rounded-lg hover:bg-white/5 text-muted-foreground"><ChevronRight className="w-4 h-4" /></button>
-        </div>
+        <h2 className="text-lg font-bold text-amber-400">Resumo do Negócio</h2>
+        <span className="text-sm font-medium capitalize text-muted-foreground">{mesLabel}</span>
       </div>
 
       {/* Row 1 */}
