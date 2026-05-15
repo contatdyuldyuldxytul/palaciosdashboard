@@ -1,19 +1,13 @@
 import { useState } from "react";
 import { Outlet, NavLink } from "react-router-dom";
-import { DollarSign, Target, HeartPulse, TrendingUp, Scale, Settings, Brain, Lock, Rocket } from "lucide-react";
+import { DollarSign, Rocket, Lock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const CEO_PASSWORD = "Cristine#1972#";
 
 const navItems = [
-  { label: "Financeiro", path: "/ceo", icon: DollarSign, emoji: "💰" },
-  { label: "Metas Comerciais", path: "/ceo/metas", icon: Target, emoji: "🎯" },
-  { label: "Estratégias", path: "/ceo/estrategias", icon: Rocket, emoji: "🚀" },
-  { label: "Saúde da Empresa", path: "/ceo/saude", icon: HeartPulse, emoji: "🏥" },
-  { label: "Pipeline & Forecast", path: "/ceo/pipeline", icon: TrendingUp, emoji: "📈" },
-  { label: "Jurídico & Contratos", path: "/ceo/juridico", icon: Scale, emoji: "⚖️" },
-  { label: "Processos & Operacional", path: "/ceo/processos", icon: Settings, emoji: "⚙️" },
-  { label: "Memória Estratégica", path: "/ceo/memoria", icon: Brain, emoji: "🧠" },
+  { label: "Financeiro", path: "/ceo", icon: DollarSign },
+  { label: "Estratégias", path: "/ceo/estrategias", icon: Rocket },
 ];
 
 export function CeoLayout() {
