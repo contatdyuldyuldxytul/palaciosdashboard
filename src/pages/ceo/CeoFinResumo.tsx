@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useMemo } from "react";
 import { useLancamentos } from "@/hooks/useLancamentos";
 import { useBalanco } from "@/hooks/useBalanco";
 import { useFluxoCaixa } from "@/hooks/useFluxoCaixa";
@@ -18,15 +18,7 @@ function fmtSign(v: number) {
 }
 
 export default function CeoFinResumo() {
-  // Auto-rotate através dos últimos 6 meses (de -5 a 0), trocando a cada 5s
-  const [monthOffset, setMonthOffset] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => {
-      setMonthOffset((o) => (o <= -5 ? 0 : o - 1));
-    }, 5000);
-    return () => clearInterval(id);
-  }, []);
-  const baseDate = addMonths(new Date(), monthOffset);
+  const baseDate = new Date();
   const mes = format(baseDate, "MM/yyyy");
   const mesLabel = format(baseDate, "MMMM yyyy", { locale: ptBR });
 
