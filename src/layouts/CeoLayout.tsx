@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Outlet, NavLink } from "react-router-dom";
-import { DollarSign, Rocket, Lock } from "lucide-react";
+import { DollarSign, Rocket, Users, Lock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const CEO_PASSWORD = "Cristine#1972#";
@@ -8,6 +8,7 @@ const CEO_PASSWORD = "Cristine#1972#";
 const navItems = [
   { label: "Financeiro", path: "/ceo", icon: DollarSign },
   { label: "Estratégias", path: "/ceo/estrategias", icon: Rocket },
+  { label: "Clientes", path: "/ceo/clientes", icon: Users },
 ];
 
 export function CeoLayout() {
