@@ -68,6 +68,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             fetchProfile(session.user.id);
             fetchRoles(session.user.id);
           }, 0);
+          if (_event === "SIGNED_IN") {
+            setTimeout(() => {
+              supabase.from("login_events").insert({
+                user_id: session.user.id,
+                email: session.user.email ?? null,
+                user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+              }).then(() => {});
+            }, 0);
+          }
         } else {
           setProfile(null);
           setRoles([]);
