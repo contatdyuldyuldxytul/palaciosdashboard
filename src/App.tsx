@@ -86,6 +86,7 @@ const App = () => (
                 <Route path="processos" element={<CeoProcessos />} />
                 <Route path="memoria" element={<CeoMemoria />} />
                 <Route path="estrategias" element={<Estrategias />} />
+                <Route path="clientes" element={<ClientesAtivos />} />
               </Route>
 
               {/* Assistente IA */}
