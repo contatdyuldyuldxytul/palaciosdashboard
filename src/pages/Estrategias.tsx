@@ -173,7 +173,7 @@ export default function Estrategias() {
       </div>
 
       <motion.div key={tab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="space-y-5">
-        {tab === "estrategia_mes" && <EstrategiaDoMes strategy={strategy} campaigns={campaigns} monthIso={monthIso} />}
+        {tab === "estrategia_mes" && <EstrategiaDoMes />}
 
         {tab === "previsibilidade" && (
           <div style={card} className="p-6 space-y-6">
