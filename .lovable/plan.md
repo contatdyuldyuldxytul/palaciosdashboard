@@ -1,58 +1,67 @@
 ## Objetivo
+Ler automaticamente a planilha financeira do Thiago e popular o dashboard apenas com os dados da **Palacios 3D Studio**, separando o que é PF do que é PJ, e tratando o "Salário Thiago" como item especial extraído do Orçamento.
 
-Eliminar a senha repetida do Painel CEO e substituir por controle de acesso baseado em login. Apenas o seu usuário (Cristine) terá a role `fundador` e, portanto, acesso ao `/ceo`.
+## ⚠️ Pré-requisito importante
+A URL fornecida (`...rtpof=true&sd=true`) indica que o arquivo é um **Excel (.xlsx) hospedado no Drive**, não uma planilha Google nativa. A Google Sheets API **não consegue ler .xlsx diretamente**. Antes do sync funcionar, precisamos de **uma das duas opções**:
 
-## Situação atual
+- **Opção A (recomendada):** abrir no Drive → *Arquivo → Salvar como Planilhas Google*. Gera um novo link `docs.google.com/spreadsheets/...` nativo. Mais simples e rápido.
+- **Opção B:** baixar via Drive API e converter no edge function com biblioteca xlsx. Mais código, mais frágil, mas mantém o arquivo .xlsx.
 
-- O projeto já tem autenticação completa (`AuthContext`, Supabase Auth, tabelas `profiles` e `user_roles` com enum `app_role` = `fundador` | `vendedor`).
-- A rota `/ceo` já está protegida por `<ProtectedRoute requireRole="fundador">` — isso sozinho já bastaria.
-- O incômodo vem do `CeoLayout.tsx`, que adiciona um **segundo** gate por PIN (`Cristine#1972#`) toda vez que você entra. É redundante com o login.
-- O mesmo PIN também aparece em `PasswordGate` usado em `/clientes` e `/hunter`.
+Vou seguir com a **Opção A** no plano. Se preferir B, me avise.
 
-## Plano
+A conta Google já conectada (`GOOGLE_SERVICE_ACCOUNT_JSON`) precisa ter acesso de leitura à planilha — basta compartilhar com o e-mail da service account.
 
-### 1. Remover o gate de PIN do Painel CEO
-Em `src/layouts/CeoLayout.tsx`:
-- Apagar todo o estado `unlocked / pin / error`, a função `handleSubmit`, o bloco JSX da tela de senha e a constante `CEO_PASSWORD`.
-- Apagar imports não usados (`useState`, `Lock`, `motion`, `AnimatePresence`).
-- O componente vira apenas a barra de navegação + `<Outlet />`.
-- A proteção continua sendo a `<ProtectedRoute requireRole="fundador">` já existente em `App.tsx`.
+## Fontes na planilha
 
-### 2. Garantir que só você tem a role `fundador`
-Não há como saber pelo código quais usuários já existem. Preciso confirmar com você (ver pergunta abaixo) e então:
-- Rodar uma migration / insert que garanta a role `fundador` apenas para o seu `user_id` em `public.user_roles`.
-- Opcionalmente, remover qualquer outra linha `fundador` que exista hoje.
+**Aba `Entrada e Saídas`** — fonte primária dos lançamentos
+- Filtrar linhas onde a coluna `Categoria` termina com (ou contém) `- P3DS`
+- Cada linha vira um registro em `financeiro_empresa` (data, descrição, categoria, valor, tipo entrada/saída)
 
-### 3. Registro de logins no Supabase (auditoria)
-Criar tabela nova `public.login_events`:
+**Aba `Orçamento`** — fonte do "Salário Thiago"
+- Linha 51, somente coluna `Realizado` de cada mês
+- Estrutura: a cada 2 colunas começa um mês novo (par Projetado/Realizado)
+- Para cada mês com valor preenchido, cria 1 lançamento em `financeiro_empresa`:
+  - tipo: `despesa`
+  - categoria: `Pessoas`
+  - subcategoria: `Pró-labore`
+  - descricao: `Salário Thiago`
+  - data: dia 1 do mês correspondente
+  - valor: valor da célula
 
-```text
-id            uuid pk
-user_id       uuid (referência a auth.users)
-email         text
-logged_in_at  timestamptz default now()
-user_agent    text
-```
+## Sincronização
+- Frequência: **a cada 12h** via `pg_cron` + `pg_net` chamando a edge function
+- Estratégia anti-duplicata: limpar (`DELETE`) os lançamentos do tipo "sync planilha" antes de reinserir, marcando origem em `notas` (ex: `notas = 'sync:orçamento'` e `notas = 'sync:entradas-saidas'`). Mantém intactos lançamentos manuais antigos.
+- Sync manual: botão no header do CEO Financeiro chamando a mesma function
 
-- RLS: só `fundador` pode ler (`SELECT`); qualquer authenticated pode inserir o **próprio** registro (`auth.uid() = user_id`).
-- Em `AuthContext`, no callback `onAuthStateChange` quando o evento for `SIGNED_IN`, inserir uma linha em `login_events` com o `user_id`, email e `navigator.userAgent`.
-- Isso te dá histórico de "quem entrou e quando" diretamente no banco.
+## Implementação técnica
 
-### 4. (Opcional) Visualizar os logins dentro do Painel CEO
-Posso adicionar uma pequena aba/seção "Acessos" listando os últimos logins. Não vou fazer isso a não ser que você peça — a menos que você confirme na pergunta abaixo.
+1. **Nova edge function `sync-financeiro-sheets`** (`supabase/functions/sync-financeiro-sheets/index.ts`)
+   - Auth: service account já existente (`GOOGLE_SERVICE_ACCOUNT_JSON`)
+   - Lê secret novo `FINANCEIRO_SHEETS_ID` (separado do `GOOGLE_SHEETS_ID` atual, que é da operação comercial)
+   - Faz `values:batchGet` em `Entrada e Saídas!A:Z` e `Orçamento!A51:ZZ51` (header de meses em `Orçamento!1:1` para identificar colunas Realizado)
+   - Filtra linhas P3DS, parseia Salário Thiago coluna a coluna
+   - Faz upsert em `financeiro_empresa`
 
-### 5. Demais gates de PIN (`/clientes`, `/hunter`)
-Por enquanto **não vou mexer**. O pedido é específico do CEO. Se quiser que eu retire também, é só dizer.
+2. **Migration**
+   - Nenhuma alteração de schema; `financeiro_empresa` já tem os campos necessários
+   - Apenas o cron job (via tool `supabase--insert`):
+     ```sql
+     select cron.schedule('sync-financeiro-12h','0 */12 * * *', $$ select net.http_post(...) $$);
+     ```
 
-## Detalhes técnicos
+3. **Frontend**
+   - Botão "Sincronizar planilha financeira" em `CeoFinanceiro.tsx` (header)
+   - Indicador da última sync (similar ao `SyncIndicator.tsx`)
+   - Banner informativo se sync falhar (categoria não encontrada, planilha movida etc.)
 
-- Arquivos alterados: `src/layouts/CeoLayout.tsx` (limpeza) e `src/contexts/AuthContext.tsx` (insert em login_events).
-- Migration nova: criação de `login_events` + RLS.
-- Sem alterações em `App.tsx` (a guarda por role já está lá).
-- Sem alterações no `PasswordGate` (continua existindo para outras rotas).
+4. **Secret novo**
+   - `FINANCEIRO_SHEETS_ID` — ID da planilha (parte entre `/d/` e `/edit`)
 
-## Preciso de confirmação sua antes de executar
+## O que vou pedir/fazer ao implementar
+1. Você converte para Planilhas Google nativa (Opção A) e compartilha com o e-mail da service account com permissão de leitor.
+2. Você me passa o **novo ID** da planilha convertida → adiciono como secret.
+3. Eu crio a edge function, migration do cron, botão no CEO e indicador de sync.
+4. Rodamos manualmente uma vez juntos para validar o parsing e ajustar (especialmente identificar exatamente onde está a coluna "Realizado" de cada mês — a regra "a cada 2 colunas = mês novo" precisa de uma linha de header pra ancorar).
 
-1. Qual é o **email** da sua conta de fundador hoje? (Para garantir/forçar a role `fundador` somente nele.)
-2. Quer que eu adicione uma aba "Acessos" no Painel CEO mostrando o histórico de logins? (sim / não)
-3. Quer que eu também retire o PIN das áreas `/clientes` e `/hunter`, deixando só o login decidir o acesso? (sim / não)
+## Pergunta final antes de implementar
+Preciso confirmar: **a primeira coluna de mês começa em qual coluna do `Orçamento`?** (Ex: B/C = Janeiro Projetado/Realizado, D/E = Fevereiro Projetado/Realizado…). Se for esse padrão, fica trivial; se não for, leio a linha 1 da aba para mapear.
