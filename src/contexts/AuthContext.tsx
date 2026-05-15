@@ -20,6 +20,7 @@ interface AuthContextType {
   profile: Profile | null;
   roles: AppRole[];
   loading: boolean;
+  rolesLoaded: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -36,6 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rolesLoaded, setRolesLoaded] = useState(false);
 
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
@@ -52,6 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select("role")
       .eq("user_id", userId);
     setRoles((data || []).map((r: any) => r.role as AppRole));
+    setRolesLoaded(true);
   };
 
   useEffect(() => {
@@ -68,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setProfile(null);
           setRoles([]);
+          setRolesLoaded(true);
         }
         setLoading(false);
       }
@@ -79,6 +83,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session?.user) {
         fetchProfile(session.user.id);
         fetchRoles(session.user.id);
+      } else {
+        setRolesLoaded(true);
       }
       setLoading(false);
     });
@@ -110,7 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, session, profile, roles, loading, signIn, signUp, signOut, hasRole, isFundador, isVendedor }}
+      value={{ user, session, profile, roles, loading, rolesLoaded, signIn, signUp, signOut, hasRole, isFundador, isVendedor }}
     >
       {children}
     </AuthContext.Provider>
