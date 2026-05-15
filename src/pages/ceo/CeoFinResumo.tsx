@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useMemo } from "react";
 import { useLancamentos } from "@/hooks/useLancamentos";
 import { useBalanco } from "@/hooks/useBalanco";
 import { useFluxoCaixa } from "@/hooks/useFluxoCaixa";
