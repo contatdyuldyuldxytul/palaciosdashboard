@@ -137,7 +137,8 @@ function parseEntradaSaidas(rows: string[][]): { items: ParsedLancamento[]; debu
     }
     return -1;
   };
-  const colData = findCol("data");
+  // User confirmed: dates are always in column C (index 2). Fallback to header detection.
+  const colData = 2;
   const colDesc = findCol("descricao", "historico", "descrição");
   const colCat = findCol("categoria");
   const colValor = findCol("valor");
