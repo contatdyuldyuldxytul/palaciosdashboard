@@ -6,55 +6,57 @@
 
 @layer base {
   :root {
-    --background: 228 16% 6%;
-    --foreground: 220 20% 92%;
+    /* Brand: Palacios 3D — deep navy + electric blue */
+    --background: 222 60% 5%;
+    --foreground: 220 25% 94%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 20% 92%;
+    --card-foreground: 220 25% 94%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 92%;
+    --popover-foreground: 220 25% 94%;
 
-    --primary: 160 100% 39%;
-    --primary-foreground: 222 20% 5%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 60% 5%;
 
-    --secondary: 230 30% 25%;
-    --secondary-foreground: 220 20% 85%;
+    --secondary: 222 45% 18%;
+    --secondary-foreground: 220 25% 90%;
 
-    --muted: 225 15% 14%;
-    --muted-foreground: 220 10% 50%;
+    --muted: 222 35% 12%;
+    --muted-foreground: 220 15% 60%;
 
-    --accent: 245 50% 55%;
-    --accent-foreground: 220 20% 95%;
+    --accent: 217 91% 60%;
+    --accent-foreground: 222 60% 5%;
 
-    --destructive: 0 70% 50%;
+    --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 98%;
 
     --border: 0 0% 100%;
     --input: 0 0% 100%;
-    --ring: 160 100% 39%;
+    --ring: 217 91% 60%;
 
     --radius: 1rem;
 
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 220 10% 55%;
-    --sidebar-primary: 160 100% 39%;
-    --sidebar-primary-foreground: 222 20% 5%;
+    --sidebar-foreground: 220 15% 60%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 222 60% 5%;
     --sidebar-accent: 0 0% 100%;
-    --sidebar-accent-foreground: 220 20% 90%;
+    --sidebar-accent-foreground: 220 25% 92%;
     --sidebar-border: 0 0% 100%;
-    --sidebar-ring: 160 100% 39%;
+    --sidebar-ring: 217 91% 60%;
 
     /* Custom tokens */
-    --glass-bg: rgba(255, 255, 255, 0.05);
-    --glass-bg-hover: rgba(255, 255, 255, 0.08);
-    --glass-border: rgba(255, 255, 255, 0.1);
-    --glass-border-hover: rgba(255, 255, 255, 0.18);
-    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    --glass-bg: rgba(255, 255, 255, 0.04);
+    --glass-bg-hover: rgba(255, 255, 255, 0.07);
+    --glass-border: rgba(120, 160, 230, 0.12);
+    --glass-border-hover: rgba(120, 160, 230, 0.22);
+    --glass-shadow: 0 8px 32px rgba(0, 10, 40, 0.45);
     --glass-blur: 20px;
+    /* Semantic — emerald reserved exclusively for positive results */
     --success: 160 100% 39%;
-    --warning: 45 100% 55%;
-    --info: 210 100% 60%;
+    --warning: 38 95% 55%;
+    --info: 217 91% 60%;
   }
 }
 
@@ -93,7 +95,7 @@
 .glass-bg-scene::before {
   width: 500px;
   height: 500px;
-  background: radial-gradient(circle, hsla(30, 90%, 55%, 0.5), transparent 70%);
+  background: radial-gradient(circle, hsla(217, 91%, 55%, 0.35), transparent 70%);
   top: -10%;
   right: -8%;
   animation-duration: 22s;
@@ -102,7 +104,7 @@
 .glass-bg-scene::after {
   width: 450px;
   height: 450px;
-  background: radial-gradient(circle, hsla(270, 60%, 50%, 0.4), transparent 70%);
+  background: radial-gradient(circle, hsla(225, 80%, 35%, 0.45), transparent 70%);
   bottom: -12%;
   left: -6%;
   animation-duration: 26s;
@@ -114,7 +116,7 @@
   width: 350px;
   height: 350px;
   border-radius: 50%;
-  background: radial-gradient(circle, hsla(160, 80%, 45%, 0.2), transparent 70%);
+  background: radial-gradient(circle, hsla(210, 100%, 50%, 0.18), transparent 70%);
   filter: blur(100px);
   top: 40%;
   left: 50%;
@@ -213,7 +215,7 @@
     background: rgba(255, 255, 255, 0.07);
     border-color: var(--glass-border-hover);
     outline: none;
-    box-shadow: 0 0 0 3px hsla(160, 100%, 39%, 0.15);
+    box-shadow: 0 0 0 3px hsla(217, 91%, 60%, 0.18);
   }
 
   .glass-button {
