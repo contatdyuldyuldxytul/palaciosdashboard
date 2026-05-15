@@ -307,92 +307,10 @@ const ImportSchema = z.object({
   })).default([]),
 });
 
-function EstrategiaDoMes({ strategy, campaigns, monthIso }: { strategy: any; campaigns: any[]; monthIso: string }) {
-  const [importOpen, setImportOpen] = useState(false);
-  const [drillCampaignId, setDrillCampaignId] = useState<string | null>(null);
-
+function EstrategiaDoMes() {
   return (
     <div className="space-y-5">
-      {/* Header card */}
-      <div style={card} className="p-6">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="flex-1 min-w-[260px]">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wide">
-              <Calendar className="w-3.5 h-3.5" />
-              Estratégia · {monthLabel(monthIso)}
-            </div>
-            <h2 className="text-2xl font-semibold text-white mt-1">
-              {strategy?.strategic_focus || "Sem foco estratégico definido"}
-            </h2>
-          </div>
-          <button
-            onClick={() => setImportOpen(true)}
-            className="flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-medium transition-all hover:opacity-90"
-            style={{
-              background: "linear-gradient(135deg, hsl(160,100%,38%), hsl(160,100%,45%))",
-              color: "white",
-              boxShadow: "0 4px 20px rgba(0,200,150,0.25)",
-            }}
-          >
-            <Download className="w-4 h-4" />
-            📥 Importar Estratégia
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-5">
-          <Stat label="Meta de caixa" value={strategy ? fmtBRL(Number(strategy.cash_target || 0)) : "—"} accent="hsl(160,100%,55%)" />
-          <Stat label="Mínimo operacional" value={strategy ? fmtBRL(Number(strategy.operational_minimum || 0)) : "—"} accent="hsl(45,100%,55%)" />
-          <Stat label="Origem" value={strategy?.source || "—"} accent="hsl(238,80%,70%)" />
-        </div>
-
-        {Array.isArray(strategy?.key_priorities) && strategy.key_priorities.length > 0 && (
-          <div className="mt-5">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Prioridades-chave</p>
-            <ul className="space-y-1.5">
-              {(strategy.key_priorities as string[]).map((p, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-white/90">
-                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "hsl(160,100%,55%)" }} />
-                  {p}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {!strategy && (
-          <p className="text-sm text-muted-foreground mt-4">
-            Nenhuma estratégia importada para este mês. Clique em "Importar Estratégia" para começar.
-          </p>
-        )}
-      </div>
-
-      {/* Campanhas */}
-      <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-white px-1">Campanhas ativas ({campaigns.length})</h3>
-        {campaigns.length === 0 && (
-          <div style={card} className="p-6 text-center text-sm text-muted-foreground">
-            Nenhuma campanha ativa neste mês.
-          </div>
-        )}
-        {campaigns.map((c: any) => (
-          <CampaignCard key={c.id} campaign={c} expanded={drillCampaignId === c.id} onToggle={() => setDrillCampaignId(drillCampaignId === c.id ? null : c.id)} />
-        ))}
-      </div>
-
-      {/* Histórico */}
-      <div className="flex justify-end">
-        <Link
-          to="/ceo/memoria"
-          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-white transition-colors"
-        >
-          Ver histórico de estratégias
-          <ChevronRight className="w-4 h-4" />
-        </Link>
-      </div>
-
       <WeeklyPlanSection />
-
-      <ImportModal open={importOpen} onClose={() => setImportOpen(false)} />
     </div>
   );
 }
