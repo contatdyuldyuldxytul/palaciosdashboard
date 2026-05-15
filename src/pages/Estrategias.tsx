@@ -8,7 +8,7 @@ import { useLeads } from "@/hooks/useLeads";
 import { useMonthlyStrategy, useCampaigns, useImportStrategy } from "@/hooks/useStrategy";
 import { supabase } from "@/integrations/supabase/client";
 
-type TabKey = "estrategia_mes" | "previsibilidade" | "leads" | "playbook" | "equipe";
+type TabKey = "estrategia_mes" | "metas_comerciais" | "previsibilidade" | "leads" | "playbook" | "equipe";
 
 interface ContratoLS { vendedor: string; valor: number; comissao: number; data: string; }
 interface MetaEquipe { vendedor: string; meta: number; }
