@@ -1417,6 +1417,51 @@ export type Database = {
         }
         Relationships: []
       }
+      weekly_plans: {
+        Row: {
+          approved_at: string | null
+          created_at: string
+          estrategia_semana: string | null
+          extras_aline: Json
+          extras_felipe: Json
+          extras_milena: Json
+          id: string
+          prioridades: Json
+          status: string
+          updated_at: string
+          week_end: string
+          week_start: string
+        }
+        Insert: {
+          approved_at?: string | null
+          created_at?: string
+          estrategia_semana?: string | null
+          extras_aline?: Json
+          extras_felipe?: Json
+          extras_milena?: Json
+          id?: string
+          prioridades?: Json
+          status?: string
+          updated_at?: string
+          week_end: string
+          week_start: string
+        }
+        Update: {
+          approved_at?: string | null
+          created_at?: string
+          estrategia_semana?: string | null
+          extras_aline?: Json
+          extras_felipe?: Json
+          extras_milena?: Json
+          id?: string
+          prioridades?: Json
+          status?: string
+          updated_at?: string
+          week_end?: string
+          week_start?: string
+        }
+        Relationships: []
+      }
       weekly_reports: {
         Row: {
           generated_at: string
