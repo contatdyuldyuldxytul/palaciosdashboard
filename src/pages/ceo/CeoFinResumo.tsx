@@ -115,14 +115,10 @@ export default function CeoFinResumo() {
 
   return (
     <div className="space-y-6">
-      {/* Month nav */}
+      {/* Month label (auto-rotativo) */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-amber-400">📊 Resumo do Negócio</h2>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setMonthOffset(o => o - 1)} className="p-1.5 rounded-lg hover:bg-white/5 text-muted-foreground"><ChevronLeft className="w-4 h-4" /></button>
-          <span className="text-sm font-medium capitalize min-w-[120px] text-center">{mesLabel}</span>
-          <button onClick={() => setMonthOffset(o => o + 1)} className="p-1.5 rounded-lg hover:bg-white/5 text-muted-foreground"><ChevronRight className="w-4 h-4" /></button>
-        </div>
+        <h2 className="text-lg font-bold text-amber-400">Resumo do Negócio</h2>
+        <span className="text-sm font-medium capitalize text-muted-foreground">{mesLabel}</span>
       </div>
 
       {/* Row 1 */}
