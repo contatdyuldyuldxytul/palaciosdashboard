@@ -7,8 +7,9 @@ import { toast } from "sonner";
 import { useLeads } from "@/hooks/useLeads";
 import { useMonthlyStrategy, useCampaigns, useImportStrategy } from "@/hooks/useStrategy";
 import { supabase } from "@/integrations/supabase/client";
+import CeoMetas from "@/pages/ceo/CeoMetas";
 
-type TabKey = "estrategia_mes" | "previsibilidade" | "leads" | "playbook" | "equipe";
+type TabKey = "estrategia_mes" | "metas_comerciais" | "previsibilidade" | "leads" | "playbook" | "equipe";
 
 interface ContratoLS { vendedor: string; valor: number; comissao: number; data: string; }
 interface MetaEquipe { vendedor: string; meta: number; }
@@ -130,6 +131,7 @@ export default function Estrategias() {
 
   const tabs: { key: TabKey; label: string; icon: any }[] = [
     { key: "estrategia_mes", label: "Estratégia do Mês", icon: Calendar },
+    { key: "metas_comerciais", label: "Metas Comerciais", icon: Target },
     { key: "previsibilidade", label: "Previsibilidade", icon: TrendingUp },
     { key: "leads", label: "Volume de Leads", icon: Users2 },
     { key: "playbook", label: "Playbook", icon: BookOpen },
@@ -174,6 +176,8 @@ export default function Estrategias() {
 
       <motion.div key={tab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="space-y-5">
         {tab === "estrategia_mes" && <EstrategiaDoMes />}
+
+        {tab === "metas_comerciais" && <CeoMetas />}
 
         {tab === "previsibilidade" && (
           <div style={card} className="p-6 space-y-6">
