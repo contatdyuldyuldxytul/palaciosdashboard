@@ -161,6 +161,11 @@
   100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
 }
 
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
 @layer utilities {
   .glass-card {
     background: var(--glass-bg);
