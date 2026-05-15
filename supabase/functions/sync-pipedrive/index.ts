@@ -60,8 +60,32 @@ serve(async (req) => {
       const dealsRes = await fetch(
         `https://api.pipedrive.com/v1/deals?api_token=${PIPEDRIVE_API_KEY}&start=${start}&limit=100&status=all_not_deleted&pipeline_id=${pipelineId}`
       );
-      const dealsData = await dealsRes.json();
-      if (!dealsData.success) throw new Error('Failed to fetch Pipedrive deals');
+      if (dealsRes.status === 429) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'RATE_LIMITED',
+          message: 'Pipedrive rate limit hit. Try again in a few minutes.',
+          fallback: true,
+        }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const dealsText = await dealsRes.text();
+      let dealsData: any;
+      try { dealsData = JSON.parse(dealsText); } catch {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'PIPEDRIVE_NON_JSON',
+          message: `Pipedrive returned non-JSON (status ${dealsRes.status})`,
+          fallback: true,
+        }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      if (!dealsData.success) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'FAILED_TO_FETCH_DEALS',
+          message: dealsData.error || 'Failed to fetch Pipedrive deals',
+          fallback: true,
+        }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
 
       if (dealsData.data) {
         allDeals.push(...dealsData.data);
