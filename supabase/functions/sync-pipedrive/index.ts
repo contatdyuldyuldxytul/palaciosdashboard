@@ -177,9 +177,11 @@ serve(async (req) => {
     console.error('Pipedrive sync error:', error);
     return new Response(JSON.stringify({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: 'SERVICE_FAILED',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      fallback: true,
     }), {
-      status: 500,
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
