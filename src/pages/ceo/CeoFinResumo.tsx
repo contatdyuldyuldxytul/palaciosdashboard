@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useLancamentos } from "@/hooks/useLancamentos";
 import { useBalanco } from "@/hooks/useBalanco";
 import { useFluxoCaixa } from "@/hooks/useFluxoCaixa";
@@ -6,7 +6,6 @@ import { useCustosConfig } from "@/hooks/useCustosConfig";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, subMonths, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 function fmt(v: number) {
