@@ -797,6 +797,7 @@ export type Database = {
           descricao: string
           id: string
           mes: string
+          notas: string | null
           valor: number
         }
         Insert: {
@@ -807,6 +808,7 @@ export type Database = {
           descricao: string
           id?: string
           mes?: string
+          notas?: string | null
           valor?: number
         }
         Update: {
@@ -817,6 +819,7 @@ export type Database = {
           descricao?: string
           id?: string
           mes?: string
+          notas?: string | null
           valor?: number
         }
         Relationships: []
