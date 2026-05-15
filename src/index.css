@@ -95,7 +95,7 @@
 .glass-bg-scene::before {
   width: 500px;
   height: 500px;
-  background: radial-gradient(circle, hsla(30, 90%, 55%, 0.5), transparent 70%);
+  background: radial-gradient(circle, hsla(217, 91%, 55%, 0.35), transparent 70%);
   top: -10%;
   right: -8%;
   animation-duration: 22s;
@@ -104,7 +104,7 @@
 .glass-bg-scene::after {
   width: 450px;
   height: 450px;
-  background: radial-gradient(circle, hsla(270, 60%, 50%, 0.4), transparent 70%);
+  background: radial-gradient(circle, hsla(225, 80%, 35%, 0.45), transparent 70%);
   bottom: -12%;
   left: -6%;
   animation-duration: 26s;
@@ -116,7 +116,7 @@
   width: 350px;
   height: 350px;
   border-radius: 50%;
-  background: radial-gradient(circle, hsla(160, 80%, 45%, 0.2), transparent 70%);
+  background: radial-gradient(circle, hsla(210, 100%, 50%, 0.18), transparent 70%);
   filter: blur(100px);
   top: 40%;
   left: 50%;
