@@ -21,17 +21,25 @@ export function TickerBar() {
     { label: "Pipeline", value: `R$ ${receita.toLocaleString("pt-BR")}`, icon: TrendingUp },
   ];
 
-  return (
-    <div className="ticker-bar h-10 flex items-center px-4 gap-6 overflow-x-auto text-xs relative z-10">
-      {metrics.map((m) => (
-        <div key={m.label} className="flex items-center gap-2 flex-shrink-0">
-          <m.icon className="w-3.5 h-3.5 text-muted-foreground" />
-          <span className="text-muted-foreground">{m.label}:</span>
-          <span className="font-semibold text-foreground">{m.value}</span>
-        </div>
-      ))}
+  const Item = ({ m }: { m: (typeof metrics)[number] }) => (
+    <div className="flex items-center gap-2 flex-shrink-0 mr-10">
+      <m.icon className="w-3.5 h-3.5 text-muted-foreground" />
+      <span className="text-muted-foreground">{m.label}:</span>
+      <span className="font-semibold text-foreground">{m.value}</span>
+    </div>
+  );
 
-      <div className="ml-auto flex items-center gap-3 flex-shrink-0">
+  return (
+    <div className="ticker-bar h-10 flex items-center px-4 gap-4 text-xs relative z-10 overflow-hidden">
+      {/* Marquee — auto-scroll horizontal */}
+      <div className="flex-1 min-w-0 overflow-hidden">
+        <div className="flex w-max animate-[ticker-scroll_28s_linear_infinite] hover:[animation-play-state:paused]">
+          {metrics.map((m, i) => <Item key={`a-${i}`} m={m} />)}
+          {metrics.map((m, i) => <Item key={`b-${i}`} m={m} />)}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 flex-shrink-0">
         {/* Pipedrive status */}
         <div className="flex items-center gap-1.5 flex-shrink-0">
           <span
