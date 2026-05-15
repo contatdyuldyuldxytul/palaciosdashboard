@@ -177,6 +177,8 @@ export default function Estrategias() {
       <motion.div key={tab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="space-y-5">
         {tab === "estrategia_mes" && <EstrategiaDoMes />}
 
+        {tab === "metas_comerciais" && <CeoMetas />}
+
         {tab === "previsibilidade" && (
           <div style={card} className="p-6 space-y-6">
             <div className="flex flex-wrap items-end gap-4">
