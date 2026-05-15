@@ -390,7 +390,244 @@ function EstrategiaDoMes({ strategy, campaigns, monthIso }: { strategy: any; cam
         </Link>
       </div>
 
+      <WeeklyPlanSection />
+
       <ImportModal open={importOpen} onClose={() => setImportOpen(false)} />
+    </div>
+  );
+}
+
+function WeeklyPlanSection() {
+  const [plan, setPlan] = useState<any | null | undefined>(undefined);
+  const [saving, setSaving] = useState(false);
+
+  const load = async () => {
+    const { data } = await (supabase as any)
+      .from("weekly_plans")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    setPlan(data ?? null);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const updateField = (key: string, value: any) =>
+    setPlan((p: any) => ({ ...p, [key]: value }));
+
+  const updateListItem = (key: string, idx: number, value: string) => {
+    const arr = [...(plan?.[key] || [])];
+    arr[idx] = value;
+    updateField(key, arr);
+  };
+  const addItem = (key: string) =>
+    updateField(key, [...(plan?.[key] || []), ""]);
+  const removeItem = (key: string, idx: number) => {
+    const arr = [...(plan?.[key] || [])];
+    arr.splice(idx, 1);
+    updateField(key, arr);
+  };
+
+  const approveAndDistribute = async () => {
+    if (!plan) return;
+    setSaving(true);
+    try {
+      const { error: upErr } = await (supabase as any)
+        .from("weekly_plans")
+        .update({
+          estrategia_semana: plan.estrategia_semana || "",
+          prioridades: plan.prioridades || [],
+          extras_aline: plan.extras_aline || [],
+          extras_felipe: plan.extras_felipe || [],
+          extras_milena: plan.extras_milena || [],
+          status: "aprovado",
+          approved_at: new Date().toISOString(),
+        })
+        .eq("id", plan.id);
+      if (upErr) throw upErr;
+
+      const rows: any[] = [];
+      const base = {
+        task_type: "strategic" as const,
+        source: "claude_briefing" as const,
+        scheduled_date: plan.week_start,
+        priority: 7,
+      };
+      (plan.extras_aline || []).filter((s: string) => s?.trim()).forEach((s: string) =>
+        rows.push({ ...base, user_pipedrive_id: 24578358, task_description: s })
+      );
+      (plan.extras_felipe || []).filter((s: string) => s?.trim()).forEach((s: string) =>
+        rows.push({ ...base, user_pipedrive_id: 26351800, task_description: s })
+      );
+      (plan.extras_milena || []).filter((s: string) => s?.trim()).forEach((s: string) =>
+        rows.push({ ...base, user_pipedrive_id: null, task_description: `Milena: ${s}` })
+      );
+      if (rows.length > 0) {
+        const { error: insErr } = await supabase.from("daily_activities").insert(rows);
+        if (insErr) throw insErr;
+      }
+
+      setPlan({ ...plan, status: "aprovado" });
+      toast.success("Plano aprovado e atividades distribuídas para o time");
+    } catch (e: any) {
+      toast.error(e?.message || "Erro ao aprovar plano");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const fmt = (iso?: string) => {
+    if (!iso) return "—";
+    const [y, m, d] = iso.split("-");
+    return `${d}/${m}/${y}`;
+  };
+
+  const inputStyle: React.CSSProperties = {
+    background: "rgba(255,255,255,0.04)",
+    border: "1px solid rgba(255,255,255,0.08)",
+    color: "white",
+    borderRadius: 8,
+    padding: "8px 10px",
+    fontSize: 13,
+    width: "100%",
+  };
+
+  if (plan === undefined) {
+    return <div style={card} className="p-6 text-sm text-muted-foreground">Carregando plano semanal…</div>;
+  }
+
+  return (
+    <div style={card} className="p-6 space-y-5">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wide">
+            <Calendar className="w-3.5 h-3.5" />
+            Plano Semanal do Claude
+          </div>
+          {plan && (
+            <h3 className="text-lg font-semibold text-white mt-1">
+              Plano da semana de {fmt(plan.week_start)} a {fmt(plan.week_end)}
+            </h3>
+          )}
+        </div>
+        {plan && (
+          <span
+            className="text-[11px] px-2.5 py-1 rounded-full font-medium"
+            style={
+              plan.status === "aprovado"
+                ? { background: "rgba(0,200,150,0.15)", color: "hsl(160,100%,55%)", border: "1px solid rgba(0,200,150,0.3)" }
+                : { background: "rgba(234,179,8,0.15)", color: "hsl(45,100%,60%)", border: "1px solid rgba(234,179,8,0.3)" }
+            }
+          >
+            {plan.status === "aprovado" ? "Aprovado" : "Aguardando aprovação"}
+          </span>
+        )}
+      </div>
+
+      {!plan && (
+        <p className="text-sm text-muted-foreground">
+          Nenhum plano disponível. O briefing de sexta-feira gerará o plano automaticamente.
+        </p>
+      )}
+
+      {plan && (
+        <>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Estratégia da semana</p>
+            <textarea
+              value={plan.estrategia_semana || ""}
+              onChange={(e) => updateField("estrategia_semana", e.target.value)}
+              rows={4}
+              style={inputStyle}
+            />
+          </div>
+
+          <EditableList title="Prioridades" items={plan.prioridades || []}
+            onChange={(i, v) => updateListItem("prioridades", i, v)}
+            onAdd={() => addItem("prioridades")} onRemove={(i) => removeItem("prioridades", i)}
+            inputStyle={inputStyle} />
+
+          <EditableList title="Atividades Aline" items={plan.extras_aline || []}
+            onChange={(i, v) => updateListItem("extras_aline", i, v)}
+            onAdd={() => addItem("extras_aline")} onRemove={(i) => removeItem("extras_aline", i)}
+            inputStyle={inputStyle} />
+
+          <EditableList title="Atividades Felipe" items={plan.extras_felipe || []}
+            onChange={(i, v) => updateListItem("extras_felipe", i, v)}
+            onAdd={() => addItem("extras_felipe")} onRemove={(i) => removeItem("extras_felipe", i)}
+            inputStyle={inputStyle} />
+
+          <EditableList title="Atividades Milena" items={plan.extras_milena || []}
+            onChange={(i, v) => updateListItem("extras_milena", i, v)}
+            onAdd={() => addItem("extras_milena")} onRemove={(i) => removeItem("extras_milena", i)}
+            inputStyle={inputStyle} />
+
+          <div className="flex justify-end">
+            <button
+              onClick={approveAndDistribute}
+              disabled={saving || plan.status === "aprovado"}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                background: "linear-gradient(135deg, hsl(160,100%,38%), hsl(160,100%,45%))",
+                color: "white",
+                boxShadow: "0 4px 20px rgba(0,200,150,0.25)",
+              }}
+            >
+              {plan.status === "aprovado" ? "Plano aprovado" : saving ? "Aprovando…" : "Aprovar e Distribuir"}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function EditableList({
+  title, items, onChange, onAdd, onRemove, inputStyle,
+}: {
+  title: string;
+  items: string[];
+  onChange: (i: number, v: string) => void;
+  onAdd: () => void;
+  onRemove: (i: number) => void;
+  inputStyle: React.CSSProperties;
+}) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">{title}</p>
+        <button
+          onClick={onAdd}
+          className="text-[11px] px-2 py-0.5 rounded-md text-white/80 hover:text-white"
+          style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
+        >
+          + Adicionar
+        </button>
+      </div>
+      {items.length === 0 ? (
+        <p className="text-xs text-muted-foreground italic">Nenhum item.</p>
+      ) : (
+        <div className="space-y-1.5">
+          {items.map((item, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <input
+                type="text"
+                value={item || ""}
+                onChange={(e) => onChange(i, e.target.value)}
+                style={inputStyle}
+              />
+              <button
+                onClick={() => onRemove(i)}
+                className="text-xs px-2 py-1 rounded-md text-white/60 hover:text-destructive"
+                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
