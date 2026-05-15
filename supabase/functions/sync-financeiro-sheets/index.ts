@@ -317,24 +317,45 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Map to lancamentos schema (the table the CEO panel reads from)
+    const lancamentosRows = allItems.map((it) => {
+      const [y, m] = it.data.split("-");
+      return {
+        data: it.data,
+        valor: it.valor,
+        descricao: it.descricao,
+        categoria: it.categoria,
+        classificacao: it.tipo === "receita" ? "Entrada" : "Saída",
+        mes: `${m}/${y}`,
+        notas: it.notas,
+      };
+    });
+
     // Wipe previous synced records (keep manual entries intact)
     const { error: delErr } = await supabase
+      .from("lancamentos")
+      .delete()
+      .in("notas", ["sync:entradas-saidas", "sync:orcamento-salario-thiago"]);
+    if (delErr) console.error("delete lancamentos error", delErr);
+
+    // Also clean up old data we accidentally pushed to financeiro_empresa earlier
+    await supabase
       .from("financeiro_empresa")
       .delete()
-      .or("notas.eq.sync:entradas-saidas,notas.eq.sync:orcamento-salario-thiago");
-    if (delErr) console.error("delete error", delErr);
+      .in("notas", ["sync:entradas-saidas", "sync:orcamento-salario-thiago"]);
 
     // Insert in batches
     let inserted = 0;
-    if (allItems.length > 0) {
+    if (lancamentosRows.length > 0) {
       const batchSize = 500;
-      for (let i = 0; i < allItems.length; i += batchSize) {
-        const batch = allItems.slice(i, i + batchSize);
-        const { error } = await supabase.from("financeiro_empresa").insert(batch);
+      for (let i = 0; i < lancamentosRows.length; i += batchSize) {
+        const batch = lancamentosRows.slice(i, i + batchSize);
+        const { error } = await supabase.from("lancamentos").insert(batch);
         if (error) throw new Error(`Insert failed: ${error.message}`);
         inserted += batch.length;
       }
     }
+
 
     return new Response(JSON.stringify({
       success: true,
