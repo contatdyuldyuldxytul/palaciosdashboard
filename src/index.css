@@ -270,3 +270,9 @@
     transition: all 0.3s ease;
   }
 }
+
+/* Native select option contrast (dark theme) */
+select option {
+  background-color: hsl(228, 16%, 10%);
+  color: hsl(0, 0%, 95%);
+}
