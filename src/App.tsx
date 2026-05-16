@@ -89,6 +89,7 @@ const App = () => (
                 <Route path="memoria" element={<CeoMemoria />} />
                 <Route path="estrategias" element={<Estrategias />} />
                 <Route path="clientes" element={<CeoClientes />} />
+                <Route path="colaboradores" element={<CeoColaboradores />} />
               </Route>
 
               {/* Assistente IA */}
