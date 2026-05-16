@@ -12,6 +12,9 @@ interface Profile {
   vendedor_sub_role: VendedorSubRole | null;
   avatar_url: string | null;
   founder_pin: string | null;
+  status: "pending" | "approved" | "rejected";
+  colaborador_slug: "thiago" | "aline" | "milena" | "felipe" | null;
+  sub_role: string | null;
 }
 
 interface AuthContextType {
