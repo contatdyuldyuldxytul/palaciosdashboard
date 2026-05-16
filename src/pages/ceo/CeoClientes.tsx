@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
-import { Plus, Repeat } from "lucide-react";
+import { Plus, Repeat, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useClientesCEO, ClienteCEO } from "@/hooks/useClientesCEO";
 import { useParcelaMatcher } from "@/hooks/useParcelaMatcher";
 import { useLancamentos } from "@/hooks/useLancamentos";
+import { useSyncSheets } from "@/hooks/useSyncSheets";
 import ClienteFormModal from "@/components/ceo/ClienteFormModal";
 import ClienteDetalhesModal from "@/components/ceo/ClienteDetalhesModal";
 import { format, parseISO } from "date-fns";
@@ -21,6 +22,7 @@ export default function CeoClientes() {
   const { data: clientes = [], isLoading } = useClientesCEO();
   const { data: lancamentos = [] } = useLancamentos();
   const matcher = useParcelaMatcher();
+  const { sync, isSyncing } = useSyncSheets();
   const [tab, setTab] = useState<Tab>("ativos");
   const [formOpen, setFormOpen] = useState(false);
   const [selected, setSelected] = useState<ClienteCEO | null>(null);
@@ -59,9 +61,15 @@ export default function CeoClientes() {
             {matcher.matchedCount > 0 && ` · ${matcher.matchedCount} pagamento(s) sincronizado(s)`}
           </p>
         </div>
-        <Button onClick={() => { setEditing(null); setFormOpen(true); }} className="bg-amber-500/90 hover:bg-amber-500 text-black">
-          <Plus className="w-4 h-4 mr-1" /> Novo cliente
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => sync()} disabled={isSyncing} variant="outline" size="sm" className="border-white/10">
+            <RefreshCw className={`w-4 h-4 mr-1 ${isSyncing ? "animate-spin" : ""}`} />
+            {isSyncing ? "Sincronizando..." : "Sincronizar planilha"}
+          </Button>
+          <Button onClick={() => { setEditing(null); setFormOpen(true); }} className="bg-amber-500/90 hover:bg-amber-500 text-black">
+            <Plus className="w-4 h-4 mr-1" /> Novo cliente
+          </Button>
+        </div>
       </div>
 
       <div className="inline-flex p-1 rounded-xl bg-white/[0.04] border border-white/5">
