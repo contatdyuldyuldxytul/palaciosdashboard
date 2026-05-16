@@ -344,6 +344,9 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
             </div>
             <p className="text-xl font-bold text-foreground"><AnimatedNumber value={totalCommission} formatAsCurrency /></p>
             <p className="text-[10px] text-muted-foreground mt-1">({sheetLeads.length}×R$1) + (1%×{formatCurrency(closedContractsValue)})</p>
+            {projetosComissao.clientesCount > 0 && (
+              <p className="text-[10px] text-amber-300/90 mt-0.5">+ 4% projetos: {formatCurrency(projetosComissao.comissao)} ({projetosComissao.clientesCount} cliente{projetosComissao.clientesCount === 1 ? "" : "s"})</p>
+            )}
             <p className="text-xs text-muted-foreground mt-0.5">Comissão Acumulada</p>
             </>}
           </motion.div>
