@@ -198,9 +198,9 @@ export default function CeoColaboradores() {
 }
 
 function ColaboradorCard({
-  colab, rank, salarioFixo, mesAtual, allProfiles, onAssignEmail, onSetSubRole, isFirst,
+  colab, rank, salarioFixo, allProfiles, onAssignEmail, onSetSubRole, isFirst,
 }: any) {
-  const { comissao } = useComissaoVendedorByName(colab.nome, mesAtual);
+  const comissao = colab.commission || 0;
   const profile = colab.profile;
   const availableProfiles = allProfiles.filter((p: ProfileRow) =>
     p.status === "approved" && (!p.colaborador_slug || p.colaborador_slug === colab.slug)
