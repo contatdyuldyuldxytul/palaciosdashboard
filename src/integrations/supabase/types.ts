@@ -1244,11 +1244,14 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          colaborador_slug: string | null
           created_at: string
           email: string | null
           founder_pin: string | null
           full_name: string
           id: string
+          status: string
+          sub_role: string | null
           updated_at: string
           vendedor_sub_role:
             | Database["public"]["Enums"]["vendedor_sub_role"]
@@ -1256,11 +1259,14 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          colaborador_slug?: string | null
           created_at?: string
           email?: string | null
           founder_pin?: string | null
           full_name?: string
           id: string
+          status?: string
+          sub_role?: string | null
           updated_at?: string
           vendedor_sub_role?:
             | Database["public"]["Enums"]["vendedor_sub_role"]
@@ -1268,11 +1274,14 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          colaborador_slug?: string | null
           created_at?: string
           email?: string | null
           founder_pin?: string | null
           full_name?: string
           id?: string
+          status?: string
+          sub_role?: string | null
           updated_at?: string
           vendedor_sub_role?:
             | Database["public"]["Enums"]["vendedor_sub_role"]
@@ -1571,6 +1580,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_my_colaborador_slug: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
