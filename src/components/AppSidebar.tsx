@@ -1,10 +1,11 @@
 import { useLocation, Link } from "react-router-dom";
 import {
   LayoutDashboard, TrendingUp, Users, MessageSquare, Target,
-  ChevronLeft, ChevronRight, ChevronDown, LogOut, Crown, User
+  ChevronLeft, ChevronRight, ChevronDown, LogOut, Crown, User, Sun, Moon
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import logoPalacios from "@/assets/logo-palacios.png";
 import logoPalaciosIcon from "@/assets/logo-palacios-icon.png";
 
