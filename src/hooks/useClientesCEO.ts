@@ -6,7 +6,7 @@ export interface Parcela {
   numero: number;
   percentual: number;
   dias_apos_inicio: number;
-  data_prevista: string; // ISO date
+  data_prevista: string;
   status: "pendente" | "pago";
   valor_pago?: number;
   data_pagamento?: string;
@@ -34,6 +34,8 @@ export interface ClienteCEO {
   concluido_em: string | null;
   notas: string | null;
   status: string;
+  recorrente: boolean;
+  vendedor_id: string | null;
   created_at: string;
 }
 
@@ -83,6 +85,28 @@ export function useUpdateClienteCEO() {
   });
 }
 
+export function useUpsertClienteCEO() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id?: string; patch: Partial<ClienteCEO> }) => {
+      if (id) {
+        const { error } = await supabase.from("clientes_ativos").update(patch as any).eq("id", id);
+        if (error) throw error;
+        return { id };
+      } else {
+        const { data, error } = await supabase.from("clientes_ativos").insert([patch as any]).select().single();
+        if (error) throw error;
+        return data;
+      }
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["clientes_ceo"] });
+      toast({ title: vars.id ? "Cliente atualizado!" : "Cliente cadastrado!" });
+    },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+}
+
 export function useDeleteClienteCEO() {
   const qc = useQueryClient();
   return useMutation({
@@ -95,5 +119,17 @@ export function useDeleteClienteCEO() {
       toast({ title: "Cliente removido" });
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+}
+
+export interface VendedorOption { id: string; nome: string; }
+export function useVendedores() {
+  return useQuery({
+    queryKey: ["vendedores_profiles"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("profiles").select("id, full_name");
+      if (error) throw error;
+      return (data || []).map((p: any) => ({ id: p.id, nome: p.full_name })) as VendedorOption[];
+    },
   });
 }
