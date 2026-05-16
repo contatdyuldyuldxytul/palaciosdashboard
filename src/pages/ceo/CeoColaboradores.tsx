@@ -183,7 +183,7 @@ export default function CeoColaboradores() {
             <div key={r.slug} className="flex items-center gap-3 p-2 rounded-lg" style={{ background: i === 0 ? "rgba(245,158,11,0.08)" : "rgba(255,255,255,0.03)" }}>
               <div className="w-7 text-center font-bold" style={{ color: i === 0 ? "#F59E0B" : "hsl(var(--muted-foreground))" }}>{i + 1}º</div>
               <div className="flex-1 text-sm text-foreground">{r.nome}</div>
-              <div className="text-xs text-muted-foreground">{r.realizado}/{r.meta || "—"}</div>
+              <div className="text-xs text-muted-foreground">{fmt(r.realizado)} / {r.meta ? fmt(r.meta) : "—"}</div>
               <div className="w-12 text-right text-sm font-semibold" style={{ color: r.cor }}>{Math.round(r.pct)}%</div>
             </div>
           ))}
