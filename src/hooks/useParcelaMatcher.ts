@@ -31,11 +31,13 @@ export function useParcelaMatcher(): MatchResult {
 
   return useMemo<MatchResult>(() => {
     const cls = (clientes || []).filter((c) => !c.recorrente);
-    const lcs = (lancamentos || []).filter(
-      (l) =>
-        l.classificacao === "Entrada" &&
-        (l.categoria === "Receitas Palacios" || l.categoria === "Receitas BKV"),
-    );
+    const lcs = (lancamentos || [])
+      .filter(
+        (l) =>
+          l.classificacao === "Entrada" &&
+          (l.categoria === "Receitas Palacios" || l.categoria === "Receitas BKV"),
+      )
+      .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
 
     const unmatched: MatchResult["unmatched"] = [];
     let matchedCount = 0;
