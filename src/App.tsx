@@ -38,6 +38,7 @@ import CeoJuridico from "@/pages/ceo/CeoJuridico";
 import CeoProcessos from "@/pages/ceo/CeoProcessos";
 import CeoMemoria from "@/pages/ceo/CeoMemoria";
 import CeoClientes from "@/pages/ceo/CeoClientes";
+import CeoColaboradores from "@/pages/ceo/CeoColaboradores";
 
 const queryClient = new QueryClient();
 
