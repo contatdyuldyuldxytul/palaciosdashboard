@@ -75,7 +75,7 @@ export default function CeoColaboradores() {
   const profileBySlug = (slug: string) => profiles.find((p) => p.colaborador_slug === slug && p.status === "approved");
 
   // Compute % meta + comissões per colaborador
-  const { data: metas } = useMetasMensais(mesAtual);
+  const { data: metas } = useMetaMensal(mesAtual);
   const { data: leads = [] } = useLeads();
 
   const stats = useMemo(() => {
