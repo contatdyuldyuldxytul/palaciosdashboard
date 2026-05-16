@@ -55,7 +55,7 @@ export function AppSidebar() {
             <img src={logoPalaciosIcon} alt="Palacios 3D Studio" className="w-7 h-7 object-contain" />
           </div>
         ) : (
-          <img src={logoPalacios} alt="Palacios 3D Studio" className="h-7 w-auto object-contain opacity-90" />
+          <img src={theme === "light" ? logoPalaciosLight : logoPalacios} alt="Palacios 3D Studio" className="h-7 w-auto object-contain opacity-90" />
         )}
       </div>
 
