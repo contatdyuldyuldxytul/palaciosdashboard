@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useComissaoVendedorByName } from "@/hooks/useComissaoVendedor";
-import { useMetasMensais } from "@/hooks/useMetasMensais";
+import { useMetaMensal } from "@/hooks/useMetasMensais";
 import { useLeads } from "@/hooks/useLeads";
 import { toast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
