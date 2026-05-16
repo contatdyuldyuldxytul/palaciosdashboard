@@ -22,6 +22,7 @@ export default function CeoClientes() {
   const { data: clientes = [], isLoading } = useClientesCEO();
   const { data: lancamentos = [] } = useLancamentos();
   const matcher = useParcelaMatcher();
+  const { sync, isSyncing } = useSyncSheets();
   const [tab, setTab] = useState<Tab>("ativos");
   const [formOpen, setFormOpen] = useState(false);
   const [selected, setSelected] = useState<ClienteCEO | null>(null);
