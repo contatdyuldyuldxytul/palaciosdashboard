@@ -275,24 +275,30 @@ function ColaboradorCard({
             }
             if (newId) onAssignEmail(newId, colab.slug);
           }}
-          className="w-full text-xs px-2 py-1.5 rounded-lg bg-transparent border border-white/10 text-foreground"
+          className="w-full text-xs px-2 py-1.5 rounded-lg border border-white/10 text-foreground"
+          style={{ background: "hsl(228,16%,10%)" }}
         >
           <option value="">— Sem conta —</option>
           {availableProfiles.map((p: ProfileRow) => (
             <option key={p.id} value={p.id}>{p.email}</option>
           ))}
         </select>
-        {profile && (
+        {profile ? (
           <select
             value={profile.sub_role || ""}
             onChange={(e) => onSetSubRole(profile.id, e.target.value || null)}
-            className="w-full text-xs px-2 py-1.5 rounded-lg bg-transparent border border-white/10 text-foreground"
+            className="w-full text-xs px-2 py-1.5 rounded-lg border border-white/10 text-foreground"
+            style={{ background: "hsl(228,16%,10%)" }}
           >
             <option value="">— Sub-cargo —</option>
             {SUB_ROLE_OPTIONS.map((r) => (
               <option key={r} value={r}>{r.toUpperCase()}</option>
             ))}
           </select>
+        ) : (
+          <div className="text-[11px] text-muted-foreground italic px-2 py-1.5 rounded-lg border border-dashed border-white/10">
+            Vincule uma conta para definir o sub-cargo
+          </div>
         )}
       </div>
     </motion.div>
