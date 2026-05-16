@@ -51,12 +51,17 @@ export default function PlanoSemanalClaude() {
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
-    const { data } = await (supabase as any)
+    const { data, error } = await (supabase as any)
       .from("weekly_plans")
       .select("*")
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+    console.log("[PlanoSemanalClaude] weekly_plans result:", { data, error });
+    if (error) {
+      console.error("[PlanoSemanalClaude] erro ao buscar weekly_plans:", error);
+      return setPlan(null);
+    }
     if (!data) return setPlan(null);
 
     // Default cadência: load from cadence_templates if empty
