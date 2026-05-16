@@ -55,17 +55,17 @@ export default function PlanoSemanalClaude() {
       .from("weekly_plans")
       .select("*")
       .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(1);
     console.log("[PlanoSemanalClaude] weekly_plans result:", { data, error });
     if (error) {
       console.error("[PlanoSemanalClaude] erro ao buscar weekly_plans:", error);
       return setPlan(null);
     }
-    if (!data) return setPlan(null);
+    const plano = data?.[0] ?? null;
+    if (!plano) return setPlan(null);
 
     // Default cadência: load from cadence_templates if empty
-    let cadencia: CadenciaSemana = data.cadencia_semana;
+    let cadencia: CadenciaSemana = plano.cadencia_semana;
     if (!cadencia || Object.keys(cadencia).length === 0) {
       const { data: templates } = await (supabase as any)
         .from("cadence_templates")
@@ -82,10 +82,10 @@ export default function PlanoSemanalClaude() {
     }
 
     setPlan({
-      ...data,
+      ...plano,
       cadencia_semana: cadencia,
-      meta_milena_dia: data.meta_milena_dia ?? 15,
-      estrategias_fora_da_caixa: data.estrategias_fora_da_caixa ?? [],
+      meta_milena_dia: plano.meta_milena_dia ?? 15,
+      estrategias_fora_da_caixa: plano.estrategias_fora_da_caixa ?? [],
     });
   };
 
