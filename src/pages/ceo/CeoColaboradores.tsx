@@ -1,9 +1,7 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useComissaoVendedorByName } from "@/hooks/useComissaoVendedor";
-import { useMetasComerciais } from "@/hooks/useMetasComerciais";
-import { useLeads } from "@/hooks/useLeads";
+import { useColaboradorStats } from "@/hooks/useColaboradorStats";
 import { toast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { Trophy, Mail, ShieldCheck, ShieldAlert, ShieldX, UserCog, Crown } from "lucide-react";
@@ -78,25 +76,29 @@ export default function CeoColaboradores() {
   const pendingProfiles = profiles.filter((p) => p.status === "pending");
   const profileBySlug = (slug: string) => profiles.find((p) => p.colaborador_slug === slug && p.status === "approved");
 
-  // Same source of truth as TeamMemberDashboard (painel Vendas):
-  // metaReceita from metas_comerciais + closedValue from leads
-  const { data: metasComerciais = [] } = useMetasComerciais(mesMMYYYY);
-  const metaReceita = metasComerciais[0] ? Number(metasComerciais[0].meta_receita) || 0 : 0;
-  const { data: leads = [] } = useLeads();
+  // Mirror EXACTLY the metrics shown in the per-vendor Sales dashboard.
+  const statsThiago = useColaboradorStats("Thiago");
+  const statsAline = useColaboradorStats("Aline");
+  const statsMilena = useColaboradorStats("Milena");
+  const statsFelipe = useColaboradorStats("Felipe");
 
   const stats = useMemo(() => {
+    const map: Record<string, ReturnType<typeof useColaboradorStats>> = {
+      thiago: statsThiago, aline: statsAline, milena: statsMilena, felipe: statsFelipe,
+    };
     return COLAB_DEFINITIONS.map((c) => {
-      const profile = profileBySlug(c.slug);
-      const myLeads = leads.filter((l: any) =>
-        (l.responsavel_nome || "").toLowerCase().trim() === c.nome.toLowerCase().trim()
-      );
-      const closedValue = myLeads
-        .filter((l: any) => l.status === "fechado")
-        .reduce((s: number, l: any) => s + (Number(l.valor_estimado) || 0), 0);
-      const pct = metaReceita > 0 ? Math.min(100, (closedValue / metaReceita) * 100) : 0;
-      return { ...c, profile, pct, realizado: closedValue, meta: metaReceita };
+      const s = map[c.slug];
+      return {
+        ...c,
+        profile: profileBySlug(c.slug),
+        pct: s.primaryPct,
+        commission: s.commission,
+        realizado: s.kind === "ldr" ? s.leadsThisMonth : s.meetingsAgendadas,
+        meta: s.kind === "ldr" ? s.metaLeads : s.metaDemos,
+        unit: s.kind === "ldr" ? "leads" : "reuniões",
+      };
     });
-  }, [profiles, leads, metaReceita]);
+  }, [profiles, statsThiago, statsAline, statsMilena, statsFelipe]);
 
   const ranking = [...stats].sort((a, b) => b.pct - a.pct);
 
@@ -183,7 +185,7 @@ export default function CeoColaboradores() {
             <div key={r.slug} className="flex items-center gap-3 p-2 rounded-lg" style={{ background: i === 0 ? "rgba(245,158,11,0.08)" : "rgba(255,255,255,0.03)" }}>
               <div className="w-7 text-center font-bold" style={{ color: i === 0 ? "#F59E0B" : "hsl(var(--muted-foreground))" }}>{i + 1}º</div>
               <div className="flex-1 text-sm text-foreground">{r.nome}</div>
-              <div className="text-xs text-muted-foreground">{fmt(r.realizado)} / {r.meta ? fmt(r.meta) : "—"}</div>
+              <div className="text-xs text-muted-foreground">{r.realizado} / {r.meta || "—"} {r.unit}</div>
               <div className="w-12 text-right text-sm font-semibold" style={{ color: r.cor }}>{Math.round(r.pct)}%</div>
             </div>
           ))}
@@ -196,9 +198,9 @@ export default function CeoColaboradores() {
 }
 
 function ColaboradorCard({
-  colab, rank, salarioFixo, mesAtual, allProfiles, onAssignEmail, onSetSubRole, isFirst,
+  colab, rank, salarioFixo, allProfiles, onAssignEmail, onSetSubRole, isFirst,
 }: any) {
-  const { comissao } = useComissaoVendedorByName(colab.nome, mesAtual);
+  const comissao = colab.commission || 0;
   const profile = colab.profile;
   const availableProfiles = allProfiles.filter((p: ProfileRow) =>
     p.status === "approved" && (!p.colaborador_slug || p.colaborador_slug === colab.slug)
