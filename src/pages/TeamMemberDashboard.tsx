@@ -17,6 +17,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useMetasComerciais } from "@/hooks/useMetasComerciais";
 import { DailyTasksPanel } from "@/components/DailyTasksPanel";
+import { useComissaoVendedorByName } from "@/hooks/useComissaoVendedor";
 
 const stageOrder: LeadStatus[] = ["lead", "contatado", "reuniao_agendada", "reuniao_realizada", "proposta", "fechado"];
 const stageColors: Record<LeadStatus, string> = {

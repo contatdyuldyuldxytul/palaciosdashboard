@@ -18,6 +18,7 @@ import { CadenceChecklist } from "@/components/CadenceChecklist";
 import { CalendarioVendas } from "@/components/CalendarioVendas";
 import { useMetasComerciais } from "@/hooks/useMetasComerciais";
 import { DailyTasksPanel } from "@/components/DailyTasksPanel";
+import { useComissaoVendedorByName } from "@/hooks/useComissaoVendedor";
 
 interface LdrMemberDashboardProps {
   memberName: string;
