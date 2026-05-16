@@ -11,11 +11,11 @@ interface LockedCommissionProps {
 export function LockedCommission({ password, children }: LockedCommissionProps) {
   const { isFundador } = useAuth();
   const [unlocked, setUnlocked] = useState(false);
-
-  if (isFundador) return <>{children}</>;
   const [showModal, setShowModal] = useState(false);
   const [pin, setPin] = useState("");
   const [error, setError] = useState(false);
+
+  if (isFundador) return <>{children}</>;
 
   const handleSubmit = () => {
     if (pin === password) {
