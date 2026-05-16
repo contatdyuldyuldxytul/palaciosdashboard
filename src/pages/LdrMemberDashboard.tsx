@@ -174,7 +174,8 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
     return sum + (isNaN(v) ? 0 : v);
   }, 0);
   const contractCommission = closedContractsValue * 0.01;
-  const totalCommission = leadCommission + contractCommission;
+  const projetosComissao = useComissaoVendedorByName(memberName);
+  const totalCommission = leadCommission + contractCommission + projetosComissao.comissao;
 
   // Lead sources
   const sourceMap: Record<string, number> = {};

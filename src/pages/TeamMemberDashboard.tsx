@@ -99,6 +99,7 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
   const closedCount = memberLeads.filter((l) => l.status === "fechado").length;
   const closedValue = memberLeads.filter((l) => l.status === "fechado").reduce((s, l) => s + (l.valor_estimado || 0), 0);
   const conversionRate = memberLeads.length > 0 ? (closedCount / memberLeads.length) * 100 : 0;
+  const projetosComissao = useComissaoVendedorByName(memberName);
 
   // Goals from metas_comerciais
   const metaMensal = metaComercial ? Number(metaComercial.meta_receita) || 0 : 0;
