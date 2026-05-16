@@ -316,6 +316,7 @@ function EstrategiaDoMes() {
   return (
     <div className="space-y-5">
       <WeeklyPlanSection />
+      <PlanoSemanalClaude />
     </div>
   );
 }
