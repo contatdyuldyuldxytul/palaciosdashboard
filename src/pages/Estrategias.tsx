@@ -8,6 +8,7 @@ import { useLeads } from "@/hooks/useLeads";
 import { useMonthlyStrategy, useCampaigns, useImportStrategy } from "@/hooks/useStrategy";
 import { supabase } from "@/integrations/supabase/client";
 import CeoMetas from "@/pages/ceo/CeoMetas";
+import PlanoSemanalClaude from "@/components/ceo/PlanoSemanalClaude";
 
 type TabKey = "estrategia_mes" | "metas_comerciais" | "previsibilidade" | "leads" | "playbook" | "equipe";
 
