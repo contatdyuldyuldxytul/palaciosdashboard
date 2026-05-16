@@ -1,10 +1,11 @@
 import { Outlet, NavLink } from "react-router-dom";
-import { DollarSign, Rocket, Users } from "lucide-react";
+import { DollarSign, Rocket, Users, UsersRound } from "lucide-react";
 
 const navItems = [
   { label: "Financeiro", path: "/ceo", icon: DollarSign },
   { label: "Estratégias", path: "/ceo/estrategias", icon: Rocket },
   { label: "Clientes", path: "/ceo/clientes", icon: Users },
+  { label: "Colaboradores", path: "/ceo/colaboradores", icon: UsersRound },
 ];
 
 export function CeoLayout() {

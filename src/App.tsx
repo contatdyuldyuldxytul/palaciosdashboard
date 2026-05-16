@@ -38,6 +38,14 @@ import CeoJuridico from "@/pages/ceo/CeoJuridico";
 import CeoProcessos from "@/pages/ceo/CeoProcessos";
 import CeoMemoria from "@/pages/ceo/CeoMemoria";
 import CeoClientes from "@/pages/ceo/CeoClientes";
+import CeoColaboradores from "@/pages/ceo/CeoColaboradores";
+import { useAuth } from "@/contexts/AuthContext";
+
+function HunterGate() {
+  const { isFundador } = useAuth();
+  if (isFundador) return <HunterNegocios />;
+  return <PasswordGate title="Hunter de Negócios"><HunterNegocios /></PasswordGate>;
+}
 
 const queryClient = new QueryClient();
 
@@ -88,13 +96,14 @@ const App = () => (
                 <Route path="memoria" element={<CeoMemoria />} />
                 <Route path="estrategias" element={<Estrategias />} />
                 <Route path="clientes" element={<CeoClientes />} />
+                <Route path="colaboradores" element={<CeoColaboradores />} />
               </Route>
 
               {/* Assistente IA */}
               <Route path="/assistente" element={<AssistenteGeral />} />
 
               {/* Hunter de Negócios */}
-              <Route path="/hunter" element={<PasswordGate title="Hunter de Negócios"><HunterNegocios /></PasswordGate>} />
+              <Route path="/hunter" element={<HunterGate />} />
 
               {/* Redirects */}
               <Route path="/leads" element={<Navigate to="/vendas" replace />} />

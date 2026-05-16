@@ -1,75 +1,76 @@
-## O que vamos fazer
+## Usuários já logados na plataforma
 
-### 1. Editar clientes cadastrados
-- Reaproveitar o `ClienteFormModal` como modal de criação **e** edição (prop opcional `cliente?: ClienteCEO`).
-- Pré-preencher todos os campos quando vier um cliente.
-- Adicionar botão **"Editar"** no `ClienteDetalhesModal` (ao lado de "Marcar como concluído") que abre o form em modo edição.
-- Hook `useUpdateClienteCEO` já existe; criar `useUpsertClienteCEO` wrapper que decide entre insert/update.
+Encontrei 5 contas que já acessaram. Use isso para mapear cada vendedor ao e-mail dele:
 
-### 2. Opção "Recorrente" no cadastro
-- Novo toggle "Cliente recorrente" no topo do form.
-- Quando ativo, **oculta**: valor total, data de início, parcelas, serviços. Mostra apenas:
-  - Nome da empresa
-  - Nome do projeto/serviço
-  - Apelidos (importantíssimo p/ match)
-- Salvo com `valor_total = 0`, `parcelas = []`, novo campo `recorrente boolean`.
-- Card e detalhes mostram badge "Recorrente" + soma de tudo que entrou (em vez de % pago).
-- Migração: adicionar coluna `recorrente boolean default false` e `vendedor_id uuid` em `clientes_ativos`.
+| Nome no perfil | E-mail | Último login | Role atual |
+|---|---|---|---|
+| Thiago Palacios | contato@palacios3dstudio.com | 16/05 12:21 | fundador (você) |
+| Thiago Palacios | titopalaciosg5@gmail.com | 16/05 12:11 | — |
+| Aline Fonseca | aline@palacios3dstudio.com | 15/05 18:52 | — |
+| Milena Palacios | milepalaciosg5@gmail.com | nunca | — |
+| milena | milena.medsouza@gmail.com | nunca | — |
 
-### 3. Vendedor + comissão de 4%
-- Novo campo no form: **"Vendedor responsável"** (select com profiles que têm `vendedor_sub_role` ou lista fixa Aline/Milena/Thiago).
-- Salvo em `clientes_ativos.vendedor_id`.
-- Comissão = 4% × soma de **pagamentos recebidos** (parcelas pagas + entradas matched p/ recorrentes) do vendedor no mês.
-- Novo hook `useComissaoVendedor(userId, mes)` que:
-  - Busca clientes onde `vendedor_id = userId`
-  - Soma `valor_pago` das parcelas com `data_pagamento` no mês (clientes normais)
-  - Soma `lancamentos` matched aos apelidos dos clientes recorrentes do vendedor no mês
-  - Retorna `{ totalRecebido, comissao: total * 0.04 }`
-- Exibir bloco **"Comissão de projetos (4%)"** dentro do perfil/dashboard do vendedor (`TeamMemberDashboard.tsx` e `LdrMemberDashboard.tsx`) junto do salário fixo existente.
+Felipe ainda não criou conta. Na nova aba você vai conseguir associar cada e-mail ao colaborador (Aline-BDR, Milena-LDR, Thiago, Felipe) e aprovar/rejeitar acessos.
 
-### 4. Corrigir dados de pagamento (matcher)
-**Causa raiz** (verificada nos dados):
-- O matcher faz fallback **"primeira parcela pendente"** quando não acha % nem valor. Isso atribui aleatoriamente pagamentos a parcelas erradas (ex: Bolognesi tem 6 pagamentos mensais reais mas só 4 parcelas configuradas; sobras viram ruído).
-- "BKV" (9 lançamentos) não tem cliente cadastrado → todos batem no fallback ou ficam unmatched.
-- Apelidos genéricos ("Cenário") colidem entre Bolognesi e "Bolognesi - Essenza".
-- Margem de 5% no value-match é frouxa em valores baixos.
+---
 
-**Correções:**
-- **Remover fallback "primeira pendente"**. Match só acontece se: (a) % explícito bater, ou (b) valor bater dentro de ±2%.
-- **Pular clientes recorrentes** na lógica de marcar parcela (eles só agregam soma).
-- Match de apelido passa a exigir **token boundary** (regex `\b<apelido>\b`) p/ evitar sobreposição.
-- Quando múltiplos clientes batem o apelido, escolher o **mais específico** (apelido mais longo) — resolve Bolognesi vs Bolognesi - Essenza.
-- Antes de gravar, **resetar parcelas para `pendente`** e remontar do zero a cada execução, para evitar matches antigos persistidos errados.
+## 1. Sistema de aprovação de acesso (novo)
 
-### 5. Remover banner "X pagamentos na planilha sem cliente identificado"
-- Apagar o bloco condicional em `CeoClientes.tsx` (linhas 76-92) e o cálculo `unmatched` exposto. Manter só `matchedCount` no subtítulo.
+Hoje qualquer pessoa que cria conta entra direto. Mudança:
+- Nova coluna `status` em `profiles`: `pending` (default) | `approved` | `rejected`.
+- Quem está `pending` é bloqueado no `ProtectedRoute` e vê uma tela "Aguardando aprovação do CEO".
+- Os 5 e-mails atuais ficam `approved` automaticamente na migration (para não te trancar fora).
+- Apenas fundador pode aprovar/rejeitar pela nova aba.
 
-## Mudanças por arquivo
+## 2. Vínculo colaborador ↔ e-mail
 
-```text
-supabase/migrations/<new>.sql          ALTER TABLE clientes_ativos
-                                         ADD recorrente boolean default false,
-                                         ADD vendedor_id uuid;
-src/hooks/useClientesCEO.ts            + campos recorrente, vendedor_id na interface
-                                       + useUpsertClienteCEO
-src/hooks/useParcelaMatcher.ts         reescrever: sem fallback, reset parcelas,
-                                       skip recorrentes, apelido com word boundary,
-                                       escolha do match mais específico
-src/hooks/useComissaoVendedor.ts       NOVO
-src/components/ceo/ClienteFormModal.tsx
-                                       + prop cliente?, toggle Recorrente,
-                                       + select Vendedor, pré-preenchimento
-src/components/ceo/ClienteDetalhesModal.tsx
-                                       + botão Editar, badge Recorrente,
-                                       + nome do vendedor + comissão acumulada
-src/pages/ceo/CeoClientes.tsx          remover banner unmatched
-src/pages/TeamMemberDashboard.tsx      bloco "Comissão de projetos (4%)"
-src/pages/LdrMemberDashboard.tsx       idem
-```
+Hoje a tabela `colaborador` é um texto fixo ("Aline", "Milena", "Thiago", "Felipe") espalhado pelo app. Vou adicionar em `profiles`:
+- `colaborador_slug`: `aline` | `milena` | `thiago` | `felipe` | null
+- `sub_role`: `bdr` | `ldr` | `cs` | `ceo` | null (texto livre, você define)
 
-## Fora de escopo
-- Reconfigurar lógica de comissão antiga (`localStorage` em `/comissoes`) — segue como está.
-- Mudar a estrutura de salário fixo.
-- UI para vincular manualmente pagamento ↔ cliente (matcher fica 100% automático com regras mais estritas).
+A aba Colaboradores deixa você escolher o slug de cada e-mail aprovado. Isso conecta a conta logada aos dados existentes (metas, comissões, clientes) sem precisar migrar nada.
 
-Confirma que posso seguir assim?
+## 3. Privacidade salário/comissão (RLS)
+
+Cada vendedor só vê o próprio salário + comissão:
+- Helper SQL `get_my_colaborador_slug()` (security definer).
+- Policy nova em `comissoes`: SELECT permitido se `has_role('fundador')` OU `vendedor_id = auth.uid()`.
+- Nas páginas `TeamMemberDashboard` (Aline/Felipe), `LdrMemberDashboard` (Milena), `ThiagoDashboard`: bloquear acesso se o `colaborador_slug` do usuário logado ≠ slug da rota (e usuário não for fundador). Mostra tela "Sem permissão".
+- Hunter de Negócios: remover `PasswordGate` para fundador, manter senha para os outros (ou bloquear direto — recomendo bloquear direto para vendedor, sem senha).
+
+## 4. Corrigir assign de vendedor nos clientes
+
+O bug atual: `useVendedores()` faz `SELECT * FROM profiles`, mas o RLS de `profiles` só permite ver o **próprio** perfil. Resultado: o dropdown só mostrava você. Correção:
+- Nova policy: `Fundador can view all profiles`.
+- `useVendedores()` filtra por `colaborador_slug IS NOT NULL AND status = 'approved'`.
+- Garante que Aline, Milena, Thiago, Felipe apareçam no select de "Vendedor responsável" do cliente.
+
+## 5. Nova aba CEO → Colaboradores
+
+Rota: `/ceo/colaboradores`. Cards (um por colaborador: Thiago, Aline, Milena, Felipe):
+- Avatar + nome + sub_role (BDR/LDR/CS/CEO)
+- **E-mail vinculado** + status (Aprovado/Pendente/Sem conta)
+- **% da meta do mês** (reusa `useMetasMensais` + dados de reuniões/contratos por colaborador)
+- **Salário fixo + Comissão acumulada** (reusa `useComissaoVendedorByName`)
+- **Posição no ranking** (1º–4º por % da meta)
+
+Painel lateral: lista de "Solicitações de acesso pendentes" com botões Aprovar / Rejeitar / Atribuir colaborador.
+
+## 6. Itens técnicos resumidos
+
+- Migration: colunas em `profiles` (status, colaborador_slug, sub_role) + policies novas em `profiles` e `comissoes` + função `get_my_colaborador_slug`.
+- Auto-aprovar os 5 e-mails existentes; setar slug do Thiago = `thiago`, role já é fundador.
+- Novo componente: `src/pages/ceo/CeoColaboradores.tsx`.
+- Atualizar `CeoLayout` (item de menu), `App.tsx` (rota), `ProtectedRoute` (checar status), `useVendedores` (filtro), `HunterNegocios` route (sem senha para fundador), dashboards individuais (lock por slug).
+
+---
+
+## Perguntas antes de executar
+
+1. Quero confirmar o mapeamento dos e-mails:
+   - `contato@palacios3dstudio.com` → **Thiago (CEO/Fundador)** ✅
+   - `titopalaciosg5@gmail.com` → segunda conta sua? Apago, mantenho como Thiago alternativo, ou atribuo a outra pessoa?
+   - `aline@palacios3dstudio.com` → **Aline (BDR)** ✅?
+   - `milepalaciosg5@gmail.com` e `milena.medsouza@gmail.com` → qual das duas é a Milena (LDR) oficial? Apago a outra?
+2. Sub-roles oficiais que devo cadastrar: **Thiago=CEO, Aline=BDR, Milena=LDR, Felipe=?** (CS, BDR, closer?)
+3. Hunter de Negócios: para os vendedores deve aparecer **bloqueado sem opção** (recomendado) ou **com senha** como hoje?
