@@ -76,25 +76,29 @@ export default function CeoColaboradores() {
   const pendingProfiles = profiles.filter((p) => p.status === "pending");
   const profileBySlug = (slug: string) => profiles.find((p) => p.colaborador_slug === slug && p.status === "approved");
 
-  // Same source of truth as TeamMemberDashboard (painel Vendas):
-  // metaReceita from metas_comerciais + closedValue from leads
-  const { data: metasComerciais = [] } = useMetasComerciais(mesMMYYYY);
-  const metaReceita = metasComerciais[0] ? Number(metasComerciais[0].meta_receita) || 0 : 0;
-  const { data: leads = [] } = useLeads();
+  // Mirror EXACTLY the metrics shown in the per-vendor Sales dashboard.
+  const statsThiago = useColaboradorStats("Thiago");
+  const statsAline = useColaboradorStats("Aline");
+  const statsMilena = useColaboradorStats("Milena");
+  const statsFelipe = useColaboradorStats("Felipe");
 
   const stats = useMemo(() => {
+    const map: Record<string, ReturnType<typeof useColaboradorStats>> = {
+      thiago: statsThiago, aline: statsAline, milena: statsMilena, felipe: statsFelipe,
+    };
     return COLAB_DEFINITIONS.map((c) => {
-      const profile = profileBySlug(c.slug);
-      const myLeads = leads.filter((l: any) =>
-        (l.responsavel_nome || "").toLowerCase().trim() === c.nome.toLowerCase().trim()
-      );
-      const closedValue = myLeads
-        .filter((l: any) => l.status === "fechado")
-        .reduce((s: number, l: any) => s + (Number(l.valor_estimado) || 0), 0);
-      const pct = metaReceita > 0 ? Math.min(100, (closedValue / metaReceita) * 100) : 0;
-      return { ...c, profile, pct, realizado: closedValue, meta: metaReceita };
+      const s = map[c.slug];
+      return {
+        ...c,
+        profile: profileBySlug(c.slug),
+        pct: s.primaryPct,
+        commission: s.commission,
+        realizado: s.kind === "ldr" ? s.leadsThisMonth : s.meetingsAgendadas,
+        meta: s.kind === "ldr" ? s.metaLeads : s.metaDemos,
+        unit: s.kind === "ldr" ? "leads" : "reuniões",
+      };
     });
-  }, [profiles, leads, metaReceita]);
+  }, [profiles, statsThiago, statsAline, statsMilena, statsFelipe]);
 
   const ranking = [...stats].sort((a, b) => b.pct - a.pct);
 
