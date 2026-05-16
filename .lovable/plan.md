@@ -1,76 +1,67 @@
-## Usuários já logados na plataforma
+## Problema
 
-Encontrei 5 contas que já acessaram. Use isso para mapear cada vendedor ao e-mail dele:
+No painel **CEO → Colaboradores**, as métricas (% Meta, Comissão, Salário) são calculadas de forma diferente do perfil individual de cada vendedor em **Vendas → [Nome]** (`TeamMemberDashboard` / `LdrMemberDashboard`). Resultado: Aline aparece com 12-13% no painel Vendas e com outro valor no CEO.
 
-| Nome no perfil | E-mail | Último login | Role atual |
-|---|---|---|---|
-| Thiago Palacios | contato@palacios3dstudio.com | 16/05 12:21 | fundador (você) |
-| Thiago Palacios | titopalaciosg5@gmail.com | 16/05 12:11 | — |
-| Aline Fonseca | aline@palacios3dstudio.com | 15/05 18:52 | — |
-| Milena Palacios | milepalaciosg5@gmail.com | nunca | — |
-| milena | milena.medsouza@gmail.com | nunca | — |
+A causa: o card no CEO está recalculando localmente, em vez de usar as mesmas fontes/fórmulas das páginas individuais.
 
-Felipe ainda não criou conta. Na nova aba você vai conseguir associar cada e-mail ao colaborador (Aline-BDR, Milena-LDR, Thiago, Felipe) e aprovar/rejeitar acessos.
+## Objetivo
 
----
+O card de cada colaborador no painel CEO deve refletir **exatamente** o que está no perfil de vendas correspondente — sem recálculo divergente.
 
-## 1. Sistema de aprovação de acesso (novo)
+## Fonte da verdade (extraída de TeamMemberDashboard.tsx)
 
-Hoje qualquer pessoa que cria conta entra direto. Mudança:
-- Nova coluna `status` em `profiles`: `pending` (default) | `approved` | `rejected`.
-- Quem está `pending` é bloqueado no `ProtectedRoute` e vê uma tela "Aguardando aprovação do CEO".
-- Os 5 e-mails atuais ficam `approved` automaticamente na migration (para não te trancar fora).
-- Apenas fundador pode aprovar/rejeitar pela nova aba.
+Para cada vendedor:
+- **% Meta exibida no card "META DE REUNIÕES"**: `meetingsAgendadas / metaComercial.meta_demos * 100`
+  - `meetingsAgendadas`: count de `meeting_checks` onde `colaborador = nome`, `mes = MM/YYYY`, `agendada = true`
+  - `metaComercial`: primeira linha de `metas_comerciais` filtrada por `mes = MM/YYYY`
+- **Comissão (SDR — Aline/Felipe)**: `2000 + (meetingsRealized * 30) + (closedValue * 0.04) + projetosComissao.comissao`
+  - `meetingsRealized` vem do `MeetingTracker` (estado local). Para o painel CEO, vamos buscar diretamente de `meeting_checks` (count com `realizada = true`).
+  - `closedValue`: soma `valor_estimado` dos leads do vendedor com `status = 'fechado'`
+  - `projetosComissao`: `useComissaoVendedorByName(nome)`
+- **Salário fixo**: já está nas definições (`COLAB_DEFINITIONS`).
+- **Status label** ("Excelente / No Caminho / Atenção"): mesma regra do dashboard (`>=80 / >=50 / <50`).
 
-## 2. Vínculo colaborador ↔ e-mail
+Para Milena (LDR) a fórmula de comissão é diferente — buscar em `LdrMemberDashboard.tsx` e replicar idêntico (mesmo padrão: ler do dashboard e reproduzir literalmente).
 
-Hoje a tabela `colaborador` é um texto fixo ("Aline", "Milena", "Thiago", "Felipe") espalhado pelo app. Vou adicionar em `profiles`:
-- `colaborador_slug`: `aline` | `milena` | `thiago` | `felipe` | null
-- `sub_role`: `bdr` | `ldr` | `cs` | `ceo` | null (texto livre, você define)
+## Implementação
 
-A aba Colaboradores deixa você escolher o slug de cada e-mail aprovado. Isso conecta a conta logada aos dados existentes (metas, comissões, clientes) sem precisar migrar nada.
+### 1. Criar hook compartilhado `src/hooks/useColaboradorStats.ts`
 
-## 3. Privacidade salário/comissão (RLS)
+Centraliza o cálculo para que CEO e Vendas usem **a mesma função**. Retorna:
+```ts
+{
+  metaDemos: number,
+  metaReceita: number,
+  meetingsAgendadas: number,
+  meetingsRealized: number,
+  closedValue: number,
+  reunioesPct: number,        // meetingsAgendadas / metaDemos * 100
+  receitaPct: number,         // closedValue / metaReceita * 100
+  commission: number,         // fórmula SDR ou LDR conforme tipo
+  fixedSalary: number,
+  status: 'excelente' | 'no_caminho' | 'atencao'
+}
+```
 
-Cada vendedor só vê o próprio salário + comissão:
-- Helper SQL `get_my_colaborador_slug()` (security definer).
-- Policy nova em `comissoes`: SELECT permitido se `has_role('fundador')` OU `vendedor_id = auth.uid()`.
-- Nas páginas `TeamMemberDashboard` (Aline/Felipe), `LdrMemberDashboard` (Milena), `ThiagoDashboard`: bloquear acesso se o `colaborador_slug` do usuário logado ≠ slug da rota (e usuário não for fundador). Mostra tela "Sem permissão".
-- Hunter de Negócios: remover `PasswordGate` para fundador, manter senha para os outros (ou bloquear direto — recomendo bloquear direto para vendedor, sem senha).
+Internamente usa: `useMetasComerciais(mes)`, `useLeads()`, `useComissaoVendedorByName(nome)`, e um `useQuery` em `meeting_checks` (count agendadas + realizadas).
 
-## 4. Corrigir assign de vendedor nos clientes
+### 2. Refatorar `TeamMemberDashboard.tsx` e `LdrMemberDashboard.tsx`
 
-O bug atual: `useVendedores()` faz `SELECT * FROM profiles`, mas o RLS de `profiles` só permite ver o **próprio** perfil. Resultado: o dropdown só mostrava você. Correção:
-- Nova policy: `Fundador can view all profiles`.
-- `useVendedores()` filtra por `colaborador_slug IS NOT NULL AND status = 'approved'`.
-- Garante que Aline, Milena, Thiago, Felipe apareçam no select de "Vendedor responsável" do cliente.
+Substituir os cálculos inline pelo `useColaboradorStats(nome)` — garantindo que ambos painéis (Vendas e CEO) consumam o mesmo hook. Manter UI intacta.
 
-## 5. Nova aba CEO → Colaboradores
+### 3. Refatorar `src/pages/ceo/CeoColaboradores.tsx`
 
-Rota: `/ceo/colaboradores`. Cards (um por colaborador: Thiago, Aline, Milena, Felipe):
-- Avatar + nome + sub_role (BDR/LDR/CS/CEO)
-- **E-mail vinculado** + status (Aprovado/Pendente/Sem conta)
-- **% da meta do mês** (reusa `useMetasMensais` + dados de reuniões/contratos por colaborador)
-- **Salário fixo + Comissão acumulada** (reusa `useComissaoVendedorByName`)
-- **Posição no ranking** (1º–4º por % da meta)
+No `ColaboradorCard`, substituir o cálculo local de `pct`, `realizado`, `meta` e `comissao` por `useColaboradorStats(colab.nome)`. O card passa a mostrar **exatamente o mesmo "% Meta de Reuniões"** que aparece no card grande do painel Vendas (ex.: Aline 13%, batendo com a imagem enviada).
 
-Painel lateral: lista de "Solicitações de acesso pendentes" com botões Aprovar / Rejeitar / Atribuir colaborador.
+Atualizar também o **Ranking** para ordenar pela mesma `reunioesPct`.
 
-## 6. Itens técnicos resumidos
+### 4. Verificação
 
-- Migration: colunas em `profiles` (status, colaborador_slug, sub_role) + policies novas em `profiles` e `comissoes` + função `get_my_colaborador_slug`.
-- Auto-aprovar os 5 e-mails existentes; setar slug do Thiago = `thiago`, role já é fundador.
-- Novo componente: `src/pages/ceo/CeoColaboradores.tsx`.
-- Atualizar `CeoLayout` (item de menu), `App.tsx` (rota), `ProtectedRoute` (checar status), `useVendedores` (filtro), `HunterNegocios` route (sem senha para fundador), dashboards individuais (lock por slug).
+- Carregar `/vendas/aline` → ler "% META DE REUNIÕES" (ex.: 13%).
+- Carregar `/ceo/colaboradores` → card da Aline deve mostrar **13%** idêntico.
+- Repetir para Thiago, Milena e Felipe.
 
----
+## Sem mudanças
 
-## Perguntas antes de executar
-
-1. Quero confirmar o mapeamento dos e-mails:
-   - `contato@palacios3dstudio.com` → **Thiago (CEO/Fundador)** ✅
-   - `titopalaciosg5@gmail.com` → segunda conta sua? Apago, mantenho como Thiago alternativo, ou atribuo a outra pessoa?
-   - `aline@palacios3dstudio.com` → **Aline (BDR)** ✅?
-   - `milepalaciosg5@gmail.com` e `milena.medsouza@gmail.com` → qual das duas é a Milena (LDR) oficial? Apago a outra?
-2. Sub-roles oficiais que devo cadastrar: **Thiago=CEO, Aline=BDR, Milena=LDR, Felipe=?** (CS, BDR, closer?)
-3. Hunter de Negócios: para os vendedores deve aparecer **bloqueado sem opção** (recomendado) ou **com senha** como hoje?
+- Nenhuma alteração de RLS, migrations ou edge functions.
+- Sem mexer em controle de conta/sub-cargo/aprovação do `CeoColaboradores`.
