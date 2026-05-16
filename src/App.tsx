@@ -37,6 +37,7 @@ import CeoPipeline from "@/pages/ceo/CeoPipeline";
 import CeoJuridico from "@/pages/ceo/CeoJuridico";
 import CeoProcessos from "@/pages/ceo/CeoProcessos";
 import CeoMemoria from "@/pages/ceo/CeoMemoria";
+import CeoClientes from "@/pages/ceo/CeoClientes";
 
 const queryClient = new QueryClient();
 
@@ -86,7 +87,7 @@ const App = () => (
                 <Route path="processos" element={<CeoProcessos />} />
                 <Route path="memoria" element={<CeoMemoria />} />
                 <Route path="estrategias" element={<Estrategias />} />
-                <Route path="clientes" element={<ClientesAtivos />} />
+                <Route path="clientes" element={<CeoClientes />} />
               </Route>
 
               {/* Assistente IA */}

@@ -335,6 +335,8 @@ export type Database = {
       }
       clientes_ativos: {
         Row: {
+          apelidos: string[]
+          concluido_em: string | null
           contato: string | null
           created_at: string
           data_inicio: string | null
@@ -344,16 +346,27 @@ export type Database = {
           id: string
           inclui_modelagem: boolean | null
           notas: string | null
+          parcelas: Json
+          plano_software: string | null
           progresso: number | null
           projeto: string
           qtd_imagens: number | null
           segundos_animacao: number | null
+          servicos_adicionais: string | null
           status: string
           telefone: string | null
+          tem_animacao: boolean
+          tem_imagens: boolean
+          tem_software: boolean
+          tem_tour_virtual: boolean
           updated_at: string
+          valor_servicos_adicionais: number
           valor_total: number | null
+          valor_tour_virtual: number
         }
         Insert: {
+          apelidos?: string[]
+          concluido_em?: string | null
           contato?: string | null
           created_at?: string
           data_inicio?: string | null
@@ -363,16 +376,27 @@ export type Database = {
           id?: string
           inclui_modelagem?: boolean | null
           notas?: string | null
+          parcelas?: Json
+          plano_software?: string | null
           progresso?: number | null
           projeto: string
           qtd_imagens?: number | null
           segundos_animacao?: number | null
+          servicos_adicionais?: string | null
           status?: string
           telefone?: string | null
+          tem_animacao?: boolean
+          tem_imagens?: boolean
+          tem_software?: boolean
+          tem_tour_virtual?: boolean
           updated_at?: string
+          valor_servicos_adicionais?: number
           valor_total?: number | null
+          valor_tour_virtual?: number
         }
         Update: {
+          apelidos?: string[]
+          concluido_em?: string | null
           contato?: string | null
           created_at?: string
           data_inicio?: string | null
@@ -382,14 +406,23 @@ export type Database = {
           id?: string
           inclui_modelagem?: boolean | null
           notas?: string | null
+          parcelas?: Json
+          plano_software?: string | null
           progresso?: number | null
           projeto?: string
           qtd_imagens?: number | null
           segundos_animacao?: number | null
+          servicos_adicionais?: string | null
           status?: string
           telefone?: string | null
+          tem_animacao?: boolean
+          tem_imagens?: boolean
+          tem_software?: boolean
+          tem_tour_virtual?: boolean
           updated_at?: string
+          valor_servicos_adicionais?: number
           valor_total?: number | null
+          valor_tour_virtual?: number
         }
         Relationships: []
       }
