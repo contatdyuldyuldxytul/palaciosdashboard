@@ -61,7 +61,7 @@ export function useParcelaMatcher(): MatchResult {
       const declaredPct = pctMatch ? Number(pctMatch[1]) : null;
 
       // Find candidate clients by word-boundary alias match; pick most specific (longest alias)
-      let best: { cliente: ClienteCEO; aliasLen: number } | null = null;
+      let best: { cliente: ClienteCEO; aliasLen: number; alias: string } | null = null;
       for (const c of cls) {
         const aliases = [c.empresa, ...(c.apelidos || [])].filter(Boolean);
         for (const a of aliases) {
@@ -70,7 +70,7 @@ export function useParcelaMatcher(): MatchResult {
           const re = new RegExp(`\\b${escapeRegex(na)}\\b`);
           if (re.test(desc)) {
             if (!best || na.length > best.aliasLen) {
-              best = { cliente: c, aliasLen: na.length };
+              best = { cliente: c, aliasLen: na.length, alias: na };
             }
           }
         }
@@ -96,6 +96,9 @@ export function useParcelaMatcher(): MatchResult {
           if (expected <= 0) return false;
           return Math.abs(expected - Number(lc.valor)) / expected < 0.02;
         });
+      }
+      if (!target && declaredPct === null && best.aliasLen >= 5) {
+        target = parcelas.find((p) => p.status === "pendente");
       }
 
       if (target) {
