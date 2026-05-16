@@ -275,7 +275,8 @@ function ColaboradorCard({
             }
             if (newId) onAssignEmail(newId, colab.slug);
           }}
-          className="w-full text-xs px-2 py-1.5 rounded-lg bg-transparent border border-white/10 text-foreground"
+          className="w-full text-xs px-2 py-1.5 rounded-lg border border-white/10 text-foreground"
+          style={{ background: "hsl(228,16%,10%)" }}
         >
           <option value="">— Sem conta —</option>
           {availableProfiles.map((p: ProfileRow) => (
