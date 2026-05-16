@@ -39,6 +39,13 @@ import CeoProcessos from "@/pages/ceo/CeoProcessos";
 import CeoMemoria from "@/pages/ceo/CeoMemoria";
 import CeoClientes from "@/pages/ceo/CeoClientes";
 import CeoColaboradores from "@/pages/ceo/CeoColaboradores";
+import { useAuth } from "@/contexts/AuthContext";
+
+function HunterGate() {
+  const { isFundador } = useAuth();
+  if (isFundador) return <HunterNegocios />;
+  return <PasswordGate title="Hunter de Negócios"><HunterNegocios /></PasswordGate>;
+}
 
 const queryClient = new QueryClient();
 
