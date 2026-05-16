@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
-import { Plus, Repeat } from "lucide-react";
+import { Plus, Repeat, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useClientesCEO, ClienteCEO } from "@/hooks/useClientesCEO";
 import { useParcelaMatcher } from "@/hooks/useParcelaMatcher";
 import { useLancamentos } from "@/hooks/useLancamentos";
+import { useSyncSheets } from "@/hooks/useSyncSheets";
 import ClienteFormModal from "@/components/ceo/ClienteFormModal";
 import ClienteDetalhesModal from "@/components/ceo/ClienteDetalhesModal";
 import { format, parseISO } from "date-fns";
