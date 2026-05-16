@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useComissaoVendedorByName } from "@/hooks/useComissaoVendedor";
-import { useMetaMensal } from "@/hooks/useMetasMensais";
+import { useMetasComerciais } from "@/hooks/useMetasComerciais";
 import { useLeads } from "@/hooks/useLeads";
 import { toast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
@@ -44,6 +44,10 @@ function StatusBadge({ status }: { status: string }) {
 export default function CeoColaboradores() {
   const qc = useQueryClient();
   const mesAtual = new Date().toISOString().slice(0, 7);
+  const mesMMYYYY = (() => {
+    const now = new Date();
+    return `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+  })();
 
   const { data: profiles = [], isLoading } = useQuery({
     queryKey: ["all_profiles"],
@@ -74,32 +78,25 @@ export default function CeoColaboradores() {
   const pendingProfiles = profiles.filter((p) => p.status === "pending");
   const profileBySlug = (slug: string) => profiles.find((p) => p.colaborador_slug === slug && p.status === "approved");
 
-  // Compute % meta + comissões per colaborador
-  const { data: metas } = useMetaMensal(mesAtual);
+  // Same source of truth as TeamMemberDashboard (painel Vendas):
+  // metaReceita from metas_comerciais + closedValue from leads
+  const { data: metasComerciais = [] } = useMetasComerciais(mesMMYYYY);
+  const metaReceita = metasComerciais[0] ? Number(metasComerciais[0].meta_receita) || 0 : 0;
   const { data: leads = [] } = useLeads();
 
   const stats = useMemo(() => {
     return COLAB_DEFINITIONS.map((c) => {
       const profile = profileBySlug(c.slug);
-      // Default meta target per slug
-      const metaContratos = metas?.contratos || 0;
-      const metaDemos = c.slug === "aline" ? (metas?.demos_aline || 0) : 0;
-      const metaLeads = c.slug === "milena" ? (metas?.leads_milena || 0) : 0;
-
-      // Realizado (basic counts based on leads)
       const myLeads = leads.filter((l: any) =>
-        (l.responsavel_nome || "").toLowerCase().includes(c.nome.toLowerCase())
+        (l.responsavel_nome || "").toLowerCase().trim() === c.nome.toLowerCase().trim()
       );
-      const realizadoContratos = myLeads.filter((l: any) => l.status === "fechado").length;
-      const realizadoDemos = myLeads.filter((l: any) => l.status === "reuniao_realizada" || l.status === "proposta" || l.status === "fechado").length;
-
-      const meta = metaContratos + metaDemos + metaLeads;
-      const realizado = realizadoContratos + (c.slug === "aline" ? realizadoDemos : 0);
-      const pct = meta > 0 ? Math.min(100, (realizado / meta) * 100) : 0;
-
-      return { ...c, profile, pct, realizado, meta };
+      const closedValue = myLeads
+        .filter((l: any) => l.status === "fechado")
+        .reduce((s: number, l: any) => s + (Number(l.valor_estimado) || 0), 0);
+      const pct = metaReceita > 0 ? Math.min(100, (closedValue / metaReceita) * 100) : 0;
+      return { ...c, profile, pct, realizado: closedValue, meta: metaReceita };
     });
-  }, [profiles, leads, metas]);
+  }, [profiles, leads, metaReceita]);
 
   const ranking = [...stats].sort((a, b) => b.pct - a.pct);
 
@@ -186,7 +183,7 @@ export default function CeoColaboradores() {
             <div key={r.slug} className="flex items-center gap-3 p-2 rounded-lg" style={{ background: i === 0 ? "rgba(245,158,11,0.08)" : "rgba(255,255,255,0.03)" }}>
               <div className="w-7 text-center font-bold" style={{ color: i === 0 ? "#F59E0B" : "hsl(var(--muted-foreground))" }}>{i + 1}º</div>
               <div className="flex-1 text-sm text-foreground">{r.nome}</div>
-              <div className="text-xs text-muted-foreground">{r.realizado}/{r.meta || "—"}</div>
+              <div className="text-xs text-muted-foreground">{fmt(r.realizado)} / {r.meta ? fmt(r.meta) : "—"}</div>
               <div className="w-12 text-right text-sm font-semibold" style={{ color: r.cor }}>{Math.round(r.pct)}%</div>
             </div>
           ))}
