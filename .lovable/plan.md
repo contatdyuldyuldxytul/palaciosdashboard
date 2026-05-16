@@ -1,121 +1,75 @@
-## Objetivo
+## O que vamos fazer
 
-Reformular completamente a aba **Clientes** dentro do CEO: limpar os 3 clientes existentes, criar um cadastro estruturado com parcelas configuráveis e checklist de serviços, fazer match automático com pagamentos da planilha financeira, e adicionar fluxo de "Projeto concluído" → seção de projetos anteriores.
+### 1. Editar clientes cadastrados
+- Reaproveitar o `ClienteFormModal` como modal de criação **e** edição (prop opcional `cliente?: ClienteCEO`).
+- Pré-preencher todos os campos quando vier um cliente.
+- Adicionar botão **"Editar"** no `ClienteDetalhesModal` (ao lado de "Marcar como concluído") que abre o form em modo edição.
+- Hook `useUpdateClienteCEO` já existe; criar `useUpsertClienteCEO` wrapper que decide entre insert/update.
 
----
+### 2. Opção "Recorrente" no cadastro
+- Novo toggle "Cliente recorrente" no topo do form.
+- Quando ativo, **oculta**: valor total, data de início, parcelas, serviços. Mostra apenas:
+  - Nome da empresa
+  - Nome do projeto/serviço
+  - Apelidos (importantíssimo p/ match)
+- Salvo com `valor_total = 0`, `parcelas = []`, novo campo `recorrente boolean`.
+- Card e detalhes mostram badge "Recorrente" + soma de tudo que entrou (em vez de % pago).
+- Migração: adicionar coluna `recorrente boolean default false` e `vendedor_id uuid` em `clientes_ativos`.
 
-## 1. Limpeza inicial
+### 3. Vendedor + comissão de 4%
+- Novo campo no form: **"Vendedor responsável"** (select com profiles que têm `vendedor_sub_role` ou lista fixa Aline/Milena/Thiago).
+- Salvo em `clientes_ativos.vendedor_id`.
+- Comissão = 4% × soma de **pagamentos recebidos** (parcelas pagas + entradas matched p/ recorrentes) do vendedor no mês.
+- Novo hook `useComissaoVendedor(userId, mes)` que:
+  - Busca clientes onde `vendedor_id = userId`
+  - Soma `valor_pago` das parcelas com `data_pagamento` no mês (clientes normais)
+  - Soma `lancamentos` matched aos apelidos dos clientes recorrentes do vendedor no mês
+  - Retorna `{ totalRecebido, comissao: total * 0.04 }`
+- Exibir bloco **"Comissão de projetos (4%)"** dentro do perfil/dashboard do vendedor (`TeamMemberDashboard.tsx` e `LdrMemberDashboard.tsx`) junto do salário fixo existente.
 
-Deletar do banco apenas estes clientes (e seus dados ligados: checklist_projetos, financeiro_clientes):
-- BKV Dsign
-- Bolognesi Cenário
-- Bolognesi - Essenza
+### 4. Corrigir dados de pagamento (matcher)
+**Causa raiz** (verificada nos dados):
+- O matcher faz fallback **"primeira parcela pendente"** quando não acha % nem valor. Isso atribui aleatoriamente pagamentos a parcelas erradas (ex: Bolognesi tem 6 pagamentos mensais reais mas só 4 parcelas configuradas; sobras viram ruído).
+- "BKV" (9 lançamentos) não tem cliente cadastrado → todos batem no fallback ou ficam unmatched.
+- Apelidos genéricos ("Cenário") colidem entre Bolognesi e "Bolognesi - Essenza".
+- Margem de 5% no value-match é frouxa em valores baixos.
 
----
+**Correções:**
+- **Remover fallback "primeira pendente"**. Match só acontece se: (a) % explícito bater, ou (b) valor bater dentro de ±2%.
+- **Pular clientes recorrentes** na lógica de marcar parcela (eles só agregam soma).
+- Match de apelido passa a exigir **token boundary** (regex `\b<apelido>\b`) p/ evitar sobreposição.
+- Quando múltiplos clientes batem o apelido, escolher o **mais específico** (apelido mais longo) — resolve Bolognesi vs Bolognesi - Essenza.
+- Antes de gravar, **resetar parcelas para `pendente`** e remontar do zero a cada execução, para evitar matches antigos persistidos errados.
 
-## 2. Estrutura de dados (schema)
+### 5. Remover banner "X pagamentos na planilha sem cliente identificado"
+- Apagar o bloco condicional em `CeoClientes.tsx` (linhas 76-92) e o cálculo `unmatched` exposto. Manter só `matchedCount` no subtítulo.
 
-**Estender `clientes_ativos`** com novos campos:
-- `parcelas` (jsonb) — array `[{ numero, percentual, dias_apos_inicio, data_prevista, status: 'pendente'|'pago', valor_pago, data_pagamento, match_descricao }]`
-- `tem_imagens` (bool), `qtd_imagens` (já existe)
-- `tem_animacao` (bool), `segundos_animacao` (já existe)
-- `tem_tour_virtual` (bool), `valor_tour_virtual` (numeric)
-- `servicos_adicionais` (text), `valor_servicos_adicionais` (numeric)
-- `tem_software` (bool), `plano_software` (enum text: 'Prata' | 'Ouro' | 'Diamante')
-- `concluido_em` (timestamptz, null = ativo)
-- `apelidos` (text[]) — usado pelo match automático (ex: `['Arcko', 'ARK']`)
+## Mudanças por arquivo
 
-Status: `ativo` (default) e `concluido` (quando `concluido_em` preenchido).
+```text
+supabase/migrations/<new>.sql          ALTER TABLE clientes_ativos
+                                         ADD recorrente boolean default false,
+                                         ADD vendedor_id uuid;
+src/hooks/useClientesCEO.ts            + campos recorrente, vendedor_id na interface
+                                       + useUpsertClienteCEO
+src/hooks/useParcelaMatcher.ts         reescrever: sem fallback, reset parcelas,
+                                       skip recorrentes, apelido com word boundary,
+                                       escolha do match mais específico
+src/hooks/useComissaoVendedor.ts       NOVO
+src/components/ceo/ClienteFormModal.tsx
+                                       + prop cliente?, toggle Recorrente,
+                                       + select Vendedor, pré-preenchimento
+src/components/ceo/ClienteDetalhesModal.tsx
+                                       + botão Editar, badge Recorrente,
+                                       + nome do vendedor + comissão acumulada
+src/pages/ceo/CeoClientes.tsx          remover banner unmatched
+src/pages/TeamMemberDashboard.tsx      bloco "Comissão de projetos (4%)"
+src/pages/LdrMemberDashboard.tsx       idem
+```
 
----
+## Fora de escopo
+- Reconfigurar lógica de comissão antiga (`localStorage` em `/comissoes`) — segue como está.
+- Mudar a estrutura de salário fixo.
+- UI para vincular manualmente pagamento ↔ cliente (matcher fica 100% automático com regras mais estritas).
 
-## 3. Tela: Cadastro de cliente (modal)
-
-Design compacto, 1 coluna em mobile, 2 em desktop. Stepper visual leve (3 seções dentro do mesmo modal scrollável, não wizard intrusivo):
-
-**Seção A — Dados do projeto**
-- Nome do projeto (text)
-- Empresa/Cliente (text)
-- Valor geral do contrato (R$)
-- Data de início
-
-**Seção B — Parcelas** (gera dinamicamente)
-- Input "Quantas parcelas?" (1–12)
-- Para cada parcela renderiza um card mini:
-  - % da parcela (com validação: soma das % = 100%)
-  - Dias após início → mostra abaixo "Vence em DD/MM/YYYY" (calc auto)
-  - Mostra valor R$ correspondente
-- Botão "distribuir igualmente" como atalho
-
-**Seção C — Checklist de serviços** (cada item = checkbox que revela um campo)
-- ☐ Imagens → input quantidade
-- ☐ Animação → input segundos
-- ☐ Tour virtual → input valor R$
-- ☐ Serviços adicionais → textarea descrição + valor R$
-- ☐ Software → select Prata/Ouro/Diamante
-
-**Seção D — Apelidos para match** (collapsible "Avançado")
-- Tags input com chips (preenchido automático com o nome da empresa; user pode adicionar variações)
-
-Botão "Salvar cliente".
-
----
-
-## 4. Match automático com planilha (Entradas e Saídas)
-
-Criar hook `useParcelaMatcher`:
-- Lê `lancamentos` onde `classificacao = 'Entrada'` e categoria ∈ ('Receitas Palacios', 'Receitas BKV').
-- Para cada cliente ativo, percorre suas `parcelas` ainda `pendente` e busca lançamento cuja `descricao` contenha qualquer um dos `apelidos` do cliente **E** contenha a `%` da parcela (ex: "20%") ou o valor exato.
-- Match encontrado → marca `status: 'pago'`, grava `valor_pago`, `data_pagamento` (= `data` do lançamento), `match_descricao`.
-- Não-match com confiança ambígua → exibe um banner "X pagamentos sem cliente identificado" com botão "Atribuir manualmente" → dropdown com lista de clientes e parcelas em aberto.
-
-Roda automaticamente ao abrir a página e após cada sync financeiro.
-
----
-
-## 5. Tela: Lista e detalhe do cliente
-
-**`/ceo/clientes` (ativos)** — grid de cards mostrando:
-- Nome do projeto, empresa
-- Barra de progresso financeiro: `valor_pago / valor_total`
-- Mini-timeline de parcelas (pontinhos: ✓ pago, ◯ pendente, ⚠ atrasada)
-- Botão "Ver detalhes" → modal com:
-  - Tabela completa de parcelas (status, vencimento, pagamento, descrição matched)
-  - Checklist de serviços
-  - Botão **"Marcar projeto como concluído"** → confirm dialog → seta `concluido_em = now()` → some da lista ativa.
-
-**`/ceo/clientes/anteriores`** — mesma estrutura, somente leitura, lista clientes com `concluido_em IS NOT NULL`. Mostra data de conclusão e total faturado.
-
-Tabs no topo: "Ativos" | "Anteriores" | "+ Novo Cliente".
-
----
-
-## 6. Design
-
-Mantém o padrão CEO (glassmorphism dark + acento amber/gold). Modal de cadastro com seções colapsáveis para não ficar overwhelming. Checklist usa toggles suaves estilo iOS. Parcelas em cards horizontais scrolláveis quando 4+.
-
----
-
-## Detalhes técnicos
-
-- **Migração 1**: ALTER TABLE `clientes_ativos` adicionar colunas listadas. Default `parcelas = '[]'::jsonb`, `apelidos = '{}'::text[]`.
-- **Migração 2**: DELETE dos 3 clientes (via insert tool, não migração).
-- **Hook novo**: `useClientesCEO.ts` (separado do `useClientes` para não impactar a rota antiga `/clientes`).
-- **Componentes novos**:
-  - `src/pages/ceo/CeoClientesAtivos.tsx`
-  - `src/pages/ceo/CeoClientesAnteriores.tsx`
-  - `src/components/ceo/ClienteFormModal.tsx`
-  - `src/components/ceo/ClienteDetalhesModal.tsx`
-  - `src/components/ceo/ParcelasEditor.tsx`
-- **Layout**: criar `CeoClientesLayout.tsx` com tabs Ativos/Anteriores.
-- **Roteamento**: substituir rota atual `/ceo/clientes` por esse layout (rota antiga `/clientes` para vendedores permanece intacta).
-- **Match**: lógica regex `/\b(\d{1,3})\s*%/` para extrair percentual + `.includes(apelido)` case-insensitive.
-- **Memória**: atualizar `mem://features/project-tracking` refletindo nova estrutura.
-
----
-
-## Fora de escopo (nesta entrega)
-
-- Edição de cliente após criação (só visualização + marcar concluído). Posso adicionar depois se quiser.
-- Notificações de parcela atrasada.
-- Upload de contratos/arquivos.
+Confirma que posso seguir assim?

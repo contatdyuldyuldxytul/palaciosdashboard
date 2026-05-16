@@ -17,6 +17,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useMetasComerciais } from "@/hooks/useMetasComerciais";
 import { DailyTasksPanel } from "@/components/DailyTasksPanel";
+import { useComissaoVendedorByName } from "@/hooks/useComissaoVendedor";
 
 const stageOrder: LeadStatus[] = ["lead", "contatado", "reuniao_agendada", "reuniao_realizada", "proposta", "fechado"];
 const stageColors: Record<LeadStatus, string> = {
@@ -98,13 +99,14 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
   const closedCount = memberLeads.filter((l) => l.status === "fechado").length;
   const closedValue = memberLeads.filter((l) => l.status === "fechado").reduce((s, l) => s + (l.valor_estimado || 0), 0);
   const conversionRate = memberLeads.length > 0 ? (closedCount / memberLeads.length) * 100 : 0;
+  const projetosComissao = useComissaoVendedorByName(memberName);
 
   // Goals from metas_comerciais
   const metaMensal = metaComercial ? Number(metaComercial.meta_receita) || 0 : 0;
   const metaReunioes = metaComercial ? Number(metaComercial.meta_demos) || 0 : 0;
 
   // SDR Commission: R$2,000 fixed + R$30/meeting (from tracker) + 4% contracts
-  const commission = 2000 + (meetingsRealized * 30) + (closedValue * 0.04);
+  const commission = 2000 + (meetingsRealized * 30) + (closedValue * 0.04) + projetosComissao.comissao;
   const metaPct = metaMensal > 0 ? (closedValue / metaMensal) * 100 : 0;
   const reunioesRestantes = Math.max(metaReunioes - meetingsDone, 0);
 
@@ -300,6 +302,9 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
             </div>
             <p className="text-xl font-bold text-foreground"><AnimatedNumber value={commission} formatAsCurrency /></p>
             <p className="text-[10px] text-muted-foreground mt-1">R$2.000 + ({meetingsRealized}×R$30) + (4%×{formatCurrency(closedValue)})</p>
+            {projetosComissao.clientesCount > 0 && (
+              <p className="text-[10px] text-amber-300/90 mt-0.5">+ 4% projetos: {formatCurrency(projetosComissao.comissao)} ({projetosComissao.clientesCount} cliente{projetosComissao.clientesCount === 1 ? "" : "s"})</p>
+            )}
             <p className="text-xs text-muted-foreground mt-0.5">Comissão Acumulada</p>
           </motion.div>
         </LockedCommission>

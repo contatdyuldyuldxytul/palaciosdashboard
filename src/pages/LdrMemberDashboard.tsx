@@ -18,6 +18,7 @@ import { CadenceChecklist } from "@/components/CadenceChecklist";
 import { CalendarioVendas } from "@/components/CalendarioVendas";
 import { useMetasComerciais } from "@/hooks/useMetasComerciais";
 import { DailyTasksPanel } from "@/components/DailyTasksPanel";
+import { useComissaoVendedorByName } from "@/hooks/useComissaoVendedor";
 
 interface LdrMemberDashboardProps {
   memberName: string;
@@ -173,7 +174,8 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
     return sum + (isNaN(v) ? 0 : v);
   }, 0);
   const contractCommission = closedContractsValue * 0.01;
-  const totalCommission = leadCommission + contractCommission;
+  const projetosComissao = useComissaoVendedorByName(memberName);
+  const totalCommission = leadCommission + contractCommission + projetosComissao.comissao;
 
   // Lead sources
   const sourceMap: Record<string, number> = {};
@@ -342,6 +344,9 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
             </div>
             <p className="text-xl font-bold text-foreground"><AnimatedNumber value={totalCommission} formatAsCurrency /></p>
             <p className="text-[10px] text-muted-foreground mt-1">({sheetLeads.length}×R$1) + (1%×{formatCurrency(closedContractsValue)})</p>
+            {projetosComissao.clientesCount > 0 && (
+              <p className="text-[10px] text-amber-300/90 mt-0.5">+ 4% projetos: {formatCurrency(projetosComissao.comissao)} ({projetosComissao.clientesCount} cliente{projetosComissao.clientesCount === 1 ? "" : "s"})</p>
+            )}
             <p className="text-xs text-muted-foreground mt-0.5">Comissão Acumulada</p>
             </>}
           </motion.div>

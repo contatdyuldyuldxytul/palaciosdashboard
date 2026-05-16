@@ -351,6 +351,7 @@ export type Database = {
           progresso: number | null
           projeto: string
           qtd_imagens: number | null
+          recorrente: boolean
           segundos_animacao: number | null
           servicos_adicionais: string | null
           status: string
@@ -363,6 +364,7 @@ export type Database = {
           valor_servicos_adicionais: number
           valor_total: number | null
           valor_tour_virtual: number
+          vendedor_id: string | null
         }
         Insert: {
           apelidos?: string[]
@@ -381,6 +383,7 @@ export type Database = {
           progresso?: number | null
           projeto: string
           qtd_imagens?: number | null
+          recorrente?: boolean
           segundos_animacao?: number | null
           servicos_adicionais?: string | null
           status?: string
@@ -393,6 +396,7 @@ export type Database = {
           valor_servicos_adicionais?: number
           valor_total?: number | null
           valor_tour_virtual?: number
+          vendedor_id?: string | null
         }
         Update: {
           apelidos?: string[]
@@ -411,6 +415,7 @@ export type Database = {
           progresso?: number | null
           projeto?: string
           qtd_imagens?: number | null
+          recorrente?: boolean
           segundos_animacao?: number | null
           servicos_adicionais?: string | null
           status?: string
@@ -423,6 +428,7 @@ export type Database = {
           valor_servicos_adicionais?: number
           valor_total?: number | null
           valor_tour_virtual?: number
+          vendedor_id?: string | null
         }
         Relationships: []
       }
