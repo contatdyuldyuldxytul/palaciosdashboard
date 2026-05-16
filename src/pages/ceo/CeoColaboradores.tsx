@@ -1,9 +1,7 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useComissaoVendedorByName } from "@/hooks/useComissaoVendedor";
-import { useMetasComerciais } from "@/hooks/useMetasComerciais";
-import { useLeads } from "@/hooks/useLeads";
+import { useColaboradorStats } from "@/hooks/useColaboradorStats";
 import { toast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { Trophy, Mail, ShieldCheck, ShieldAlert, ShieldX, UserCog, Crown } from "lucide-react";
