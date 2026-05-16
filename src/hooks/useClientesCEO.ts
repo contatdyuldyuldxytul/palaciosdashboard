@@ -122,14 +122,20 @@ export function useDeleteClienteCEO() {
   });
 }
 
-export interface VendedorOption { id: string; nome: string; }
+export interface VendedorOption { id: string; nome: string; slug: string | null; sub_role: string | null; }
 export function useVendedores() {
   return useQuery({
     queryKey: ["vendedores_profiles"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("profiles").select("id, full_name");
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name, colaborador_slug, sub_role")
+        .not("colaborador_slug", "is", null)
+        .eq("status", "approved");
       if (error) throw error;
-      return (data || []).map((p: any) => ({ id: p.id, nome: p.full_name })) as VendedorOption[];
+      return (data || []).map((p: any) => ({
+        id: p.id, nome: p.full_name, slug: p.colaborador_slug, sub_role: p.sub_role,
+      })) as VendedorOption[];
     },
   });
 }
