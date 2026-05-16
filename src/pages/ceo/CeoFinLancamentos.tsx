@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const CATS_ENTRADA = ["Receita de Projeto", "Receita não Operacional", "Outros"];
-const CATS_SAIDA = ["CMV/Custo", "Pessoal", "Aluguel", "Marketing", "Adm", "Financeiro", "Educação", "Software", "Outras Despesas"];
+const CATS_ENTRADA = ["Receitas Palacios", "Receitas BKV", "Outras"];
+const CATS_SAIDA = ["Pessoas", "Equipe de Vendas", "Equipe Artistas 3D", "Educação", "Softwares Assinaturas", "Softwares Assinaturas não essenciais", "Contabilidade Contabilizei", "Impostos e Taxas", "Telefonia + Internet", "Equipamentos", "Outras Despesas"];
 
 function fmt(v: number) {
   return `R$ ${Math.abs(v).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
