@@ -1,10 +1,11 @@
 import { useLocation, Link } from "react-router-dom";
 import {
   LayoutDashboard, TrendingUp, Users, MessageSquare, Target,
-  ChevronLeft, ChevronRight, ChevronDown, LogOut, Crown, User
+  ChevronLeft, ChevronRight, ChevronDown, LogOut, Crown, User, Sun, Moon
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import logoPalacios from "@/assets/logo-palacios.png";
 import logoPalaciosIcon from "@/assets/logo-palacios-icon.png";
 
@@ -28,6 +29,7 @@ export function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const { signOut, profile, hasRole } = useAuth();
+  const { theme, toggle } = useTheme();
 
   const isActive = (url: string) => {
     if (url === "/") return location.pathname === "/";
@@ -126,6 +128,14 @@ export function AppSidebar() {
           <p className="text-[10px] text-muted-foreground truncate">{profile.email}</p>
         </div>
       )}
+      <button
+        onClick={toggle}
+        className="flex items-center gap-2 px-3 py-2 mx-2 mb-1 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-white/[0.04] transition-all duration-300"
+        title={theme === "dark" ? "Modo claro" : "Modo escuro"}
+      >
+        {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+        {!collapsed && <span>{theme === "dark" ? "Modo claro" : "Modo escuro"}</span>}
+      </button>
       <button
         onClick={signOut}
         className="flex items-center gap-2 px-3 py-2 mx-2 mb-1 rounded-xl text-sm text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-300"
