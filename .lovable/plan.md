@@ -1,37 +1,121 @@
-## Ajustes finais antes de ativar o sync
+## Objetivo
 
-Dry-run validou que a planilha é lida (78 lançamentos: 73 da aba Entrada e Saídas + 5 do Salário Thiago). Mas duas correções no parser são necessárias antes de sincronizar de verdade.
+Reformular completamente a aba **Clientes** dentro do CEO: limpar os 3 clientes existentes, criar um cadastro estruturado com parcelas configuráveis e checklist de serviços, fazer match automático com pagamentos da planilha financeira, e adicionar fluxo de "Projeto concluído" → seção de projetos anteriores.
 
-### 1. Corrigir coluna de data (Entrada e Saídas)
-- Hoje o parser pega a primeira coluna cujo header contém "data" → caiu na **coluna B** que está vazia → tudo virou data de hoje.
-- Você confirmou que **as datas estão na coluna C**.
-- **Fix**: forçar `colData = 2` (coluna C) na função `parseEntradaSaidas`, em vez do auto-detect por header. Mantém auto-detect só se col C não existir (defensivo).
+---
 
-### 2. Manter linha 51 como "Salário Thiago" (já está correto)
-- Linha 51 da aba Orçamento é rotulada "Despesas Totais", mas você confirmou que **isso representa o pró-labore do Thiago**.
-- Parser já está lendo somente as 12 colunas Realizado e gravando como `categoria=Pessoas, subcategoria=Pró-labore, descricao=Salário Thiago`.
-- Nada a mudar.
+## 1. Limpeza inicial
 
-### 3. Cron de 12 em 12h
-- Agendar via `pg_cron` + `pg_net` chamando `sync-financeiro-sheets` às **00h e 12h** todo dia (`0 0,12 * * *`).
-- Inserido com `supabase--insert` (dado sensível: URL e anon key).
+Deletar do banco apenas estes clientes (e seus dados ligados: checklist_projetos, financeiro_clientes):
+- BKV Dsign
+- Bolognesi Cenário
+- Bolognesi - Essenza
 
-### 4. Botão "Sincronizar planilha financeira" no CEO Financeiro
-- Header de `CeoFinanceiro.tsx`: botão chamando `supabase.functions.invoke("sync-financeiro-sheets")`.
-- Indicador "Última sync: HH:MM" ao lado, com hook leve `useFinanceiroSync` (espelho simples do `useSyncSheets`, sem auto-sync porque o cron cuida disso).
-- Toast de sucesso/erro mostrando contagem (`73 lançamentos + 5 salário`).
-- Após sync ok, invalida queries `useFinanceiro` para recarregar UI.
+---
 
-### 5. Rodar sync real (não-dryRun) uma vez
-- Após deploy, chamar a function sem `?dryRun=1` para popular `financeiro_empresa` pela 1ª vez.
-- Verificar contagem no banco com `read_query`.
+## 2. Estrutura de dados (schema)
 
-### Arquivos afetados
-- `supabase/functions/sync-financeiro-sheets/index.ts` — fix coluna de data
-- `src/hooks/useFinanceiroSync.ts` — novo hook
-- `src/pages/ceo/CeoFinanceiro.tsx` — botão + indicador
-- Cron via SQL (não cria arquivo de migration)
+**Estender `clientes_ativos`** com novos campos:
+- `parcelas` (jsonb) — array `[{ numero, percentual, dias_apos_inicio, data_prevista, status: 'pendente'|'pago', valor_pago, data_pagamento, match_descricao }]`
+- `tem_imagens` (bool), `qtd_imagens` (já existe)
+- `tem_animacao` (bool), `segundos_animacao` (já existe)
+- `tem_tour_virtual` (bool), `valor_tour_virtual` (numeric)
+- `servicos_adicionais` (text), `valor_servicos_adicionais` (numeric)
+- `tem_software` (bool), `plano_software` (enum text: 'Prata' | 'Ouro' | 'Diamante')
+- `concluido_em` (timestamptz, null = ativo)
+- `apelidos` (text[]) — usado pelo match automático (ex: `['Arcko', 'ARK']`)
 
-### O que **não** vou fazer
-- Não vou mexer no schema da tabela `financeiro_empresa` (já tem todas as colunas).
-- Não vou tocar nos lançamentos manuais existentes — só apago os com `notas IN ('sync:entradas-saidas', 'sync:orcamento-salario-thiago')` antes de reinserir.
+Status: `ativo` (default) e `concluido` (quando `concluido_em` preenchido).
+
+---
+
+## 3. Tela: Cadastro de cliente (modal)
+
+Design compacto, 1 coluna em mobile, 2 em desktop. Stepper visual leve (3 seções dentro do mesmo modal scrollável, não wizard intrusivo):
+
+**Seção A — Dados do projeto**
+- Nome do projeto (text)
+- Empresa/Cliente (text)
+- Valor geral do contrato (R$)
+- Data de início
+
+**Seção B — Parcelas** (gera dinamicamente)
+- Input "Quantas parcelas?" (1–12)
+- Para cada parcela renderiza um card mini:
+  - % da parcela (com validação: soma das % = 100%)
+  - Dias após início → mostra abaixo "Vence em DD/MM/YYYY" (calc auto)
+  - Mostra valor R$ correspondente
+- Botão "distribuir igualmente" como atalho
+
+**Seção C — Checklist de serviços** (cada item = checkbox que revela um campo)
+- ☐ Imagens → input quantidade
+- ☐ Animação → input segundos
+- ☐ Tour virtual → input valor R$
+- ☐ Serviços adicionais → textarea descrição + valor R$
+- ☐ Software → select Prata/Ouro/Diamante
+
+**Seção D — Apelidos para match** (collapsible "Avançado")
+- Tags input com chips (preenchido automático com o nome da empresa; user pode adicionar variações)
+
+Botão "Salvar cliente".
+
+---
+
+## 4. Match automático com planilha (Entradas e Saídas)
+
+Criar hook `useParcelaMatcher`:
+- Lê `lancamentos` onde `classificacao = 'Entrada'` e categoria ∈ ('Receitas Palacios', 'Receitas BKV').
+- Para cada cliente ativo, percorre suas `parcelas` ainda `pendente` e busca lançamento cuja `descricao` contenha qualquer um dos `apelidos` do cliente **E** contenha a `%` da parcela (ex: "20%") ou o valor exato.
+- Match encontrado → marca `status: 'pago'`, grava `valor_pago`, `data_pagamento` (= `data` do lançamento), `match_descricao`.
+- Não-match com confiança ambígua → exibe um banner "X pagamentos sem cliente identificado" com botão "Atribuir manualmente" → dropdown com lista de clientes e parcelas em aberto.
+
+Roda automaticamente ao abrir a página e após cada sync financeiro.
+
+---
+
+## 5. Tela: Lista e detalhe do cliente
+
+**`/ceo/clientes` (ativos)** — grid de cards mostrando:
+- Nome do projeto, empresa
+- Barra de progresso financeiro: `valor_pago / valor_total`
+- Mini-timeline de parcelas (pontinhos: ✓ pago, ◯ pendente, ⚠ atrasada)
+- Botão "Ver detalhes" → modal com:
+  - Tabela completa de parcelas (status, vencimento, pagamento, descrição matched)
+  - Checklist de serviços
+  - Botão **"Marcar projeto como concluído"** → confirm dialog → seta `concluido_em = now()` → some da lista ativa.
+
+**`/ceo/clientes/anteriores`** — mesma estrutura, somente leitura, lista clientes com `concluido_em IS NOT NULL`. Mostra data de conclusão e total faturado.
+
+Tabs no topo: "Ativos" | "Anteriores" | "+ Novo Cliente".
+
+---
+
+## 6. Design
+
+Mantém o padrão CEO (glassmorphism dark + acento amber/gold). Modal de cadastro com seções colapsáveis para não ficar overwhelming. Checklist usa toggles suaves estilo iOS. Parcelas em cards horizontais scrolláveis quando 4+.
+
+---
+
+## Detalhes técnicos
+
+- **Migração 1**: ALTER TABLE `clientes_ativos` adicionar colunas listadas. Default `parcelas = '[]'::jsonb`, `apelidos = '{}'::text[]`.
+- **Migração 2**: DELETE dos 3 clientes (via insert tool, não migração).
+- **Hook novo**: `useClientesCEO.ts` (separado do `useClientes` para não impactar a rota antiga `/clientes`).
+- **Componentes novos**:
+  - `src/pages/ceo/CeoClientesAtivos.tsx`
+  - `src/pages/ceo/CeoClientesAnteriores.tsx`
+  - `src/components/ceo/ClienteFormModal.tsx`
+  - `src/components/ceo/ClienteDetalhesModal.tsx`
+  - `src/components/ceo/ParcelasEditor.tsx`
+- **Layout**: criar `CeoClientesLayout.tsx` com tabs Ativos/Anteriores.
+- **Roteamento**: substituir rota atual `/ceo/clientes` por esse layout (rota antiga `/clientes` para vendedores permanece intacta).
+- **Match**: lógica regex `/\b(\d{1,3})\s*%/` para extrair percentual + `.includes(apelido)` case-insensitive.
+- **Memória**: atualizar `mem://features/project-tracking` refletindo nova estrutura.
+
+---
+
+## Fora de escopo (nesta entrega)
+
+- Edição de cliente após criação (só visualização + marcar concluído). Posso adicionar depois se quiser.
+- Notificações de parcela atrasada.
+- Upload de contratos/arquivos.
