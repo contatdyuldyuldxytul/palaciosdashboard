@@ -127,12 +127,11 @@ export default function CeoColaboradores() {
                   <select
                     defaultValue=""
                     onChange={(e) => updateProfile.mutate({ id: p.id, colaborador_slug: (e.target.value || null) as any })}
-                    className="text-xs px-2 py-1 rounded-lg border border-white/10 text-foreground"
-                    style={{ background: "hsl(228,16%,10%)" }}
+                    className="text-xs px-2 py-1 rounded-lg border border-border bg-card text-foreground"
                   >
-                    <option value="" style={{ background: "hsl(228,16%,10%)", color: "white" }}>Atribuir…</option>
+                    <option value="">Atribuir…</option>
                     {COLAB_DEFINITIONS.map((c) => (
-                      <option key={c.slug} value={c.slug} style={{ background: "hsl(228,16%,10%)", color: "white" }}>{c.nome}</option>
+                      <option key={c.slug} value={c.slug}>{c.nome}</option>
                     ))}
                   </select>
                   <button
