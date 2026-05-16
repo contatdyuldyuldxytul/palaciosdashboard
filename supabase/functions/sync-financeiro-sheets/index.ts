@@ -147,6 +147,25 @@ function parseEntradaSaidas(rows: string[][]): { items: ParsedLancamento[]; debu
 
   if (colCat < 0 || colValor < 0) { debug.error = "missing_required_columns"; return { items, debug }; }
 
+  // DEBUG: collect all unique cat+tipo combos
+  const uniqCats = new Map<string, { count: number; sampleValor: number; sampleDesc: string }>();
+  for (let i = headerIdx + 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || row.length === 0) continue;
+    const cat = String(row[colCat] ?? "").trim();
+    const tipo = colTipo >= 0 ? String(row[colTipo] ?? "").trim() : "";
+    if (!cat) continue;
+    const key = `${tipo} || ${cat}`;
+    const cur = uniqCats.get(key) || { count: 0, sampleValor: 0, sampleDesc: "" };
+    cur.count++;
+    if (!cur.sampleDesc) {
+      cur.sampleDesc = String(row[colDesc] ?? "");
+      cur.sampleValor = parseBRNumber(row[colValor]);
+    }
+    uniqCats.set(key, cur);
+  }
+  debug.uniqueCategorias = Array.from(uniqCats.entries()).map(([k, v]) => ({ key: k, ...v }));
+
   for (let i = headerIdx + 1; i < rows.length; i++) {
     const row = rows[i];
     if (!row || row.length === 0) continue;
