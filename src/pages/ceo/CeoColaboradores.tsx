@@ -273,8 +273,7 @@ function ColaboradorCard({
             }
             if (newId) onAssignEmail(newId, colab.slug);
           }}
-          className="w-full text-xs px-2 py-1.5 rounded-lg border border-white/10 text-foreground"
-          style={{ background: "hsl(228,16%,10%)" }}
+          className="w-full text-xs px-2 py-1.5 rounded-lg border border-border bg-card text-foreground"
         >
           <option value="">— Sem conta —</option>
           {availableProfiles.map((p: ProfileRow) => (
@@ -285,8 +284,7 @@ function ColaboradorCard({
           <select
             value={profile.sub_role || ""}
             onChange={(e) => onSetSubRole(profile.id, e.target.value || null)}
-            className="w-full text-xs px-2 py-1.5 rounded-lg border border-white/10 text-foreground"
-            style={{ background: "hsl(228,16%,10%)" }}
+            className="w-full text-xs px-2 py-1.5 rounded-lg border border-border bg-card text-foreground"
           >
             <option value="">— Sub-cargo —</option>
             {SUB_ROLE_OPTIONS.map((r) => (
