@@ -38,10 +38,10 @@ export default function CeoFinIndicadores() {
     const bal = balQ.data?.[0] || {} as any;
     const fc = fcQ.data?.[0] || {} as any;
 
-    const recBruta = entries.filter(e => e.classificacao === "Entrada" && e.categoria === "Receita de Projeto").reduce((s, e) => s + Number(e.valor), 0);
+    const recBruta = entries.filter(e => e.classificacao === "Entrada" && (e.categoria === "Receitas Palacios" || e.categoria === "Receitas BKV")).reduce((s, e) => s + Number(e.valor), 0);
     const totalEntradas = entries.filter(e => e.classificacao === "Entrada").reduce((s, e) => s + Number(e.valor), 0);
     const totalSaidas = entries.filter(e => e.classificacao === "Saída").reduce((s, e) => s + Number(e.valor), 0);
-    const cmv = entries.filter(e => e.classificacao === "Saída" && e.categoria === "CMV/Custo").reduce((s, e) => s + Number(e.valor), 0);
+    const cmv = 0;
     const lucroBruto = totalEntradas - cmv;
     const resultLiq = totalEntradas - totalSaidas;
 

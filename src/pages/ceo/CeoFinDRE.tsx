@@ -27,28 +27,29 @@ export default function CeoFinDRE() {
   const calcDRE = (entries: any[]) => {
     const sumCat = (classif: string, cat: string) =>
       entries.filter(e => e.classificacao === classif && e.categoria === cat).reduce((s: number, e: any) => s + Number(e.valor), 0);
-    const sumClass = (classif: string) =>
-      entries.filter(e => e.classificacao === classif).reduce((s: number, e: any) => s + Number(e.valor), 0);
 
-    const receitaBruta = sumCat("Entrada", "Receita de Projeto");
-    const deducoes = sumCat("Saída", "Financeiro") * 0.05; // placeholder for ISS
+    const recPalacios = sumCat("Entrada", "Receitas Palacios");
+    const recBKV = sumCat("Entrada", "Receitas BKV");
+    const recOutras = sumCat("Entrada", "Outras");
+    const receitaBruta = recPalacios + recBKV;
+    const deducoes = receitaBruta * 0.05; // ISS estimado
     const receitaLiq = receitaBruta - deducoes;
-    const cmv = sumCat("Saída", "CMV/Custo");
-    const lucroBruto = receitaLiq - cmv;
-    const pessoal = sumCat("Saída", "Pessoal");
-    const aluguel = sumCat("Saída", "Aluguel");
-    const marketing = sumCat("Saída", "Marketing");
-    const adm = sumCat("Saída", "Adm");
-    const financeiro = sumCat("Saída", "Financeiro");
-    const outras = sumCat("Saída", "Outras Despesas");
-    const educacao = sumCat("Saída", "Educação");
-    const software = sumCat("Saída", "Software");
-    const totalDesp = pessoal + aluguel + marketing + adm + financeiro + educacao + software + outras;
-    const ebit = lucroBruto - totalDesp;
-    const recNaoOp = sumCat("Entrada", "Receita não Operacional");
-    const resultadoLiq = ebit + recNaoOp;
 
-    return { receitaBruta, deducoes, receitaLiq, cmv, lucroBruto, pessoal, aluguel, marketing, adm, financeiro, educacao, software, outras, totalDesp, ebit, recNaoOp, resultadoLiq };
+    const pessoas = sumCat("Saída", "Pessoas");
+    const equipeVendas = sumCat("Saída", "Equipe de Vendas");
+    const equipeArtistas = sumCat("Saída", "Equipe Artistas 3D");
+    const educacao = sumCat("Saída", "Educação");
+    const softwares = sumCat("Saída", "Softwares Assinaturas") + sumCat("Saída", "Softwares Assinaturas não essenciais");
+    const contabilidade = sumCat("Saída", "Contabilidade Contabilizei");
+    const impostos = sumCat("Saída", "Impostos e Taxas");
+    const telefonia = sumCat("Saída", "Telefonia + Internet");
+    const equipamentos = sumCat("Saída", "Equipamentos");
+    const outras = sumCat("Saída", "Outras Despesas");
+    const totalDesp = pessoas + equipeVendas + equipeArtistas + educacao + softwares + contabilidade + impostos + telefonia + equipamentos + outras;
+    const ebit = receitaLiq - totalDesp;
+    const resultadoLiq = ebit + recOutras;
+
+    return { recPalacios, recBKV, recOutras, receitaBruta, deducoes, receitaLiq, pessoas, equipeVendas, equipeArtistas, educacao, softwares, contabilidade, impostos, telefonia, equipamentos, outras, totalDesp, ebit, resultadoLiq };
   };
 
   const cur = useMemo(() => calcDRE(curQ.data || []), [curQ.data]);
@@ -63,28 +64,30 @@ export default function CeoFinDRE() {
   if (curQ.isLoading) return <div className="space-y-4"><Skeleton className="h-8 w-48" /><Skeleton className="h-96" /></div>;
 
   const rows = [
-    { label: "Receita Bruta de Vendas", cur: cur.receitaBruta, prev: prev.receitaBruta, bold: true, section: true },
-    { label: "(-) Deduções da Receita (ISS)", cur: -cur.deducoes, prev: -prev.deducoes },
+    { label: "RECEITAS", header: true },
+    { label: "Receitas Palacios", cur: cur.recPalacios, prev: prev.recPalacios },
+    { label: "Receitas BKV", cur: cur.recBKV, prev: prev.recBKV },
+    { label: "= Receita Bruta", cur: cur.receitaBruta, prev: prev.receitaBruta, bold: true, section: true },
+    { label: "(-) Deduções da Receita (ISS ~5%)", cur: -cur.deducoes, prev: -prev.deducoes },
     { label: "= RECEITA LÍQUIDA", cur: cur.receitaLiq, prev: prev.receitaLiq, bold: true, highlight: true,
       sub: cur.receitaBruta > 0 ? `Margem: ${pct(cur.receitaLiq / cur.receitaBruta)}` : undefined },
-    { label: "(-) CMV / Custo dos Serviços", cur: -cur.cmv, prev: -prev.cmv },
-    { label: "= LUCRO BRUTO", cur: cur.lucroBruto, prev: prev.lucroBruto, bold: true, highlight: true,
-      sub: cur.receitaBruta > 0 ? `Margem Bruta: ${pct(cur.lucroBruto / cur.receitaBruta)}` : undefined },
     { label: "", divider: true },
     { label: "DESPESAS OPERACIONAIS", header: true },
-    { label: "(-) Pessoal", cur: -cur.pessoal, prev: -prev.pessoal },
-    { label: "(-) Aluguel", cur: -cur.aluguel, prev: -prev.aluguel },
-    { label: "(-) Marketing", cur: -cur.marketing, prev: -prev.marketing },
-    { label: "(-) Despesas Adm", cur: -cur.adm, prev: -prev.adm },
-    { label: "(-) Despesas Financeiras", cur: -cur.financeiro, prev: -prev.financeiro },
+    { label: "(-) Pessoas (Pró-labore)", cur: -cur.pessoas, prev: -prev.pessoas },
+    { label: "(-) Equipe de Vendas", cur: -cur.equipeVendas, prev: -prev.equipeVendas },
+    { label: "(-) Equipe Artistas 3D", cur: -cur.equipeArtistas, prev: -prev.equipeArtistas },
+    { label: "(-) Softwares & Assinaturas", cur: -cur.softwares, prev: -prev.softwares },
     { label: "(-) Educação", cur: -cur.educacao, prev: -prev.educacao },
-    { label: "(-) Software", cur: -cur.software, prev: -prev.software },
+    { label: "(-) Contabilidade", cur: -cur.contabilidade, prev: -prev.contabilidade },
+    { label: "(-) Impostos e Taxas", cur: -cur.impostos, prev: -prev.impostos },
+    { label: "(-) Telefonia + Internet", cur: -cur.telefonia, prev: -prev.telefonia },
+    { label: "(-) Equipamentos", cur: -cur.equipamentos, prev: -prev.equipamentos },
     { label: "(-) Outras Despesas", cur: -cur.outras, prev: -prev.outras },
     { label: "= TOTAL DESPESAS OPERACIONAIS", cur: -cur.totalDesp, prev: -prev.totalDesp, bold: true },
     { label: "", divider: true },
     { label: "= LUCRO OPERACIONAL (EBIT)", cur: cur.ebit, prev: prev.ebit, bold: true, highlight: true,
       sub: cur.receitaBruta > 0 ? `Margem Operacional: ${pct(cur.ebit / cur.receitaBruta)}` : undefined },
-    { label: "Receita não Operacional", cur: cur.recNaoOp, prev: prev.recNaoOp },
+    { label: "(+) Outras Receitas (não operacional)", cur: cur.recOutras, prev: prev.recOutras },
     { label: "= RESULTADO LÍQUIDO", cur: cur.resultadoLiq, prev: prev.resultadoLiq, bold: true, highlight: true,
       sub: cur.receitaBruta > 0 ? `% Resultado: ${pct(cur.resultadoLiq / cur.receitaBruta)}` : undefined },
   ];

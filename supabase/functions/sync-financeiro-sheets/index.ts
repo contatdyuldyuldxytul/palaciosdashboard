@@ -152,32 +152,40 @@ function parseEntradaSaidas(rows: string[][]): { items: ParsedLancamento[]; debu
     if (!row || row.length === 0) continue;
     const cat = String(row[colCat] ?? "").trim();
     if (!cat) continue;
-    // Filter: only P3DS company
-    if (!norm(cat).includes("p3ds")) continue;
 
     const valor = parseBRNumber(row[colValor]);
     if (valor === 0) continue;
+
+    const tipoRaw = colTipo >= 0 ? norm(row[colTipo]) : "";
+    let tipo: "receita" | "despesa";
+    if (tipoRaw.includes("entr") || tipoRaw.includes("rec")) tipo = "receita";
+    else if (tipoRaw.includes("sai") || tipoRaw.includes("desp")) tipo = "despesa";
+    else tipo = valor < 0 ? "despesa" : "receita";
+
+    const catNorm = norm(cat);
+    let categoriaFinal: string;
+
+    if (tipo === "receita") {
+      // 3 buckets per user spec
+      if (catNorm.includes("palacios")) categoriaFinal = "Receitas Palacios";
+      else if (catNorm.includes("bkv")) categoriaFinal = "Receitas BKV";
+      else categoriaFinal = "Outras";
+    } else {
+      // Despesas: only P3DS (empresa). Pessoais ficam de fora.
+      if (!catNorm.includes("p3ds")) continue;
+      categoriaFinal = cat.replace(/\s*-\s*p3ds\s*$/i, "").trim() || cat;
+    }
 
     const dataRaw = colData >= 0 ? row[colData] : null;
     const data = parseBRDate(dataRaw) || new Date().toISOString().slice(0, 10);
     const desc = colDesc >= 0 ? String(row[colDesc] ?? "").trim() : cat;
 
-    let tipo: "receita" | "despesa";
-    if (colTipo >= 0) {
-      const t = norm(row[colTipo]);
-      if (t.includes("entr") || t.includes("rec")) tipo = "receita";
-      else if (t.includes("sai") || t.includes("desp")) tipo = "despesa";
-      else tipo = valor < 0 ? "despesa" : "receita";
-    } else {
-      tipo = valor < 0 ? "despesa" : "receita";
-    }
-
     items.push({
       data,
       tipo,
-      categoria: cat.replace(/\s*-\s*p3ds\s*$/i, "").trim() || cat,
+      categoria: categoriaFinal,
       subcategoria: null,
-      descricao: desc || cat,
+      descricao: desc || categoriaFinal,
       valor: Math.abs(valor),
       notas: "sync:entradas-saidas",
     });

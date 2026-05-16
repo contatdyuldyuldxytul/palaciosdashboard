@@ -30,16 +30,16 @@ export default function CeoFinResumo() {
   const allEntries = allLancamentos.data || [];
   const custos = custosQ.data?.[0];
 
-  const receitaBruta = entries.filter(e => e.classificacao === "Entrada" && e.categoria === "Receita de Projeto").reduce((s, e) => s + Number(e.valor), 0);
-  const totalEntradas = entries.filter(e => e.classificacao === "Entrada").reduce((s, e) => s + Number(e.valor), 0);
+  const recPalacios = entries.filter(e => e.classificacao === "Entrada" && e.categoria === "Receitas Palacios").reduce((s, e) => s + Number(e.valor), 0);
+  const recBKV = entries.filter(e => e.classificacao === "Entrada" && e.categoria === "Receitas BKV").reduce((s, e) => s + Number(e.valor), 0);
+  const recOutras = entries.filter(e => e.classificacao === "Entrada" && e.categoria === "Outras").reduce((s, e) => s + Number(e.valor), 0);
+  const receitaBruta = recPalacios + recBKV;
+  const totalEntradas = receitaBruta + recOutras;
   const totalSaidas = entries.filter(e => e.classificacao === "Saída").reduce((s, e) => s + Number(e.valor), 0);
-  const cmv = entries.filter(e => e.classificacao === "Saída" && e.categoria === "CMV/Custo").reduce((s, e) => s + Number(e.valor), 0);
-  const deducoes = entries.filter(e => e.classificacao === "Saída" && e.categoria === "Financeiro").reduce((s, e) => s + Number(e.valor), 0);
+  const deducoes = receitaBruta * 0.05; // ISS estimado
   const receitaLiq = receitaBruta - deducoes;
-  const lucroBruto = receitaLiq - cmv;
-  const despOp = totalSaidas - cmv;
-  const ebit = lucroBruto - despOp + cmv; // lucro bruto - (total despesas - cmv)
-  const resultadoLiq = totalEntradas - totalSaidas;
+  const ebit = receitaLiq - totalSaidas;
+  const resultadoLiq = totalEntradas - totalSaidas - deducoes;
   const margemLiq = totalEntradas > 0 ? (resultadoLiq / totalEntradas) * 100 : 0;
 
   // Ponto de equilíbrio
