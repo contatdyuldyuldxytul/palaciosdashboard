@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import logoPalacios from "@/assets/logo-palacios.png";
+import logoPalaciosLight from "@/assets/logo-palacios-light.png";
 import logoPalaciosIcon from "@/assets/logo-palacios-icon.png";
 
 const navItems = [
