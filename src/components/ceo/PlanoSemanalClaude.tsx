@@ -65,7 +65,7 @@ export default function PlanoSemanalClaude() {
     if (!plano) return setPlan(null);
 
     // Default cadência: load from cadence_templates if empty
-    let cadencia: CadenciaSemana = data.cadencia_semana;
+    let cadencia: CadenciaSemana = plano.cadencia_semana;
     if (!cadencia || Object.keys(cadencia).length === 0) {
       const { data: templates } = await (supabase as any)
         .from("cadence_templates")
@@ -82,10 +82,10 @@ export default function PlanoSemanalClaude() {
     }
 
     setPlan({
-      ...data,
+      ...plano,
       cadencia_semana: cadencia,
-      meta_milena_dia: data.meta_milena_dia ?? 15,
-      estrategias_fora_da_caixa: data.estrategias_fora_da_caixa ?? [],
+      meta_milena_dia: plano.meta_milena_dia ?? 15,
+      estrategias_fora_da_caixa: plano.estrategias_fora_da_caixa ?? [],
     });
   };
 
