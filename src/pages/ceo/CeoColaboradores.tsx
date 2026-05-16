@@ -127,7 +127,7 @@ export default function CeoColaboradores() {
                   <select
                     defaultValue=""
                     onChange={(e) => updateProfile.mutate({ id: p.id, colaborador_slug: (e.target.value || null) as any })}
-                    className="text-xs px-2 py-1 rounded-lg border border-border bg-card text-foreground"
+                    className="text-xs px-2 py-1 rounded-lg border border-border bg-secondary text-secondary-foreground"
                   >
                     <option value="">Atribuir…</option>
                     {COLAB_DEFINITIONS.map((c) => (
@@ -273,7 +273,7 @@ function ColaboradorCard({
             }
             if (newId) onAssignEmail(newId, colab.slug);
           }}
-          className="w-full text-xs px-2 py-1.5 rounded-lg border border-border bg-card text-foreground"
+          className="w-full text-xs px-2 py-1.5 rounded-lg border border-border bg-secondary text-secondary-foreground"
         >
           <option value="">— Sem conta —</option>
           {availableProfiles.map((p: ProfileRow) => (
@@ -284,7 +284,7 @@ function ColaboradorCard({
           <select
             value={profile.sub_role || ""}
             onChange={(e) => onSetSubRole(profile.id, e.target.value || null)}
-            className="w-full text-xs px-2 py-1.5 rounded-lg border border-border bg-card text-foreground"
+            className="w-full text-xs px-2 py-1.5 rounded-lg border border-border bg-secondary text-secondary-foreground"
           >
             <option value="">— Sub-cargo —</option>
             {SUB_ROLE_OPTIONS.map((r) => (
