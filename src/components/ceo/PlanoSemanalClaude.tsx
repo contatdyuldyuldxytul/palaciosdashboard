@@ -55,14 +55,14 @@ export default function PlanoSemanalClaude() {
       .from("weekly_plans")
       .select("*")
       .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(1);
     console.log("[PlanoSemanalClaude] weekly_plans result:", { data, error });
     if (error) {
       console.error("[PlanoSemanalClaude] erro ao buscar weekly_plans:", error);
       return setPlan(null);
     }
-    if (!data) return setPlan(null);
+    const plano = data?.[0] ?? null;
+    if (!plano) return setPlan(null);
 
     // Default cadência: load from cadence_templates if empty
     let cadencia: CadenciaSemana = data.cadencia_semana;
