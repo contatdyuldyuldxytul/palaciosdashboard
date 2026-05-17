@@ -310,6 +310,19 @@ export default function PlanoSemanalClaude() {
         <p className="text-sm text-muted-foreground">
           Nenhum plano disponível. O briefing de sexta-feira gerará automaticamente.
         </p>
+        <button
+          onClick={criarPlanoManual}
+          disabled={creating}
+          className="mt-4 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            background: "linear-gradient(135deg, hsl(160,100%,38%), hsl(160,100%,45%))",
+            color: "white",
+            boxShadow: "0 4px 20px rgba(0,200,150,0.25)",
+          }}
+        >
+          <Plus className="w-4 h-4" />
+          {creating ? "Criando…" : "Criar plano da semana atual"}
+        </button>
       </div>
     );
   }
