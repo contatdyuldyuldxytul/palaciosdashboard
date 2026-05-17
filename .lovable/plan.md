@@ -1,27 +1,40 @@
-Unificar a "Checklist" como única lista em todos os perfis de colaborador, removendo a "Checklist do Dia" duplicada (componente `CadenceChecklist`).
+## Objetivo
 
-## Mudanças por arquivo
+Adicionar um botão de fallback no componente `PlanoSemanalClaude` para criar manualmente um `weekly_plans` quando o GitHub Actions de sexta falhar. O registro criado terá **exatamente a mesma estrutura** do que o Claude insere, ficando em `status: 'draft'` para você editar e aprovar normalmente.
 
-**1. `src/pages/TeamMemberDashboard.tsx` (Aline e Felipe)**
+## Comportamento
 
-- Remover o bloco `<CadenceChecklist ... />` da ROW 2 (linha ~342) e o import.
-- A linha de cima continua com `DailyTasksPanel` (title="Checklist"), que vira a única.
-- Ajustar o grid da ROW 2 (hoje `grid-cols-1 lg:grid-cols-2`) para acomodar só o Activity Feed do lado, ou converter em coluna única caso o Activity Feed estivesse acoplado ao checklist removido — confirmar olhando o JSX antes de editar.
+Quando não existe plano (`plan === null`), em vez de mostrar só "Nenhum plano disponível", mostrar também um botão **"Criar plano da semana atual"**.
 
-**2. `src/pages/LdrMemberDashboard.tsx` (Milena)**
+Ao clicar:
+1. Calcula `week_start` = segunda-feira da semana atual (America/Sao_Paulo)
+2. Calcula `week_end` = sexta-feira (week_start + 4 dias)
+3. Insere em `weekly_plans` com os mesmos defaults da tabela:
+   - `status: 'draft'`
+   - `estrategia_semana: ''`
+   - `prioridades: []`
+   - `extras_aline/felipe/milena: []`
+4. Recarrega via `load()` — que já popula a cadência padrão a partir de `cadence_templates` (cadence_2_0, D1–D5) e `meta_milena_dia: 15`
 
-- Remover `<CadenceChecklist ... />` (linha ~372) e o import.
-- Mesmo ajuste de grid da ROW 2.
+A partir daí o fluxo é idêntico ao plano vindo do Claude: você edita estratégia, prioridades, cadência, extras e clica **Aprovar e Distribuir**.
 
-**3.** `src/pages/ThiagoDashboard.tsx` **(Thiago)**
+## Diferenças vs. plano do Claude
 
-- Thiago só tem um painel, mas com título "Checklist do Dia". Renomear para `title="Checklist"` (linha 189) para padronizar com os demais.
+| Campo | Claude (email) | Botão manual |
+|---|---|---|
+| `estrategia_semana` | preenchida pelo Claude | vazia (você escreve) |
+| `prioridades` | sugeridas pelo Claude | vazias (você adiciona) |
+| `cadencia_semana` | sugerida pelo Claude | default de `cadence_templates` |
+| `extras_*` | sugeridos pelo Claude | vazios |
+| `meta_milena_dia` | sugerida pelo Claude | 15 (default) |
+| `status` | `draft` | `draft` |
 
-## Não-mexer
+Estrutura no banco: **idêntica**. Mesmo schema, mesmas colunas, mesmo status inicial. A única diferença é o conteúdo vir vazio (você preenche manualmente em vez de receber pronto do Claude).
 
-- `CadenceChecklist.tsx` em si não será deletado neste passo (pode estar referenciado em outros lugares fora do escopo); apenas removido dos dashboards de colaborador.
-- Nenhuma mudança em hooks, dados, ou backend.
+## Detalhes técnicos
 
-## Verificação
-
-- Build/preview dos perfis `/equipe/aline`, `/equipe/felipe`, `/equipe/milena` e do dashboard do Thiago para confirmar que sobra apenas um bloco "Checklist".
+- Arquivo único: `src/components/ceo/PlanoSemanalClaude.tsx`
+- Nova função `criarPlanoManual()` faz `(supabase as any).from('weekly_plans').insert({...}).select().single()` e chama `load()`
+- Cálculo de segunda-feira em UTC-3 usando lógica existente do projeto (mesma abordagem já usada em `addDaysISO`)
+- Botão estilizado igual ao "Aprovar e Distribuir" (gradiente emerald), com ícone `Plus`
+- Sem mudanças em banco, edge functions, ou outros componentes
