@@ -46,9 +46,47 @@ const EMPTY_CADENCIA: CadenciaSemana = DIAS.reduce((acc, _, i) => {
   return acc;
 }, {} as CadenciaSemana);
 
+function getMondayISO(): string {
+  // America/Sao_Paulo (UTC-3)
+  const now = new Date();
+  const sp = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+  const dow = sp.getUTCDay(); // 0=Sun..6=Sat
+  const diff = dow === 0 ? -6 : 1 - dow;
+  const mon = new Date(sp);
+  mon.setUTCDate(sp.getUTCDate() + diff);
+  return mon.toISOString().slice(0, 10);
+}
+
 export default function PlanoSemanalClaude() {
   const [plan, setPlan] = useState<any | null | undefined>(undefined);
   const [saving, setSaving] = useState(false);
+  const [creating, setCreating] = useState(false);
+
+  const criarPlanoManual = async () => {
+    setCreating(true);
+    try {
+      const week_start = getMondayISO();
+      const week_end = addDaysISO(week_start, 4);
+      const { error } = await (supabase as any).from("weekly_plans").insert({
+        week_start,
+        week_end,
+        status: "draft",
+        estrategia_semana: "",
+        prioridades: [],
+        extras_aline: [],
+        extras_felipe: [],
+        extras_milena: [],
+      });
+      if (error) throw error;
+      toast.success("Plano da semana criado");
+      setPlan(undefined);
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message || "Erro ao criar plano");
+    } finally {
+      setCreating(false);
+    }
+  };
 
   const load = async () => {
     const { data, error } = await (supabase as any)
