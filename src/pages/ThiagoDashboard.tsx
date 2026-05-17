@@ -186,7 +186,7 @@ export default function ThiagoDashboard() {
         {/* Checklist do Dia (Thiago) */}
         <DailyTasksPanel
           mode={{ kind: "pipedrive", pipedriveUserId: THIAGO_PIPEDRIVE_ID }}
-          title="Checklist do Dia"
+          title="Checklist"
           subtitle="Reuniões · Propostas · Ligações estratégicas"
         />
 
