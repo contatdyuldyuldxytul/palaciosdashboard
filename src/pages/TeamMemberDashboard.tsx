@@ -8,7 +8,7 @@ import { CircularProgress } from "@/components/CircularProgress";
 import { MeetingTracker } from "@/components/MeetingTracker";
 import { LockedCommission } from "@/components/LockedCommission";
 import { Plus, Search, Phone, FileText, TrendingUp, Users, Target, CalendarCheck, CheckCircle2, Activity, AlertTriangle } from "lucide-react";
-import { CadenceChecklist } from "@/components/CadenceChecklist";
+
 import { CalendarioVendas } from "@/components/CalendarioVendas";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -258,16 +258,7 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
         </div>
       </motion.div>
 
-      {/* Checklist Hoje/Semana */}
-      <DailyTasksPanel
-        mode={
-          memberName === "Aline"
-            ? { kind: "pipedrive", pipedriveUserId: 24578358 }
-            : { kind: "disabled", emptyMessage: `${memberName} ainda não tem tarefas.` }
-        }
-        title="Checklist"
-        subtitle="Tarefas atribuídas · cadência, follow-ups, estratégia"
-      />
+
 
       {/* ROW 1 — 4 Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -339,7 +330,15 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
       {/* ROW 2 — Checklist + Activity Feed */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Checklist */}
-        <CadenceChecklist colaborador={memberName} accentColor="hsl(160,100%,39%)" />
+        <DailyTasksPanel
+          mode={
+            memberName === "Aline"
+              ? { kind: "pipedrive", pipedriveUserId: 24578358 }
+              : { kind: "disabled", emptyMessage: `${memberName} ainda não tem tarefas.` }
+          }
+          title="Checklist"
+          subtitle="Tarefas atribuídas · cadência, follow-ups, estratégia"
+        />
 
         {/* Meeting Tracker */}
         <MeetingTracker colaborador={memberName} onCommissionChange={setMeetingsRealized} onAgendadasChange={setMeetingsAgendadas} />
