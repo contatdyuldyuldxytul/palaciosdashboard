@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Calendar, Plus, X, CheckCircle2, Sparkles } from "lucide-react";
+import { Plus, X, CheckCircle2, Sparkles, Calendar as CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -11,13 +11,14 @@ const card: React.CSSProperties = {
 };
 
 const inputStyle: React.CSSProperties = {
-  background: "rgba(255,255,255,0.04)",
-  border: "1px solid rgba(255,255,255,0.08)",
+  background: "rgba(255,255,255,0.05)",
+  border: "1px solid rgba(255,255,255,0.1)",
   color: "white",
   borderRadius: 8,
-  padding: "8px 10px",
+  padding: "10px 12px",
   fontSize: 13,
   width: "100%",
+  outline: "none",
 };
 
 const ALINE_ID = 24578358;
@@ -26,7 +27,24 @@ const FELIPE_ID = 26351800;
 const DIAS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"];
 
 type Periodo = "manha" | "tarde";
-type CadenciaSemana = Record<string, { manha: string[]; tarde: string[] }>;
+type Pessoa = "aline" | "felipe";
+type DiaCadencia = Record<Pessoa, Record<Periodo, string[]>>;
+type CadenciaSemana = Record<string, DiaCadencia>;
+
+const PESSOAS: { key: Pessoa; label: string; color: string }[] = [
+  { key: "aline", label: "Aline", color: "hsl(200,90%,60%)" },
+  { key: "felipe", label: "Felipe", color: "hsl(280,80%,65%)" },
+];
+
+const emptyDia = (): DiaCadencia => ({
+  aline: { manha: [], tarde: [] },
+  felipe: { manha: [], tarde: [] },
+});
+
+const EMPTY_CADENCIA: CadenciaSemana = DIAS.reduce((acc, _, i) => {
+  acc[`d${i}`] = emptyDia();
+  return acc;
+}, {} as CadenciaSemana);
 
 function addDaysISO(iso: string, days: number) {
   const [y, m, d] = iso.split("-").map(Number);
@@ -41,20 +59,46 @@ function fmtDate(iso?: string) {
   return `${d}/${m}/${y}`;
 }
 
-const EMPTY_CADENCIA: CadenciaSemana = DIAS.reduce((acc, _, i) => {
-  acc[`d${i}`] = { manha: [], tarde: [] };
-  return acc;
-}, {} as CadenciaSemana);
-
 function getMondayISO(): string {
-  // America/Sao_Paulo (UTC-3)
   const now = new Date();
   const sp = new Date(now.getTime() - 3 * 60 * 60 * 1000);
-  const dow = sp.getUTCDay(); // 0=Sun..6=Sat
+  const dow = sp.getUTCDay();
   const diff = dow === 0 ? -6 : 1 - dow;
   const mon = new Date(sp);
   mon.setUTCDate(sp.getUTCDate() + diff);
   return mon.toISOString().slice(0, 10);
+}
+
+/** Normaliza cadência antiga (sem aline/felipe) para a nova estrutura */
+function normalizeCadencia(raw: any): CadenciaSemana {
+  const out = JSON.parse(JSON.stringify(EMPTY_CADENCIA)) as CadenciaSemana;
+  if (!raw || typeof raw !== "object") return out;
+  for (let i = 0; i < 5; i++) {
+    const key = `d${i}`;
+    const day = raw[key];
+    if (!day) continue;
+    if (day.aline || day.felipe) {
+      out[key] = {
+        aline: {
+          manha: Array.isArray(day.aline?.manha) ? day.aline.manha : [],
+          tarde: Array.isArray(day.aline?.tarde) ? day.aline.tarde : [],
+        },
+        felipe: {
+          manha: Array.isArray(day.felipe?.manha) ? day.felipe.manha : [],
+          tarde: Array.isArray(day.felipe?.tarde) ? day.felipe.tarde : [],
+        },
+      };
+    } else {
+      // formato antigo: { manha:[], tarde:[] } compartilhado — duplica p/ ambos
+      const m = Array.isArray(day.manha) ? day.manha : [];
+      const t = Array.isArray(day.tarde) ? day.tarde : [];
+      out[key] = {
+        aline: { manha: [...m], tarde: [...t] },
+        felipe: { manha: [...m], tarde: [...t] },
+      };
+    }
+  }
+  return out;
 }
 
 export default function PlanoSemanalClaude() {
@@ -76,6 +120,9 @@ export default function PlanoSemanalClaude() {
         extras_aline: [],
         extras_felipe: [],
         extras_milena: [],
+        estrategias_fora_da_caixa: [],
+        meta_milena_dia: 15,
+        cadencia_semana: {},
       });
       if (error) throw error;
       toast.success("Plano da semana criado");
@@ -94,28 +141,37 @@ export default function PlanoSemanalClaude() {
       .select("*")
       .order("created_at", { ascending: false })
       .limit(1);
-    console.log("[PlanoSemanalClaude] weekly_plans result:", { data, error });
     if (error) {
-      console.error("[PlanoSemanalClaude] erro ao buscar weekly_plans:", error);
+      console.error("[PlanoSemanalClaude] erro:", error);
       return setPlan(null);
     }
     const plano = data?.[0] ?? null;
     if (!plano) return setPlan(null);
 
-    // Default cadência: load from cadence_templates if empty
-    let cadencia: CadenciaSemana = plano.cadencia_semana;
-    if (!cadencia || Object.keys(cadencia).length === 0) {
+    let cadencia = normalizeCadencia(plano.cadencia_semana);
+    const isEmpty = DIAS.every((_, i) => {
+      const d = cadencia[`d${i}`];
+      return (
+        d.aline.manha.length === 0 &&
+        d.aline.tarde.length === 0 &&
+        d.felipe.manha.length === 0 &&
+        d.felipe.tarde.length === 0
+      );
+    });
+
+    if (isEmpty) {
       const { data: templates } = await (supabase as any)
         .from("cadence_templates")
         .select("*")
         .eq("playbook_type", "cadence_2_0")
         .gte("day_in_flow", 1)
         .lte("day_in_flow", 5);
-      cadencia = JSON.parse(JSON.stringify(EMPTY_CADENCIA));
       (templates || []).forEach((t: any) => {
         const key = `d${t.day_in_flow - 1}`;
         const per = String(t.period).toLowerCase().includes("tarde") ? "tarde" : "manha";
-        if (cadencia[key]) cadencia[key][per as Periodo].push(t.task_template);
+        if (!cadencia[key]) cadencia[key] = emptyDia();
+        cadencia[key].aline[per as Periodo].push(t.task_template);
+        cadencia[key].felipe[per as Periodo].push(t.task_template);
       });
     }
 
@@ -146,28 +202,49 @@ export default function PlanoSemanalClaude() {
     updateField(key, arr);
   };
 
-  const updateCadencia = (dayKey: string, per: Periodo, idx: number, value: string) => {
-    const cad = { ...(plan.cadencia_semana || EMPTY_CADENCIA) };
-    const arr = [...(cad[dayKey]?.[per] || [])];
+  const updateCadencia = (
+    dayKey: string,
+    pessoa: Pessoa,
+    per: Periodo,
+    idx: number,
+    value: string,
+  ) => {
+    const cad: CadenciaSemana = JSON.parse(
+      JSON.stringify(plan.cadencia_semana || EMPTY_CADENCIA),
+    );
+    if (!cad[dayKey]) cad[dayKey] = emptyDia();
+    const arr = [...(cad[dayKey][pessoa][per] || [])];
     arr[idx] = value;
-    cad[dayKey] = { ...cad[dayKey], [per]: arr };
+    cad[dayKey][pessoa][per] = arr;
     updateField("cadencia_semana", cad);
   };
-  const addCadencia = (dayKey: string, per: Periodo) => {
-    const cad = { ...(plan.cadencia_semana || EMPTY_CADENCIA) };
-    cad[dayKey] = {
-      manha: cad[dayKey]?.manha || [],
-      tarde: cad[dayKey]?.tarde || [],
-    };
-    cad[dayKey][per] = [...cad[dayKey][per], ""];
+  const addCadencia = (dayKey: string, pessoa: Pessoa, per: Periodo) => {
+    const cad: CadenciaSemana = JSON.parse(
+      JSON.stringify(plan.cadencia_semana || EMPTY_CADENCIA),
+    );
+    if (!cad[dayKey]) cad[dayKey] = emptyDia();
+    cad[dayKey][pessoa][per] = [...cad[dayKey][pessoa][per], ""];
     updateField("cadencia_semana", cad);
   };
-  const removeCadencia = (dayKey: string, per: Periodo, idx: number) => {
-    const cad = { ...(plan.cadencia_semana || EMPTY_CADENCIA) };
-    const arr = [...(cad[dayKey]?.[per] || [])];
+  const removeCadencia = (
+    dayKey: string,
+    pessoa: Pessoa,
+    per: Periodo,
+    idx: number,
+  ) => {
+    const cad: CadenciaSemana = JSON.parse(
+      JSON.stringify(plan.cadencia_semana || EMPTY_CADENCIA),
+    );
+    const arr = [...(cad[dayKey][pessoa][per] || [])];
     arr.splice(idx, 1);
-    cad[dayKey] = { ...cad[dayKey], [per]: arr };
+    cad[dayKey][pessoa][per] = arr;
     updateField("cadencia_semana", cad);
+  };
+
+  const handleWeekStartChange = (iso: string) => {
+    if (!iso) return;
+    updateField("week_start", iso);
+    updateField("week_end", addDaysISO(iso, 4));
   };
 
   const totalSemanaMilena = useMemo(
@@ -182,6 +259,8 @@ export default function PlanoSemanalClaude() {
       const { error: upErr } = await (supabase as any)
         .from("weekly_plans")
         .update({
+          week_start: plan.week_start,
+          week_end: plan.week_end,
           estrategia_semana: plan.estrategia_semana || "",
           prioridades: plan.prioridades || [],
           estrategias_fora_da_caixa: plan.estrategias_fora_da_caixa || [],
@@ -201,31 +280,26 @@ export default function PlanoSemanalClaude() {
 
       for (let i = 0; i < 5; i++) {
         const dayISO = addDaysISO(plan.week_start, i);
-        const cad = plan.cadencia_semana?.[`d${i}`] || { manha: [], tarde: [] };
-        const tasks = [...(cad.manha || []), ...(cad.tarde || [])].filter((t: string) =>
-          t?.trim(),
-        );
+        const dia = plan.cadencia_semana?.[`d${i}`] || emptyDia();
 
-        tasks.forEach((task: string) => {
-          rows.push({
-            user_pipedrive_id: ALINE_ID,
-            assignee_label: "Aline",
-            scheduled_date: dayISO,
-            task_type: "cadence",
-            task_description: task,
-            source: "claude_briefing",
-            priority: 5,
-          });
-          rows.push({
-            user_pipedrive_id: FELIPE_ID,
-            assignee_label: "Felipe",
-            scheduled_date: dayISO,
-            task_type: "cadence",
-            task_description: task,
-            source: "claude_briefing",
-            priority: 5,
-          });
-        });
+        const pushFor = (pessoaId: number, pessoaLabel: string, tasks: string[]) => {
+          tasks
+            .filter((t) => t?.trim())
+            .forEach((task) =>
+              rows.push({
+                user_pipedrive_id: pessoaId,
+                assignee_label: pessoaLabel,
+                scheduled_date: dayISO,
+                task_type: "cadence",
+                task_description: task,
+                source: "claude_briefing",
+                priority: 5,
+              }),
+            );
+        };
+
+        pushFor(ALINE_ID, "Aline", [...dia.aline.manha, ...dia.aline.tarde]);
+        pushFor(FELIPE_ID, "Felipe", [...dia.felipe.manha, ...dia.felipe.tarde]);
 
         if (metaMilena > 0) {
           rows.push({
@@ -240,7 +314,6 @@ export default function PlanoSemanalClaude() {
         }
       }
 
-      // Extras só no primeiro dia (week_start)
       const extrasDate = plan.week_start;
       (plan.extras_aline || []).filter((s: string) => s?.trim()).forEach((s: string) =>
         rows.push({
@@ -330,16 +403,35 @@ export default function PlanoSemanalClaude() {
   const aprovado = plan.status === "aprovado";
 
   return (
-    <div style={card} className="p-6 space-y-6">
+    <div style={card} className="p-6 space-y-7">
+      {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wide">
-            <Sparkles className="w-3.5 h-3.5" />
-            Plano Semanal Claude
+        <div className="flex items-center gap-4 flex-wrap">
+          <div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wide">
+              <Sparkles className="w-3.5 h-3.5" />
+              Plano Semanal Claude
+            </div>
+            <h3 className="text-lg font-semibold text-white mt-1">
+              Semana de {fmtDate(plan.week_start)} a {fmtDate(plan.week_end)}
+            </h3>
           </div>
-          <h3 className="text-lg font-semibold text-white mt-1">
-            Semana de {fmtDate(plan.week_start)} a {fmtDate(plan.week_end)}
-          </h3>
+          <label
+            className="flex items-center gap-2 text-xs text-muted-foreground rounded-lg px-3 py-2"
+            style={{
+              background: "rgba(255,255,255,0.05)",
+              border: "1px solid rgba(255,255,255,0.1)",
+            }}
+          >
+            <CalendarIcon className="w-3.5 h-3.5" />
+            <span className="uppercase tracking-wide">Início:</span>
+            <input
+              type="date"
+              value={plan.week_start || ""}
+              onChange={(e) => handleWeekStartChange(e.target.value)}
+              className="bg-transparent text-white outline-none text-sm"
+            />
+          </label>
         </div>
         <span
           className="text-[11px] px-2.5 py-1 rounded-full font-medium"
@@ -361,17 +453,16 @@ export default function PlanoSemanalClaude() {
         </span>
       </div>
 
-      <div>
-        <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-          Estratégia da semana
-        </p>
+      {/* Estratégia */}
+      <Field label="Estratégia da semana">
         <textarea
           value={plan.estrategia_semana || ""}
           onChange={(e) => updateField("estrategia_semana", e.target.value)}
           rows={4}
           style={inputStyle}
+          placeholder="Descreva o foco estratégico desta semana…"
         />
-      </div>
+      </Field>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <EditableList
@@ -390,63 +481,72 @@ export default function PlanoSemanalClaude() {
         />
       </div>
 
-      <div>
-        <p className="text-xs uppercase tracking-wide text-muted-foreground mb-3">
-          Cadência da semana (Aline + Felipe)
+      {/* Cadência separada por pessoa */}
+      <div className="space-y-5">
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">
+          Cadência da semana
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
-          {DIAS.map((label, i) => {
-            const key = `d${i}`;
-            const dia = plan.cadencia_semana?.[key] || { manha: [], tarde: [] };
-            return (
-              <div
-                key={key}
-                style={{
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                  borderRadius: 12,
-                }}
-                className="p-3 space-y-3"
-              >
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-semibold text-white">{label}</p>
-                  <span className="text-[10px] text-muted-foreground">
-                    {fmtDate(addDaysISO(plan.week_start, i))}
-                  </span>
-                </div>
-                <PeriodoBlock
-                  label="Manhã"
-                  items={dia.manha || []}
-                  onChange={(idx, v) => updateCadencia(key, "manha", idx, v)}
-                  onAdd={() => addCadencia(key, "manha")}
-                  onRemove={(idx) => removeCadencia(key, "manha", idx)}
-                />
-                <PeriodoBlock
-                  label="Tarde"
-                  items={dia.tarde || []}
-                  onChange={(idx, v) => updateCadencia(key, "tarde", idx, v)}
-                  onAdd={() => addCadencia(key, "tarde")}
-                  onRemove={(idx) => removeCadencia(key, "tarde", idx)}
-                />
-              </div>
-            );
-          })}
-        </div>
+        {PESSOAS.map((p) => (
+          <div key={p.key} className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span
+                className="w-2 h-2 rounded-full"
+                style={{ background: p.color }}
+              />
+              <h4 className="text-sm font-semibold text-white">{p.label}</h4>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+              {DIAS.map((label, i) => {
+                const key = `d${i}`;
+                const dia = plan.cadencia_semana?.[key] || emptyDia();
+                return (
+                  <div
+                    key={`${p.key}-${key}`}
+                    style={{
+                      background: "rgba(255,255,255,0.03)",
+                      border: `1px solid ${p.color}22`,
+                      borderRadius: 12,
+                    }}
+                    className="p-3 space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold text-white">{label}</p>
+                      <span className="text-[10px] text-muted-foreground">
+                        {fmtDate(addDaysISO(plan.week_start, i))}
+                      </span>
+                    </div>
+                    <PeriodoBlock
+                      label="Manhã"
+                      items={dia[p.key]?.manha || []}
+                      onChange={(idx, v) => updateCadencia(key, p.key, "manha", idx, v)}
+                      onAdd={() => addCadencia(key, p.key, "manha")}
+                      onRemove={(idx) => removeCadencia(key, p.key, "manha", idx)}
+                    />
+                    <PeriodoBlock
+                      label="Tarde"
+                      items={dia[p.key]?.tarde || []}
+                      onChange={(idx, v) => updateCadencia(key, p.key, "tarde", idx, v)}
+                      onAdd={() => addCadencia(key, p.key, "tarde")}
+                      onRemove={(idx) => removeCadencia(key, p.key, "tarde", idx)}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
 
+      {/* Meta Milena */}
       <div className="flex flex-wrap items-end gap-4">
-        <div className="flex-1 min-w-[200px] max-w-[280px]">
-          <label className="text-xs uppercase tracking-wide text-muted-foreground">
-            Meta Milena (leads/dia)
-          </label>
+        <Field label="Meta Milena (leads/dia)" className="flex-1 min-w-[200px] max-w-[280px]">
           <input
             type="number"
             value={plan.meta_milena_dia ?? 15}
             onChange={(e) => updateField("meta_milena_dia", Number(e.target.value) || 0)}
             style={inputStyle}
-            className="mt-1.5"
           />
-        </div>
+        </Field>
         <div
           className="px-4 py-2.5 rounded-lg text-sm"
           style={{
@@ -486,7 +586,7 @@ export default function PlanoSemanalClaude() {
       <div className="flex justify-end">
         <button
           onClick={approveAndDistribute}
-          disabled={saving || aprovado}
+          disabled={saving}
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
           style={{
             background: "linear-gradient(135deg, hsl(160,100%,38%), hsl(160,100%,45%))",
@@ -495,9 +595,28 @@ export default function PlanoSemanalClaude() {
           }}
         >
           <CheckCircle2 className="w-4 h-4" />
-          {aprovado ? "Plano aprovado" : saving ? "Aprovando…" : "Aprovar e Distribuir"}
+          {saving ? "Salvando…" : aprovado ? "Reaprovar e Redistribuir" : "Aprovar e Distribuir"}
         </button>
       </div>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  children,
+  className,
+}: {
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={className}>
+      <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
+        {label}
+      </p>
+      {children}
     </div>
   );
 }
@@ -518,10 +637,13 @@ function PeriodoBlock({
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
-        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+        <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
+          {label}
+        </p>
         <button
           onClick={onAdd}
-          className="text-[10px] px-1.5 py-0.5 rounded text-white/80 hover:text-white"
+          aria-label={`Adicionar tarefa ${label}`}
+          className="text-[10px] p-1 rounded text-white/80 hover:text-white transition-colors"
           style={{
             background: "rgba(255,255,255,0.06)",
             border: "1px solid rgba(255,255,255,0.1)",
@@ -533,18 +655,19 @@ function PeriodoBlock({
       {items.length === 0 ? (
         <p className="text-[11px] text-muted-foreground italic">—</p>
       ) : (
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           {items.map((it, i) => (
             <div key={i} className="flex items-start gap-1">
               <textarea
                 value={it || ""}
                 onChange={(e) => onChange(i, e.target.value)}
                 rows={2}
-                style={{ ...inputStyle, fontSize: 11, padding: "5px 7px" }}
+                style={{ ...inputStyle, fontSize: 11, padding: "6px 8px" }}
               />
               <button
                 onClick={() => onRemove(i)}
-                className="text-white/50 hover:text-destructive p-1"
+                aria-label="Remover tarefa"
+                className="text-white/50 hover:text-destructive p-1 transition-colors"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -575,7 +698,7 @@ function EditableList({
         <p className="text-xs uppercase tracking-wide text-muted-foreground">{title}</p>
         <button
           onClick={onAdd}
-          className="text-[11px] px-2 py-0.5 rounded-md text-white/80 hover:text-white flex items-center gap-1"
+          className="text-[11px] px-2 py-1 rounded-md text-white/80 hover:text-white flex items-center gap-1 transition-colors"
           style={{
             background: "rgba(255,255,255,0.06)",
             border: "1px solid rgba(255,255,255,0.1)",
@@ -598,7 +721,8 @@ function EditableList({
               />
               <button
                 onClick={() => onRemove(i)}
-                className="text-xs px-2 py-1 rounded-md text-white/60 hover:text-destructive"
+                aria-label="Remover item"
+                className="text-xs px-2 py-2 rounded-md text-white/60 hover:text-destructive transition-colors"
                 style={{
                   background: "rgba(255,255,255,0.04)",
                   border: "1px solid rgba(255,255,255,0.08)",
