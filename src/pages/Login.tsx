@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { Eye, EyeOff } from "lucide-react";
 import logoPalacios from "@/assets/logo-palacios-white.png";
 
 export default function Login() {
@@ -10,6 +11,7 @@ export default function Login() {
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { signIn, signUp } = useAuth();
 
@@ -92,16 +94,37 @@ export default function Login() {
             />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Senha</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full h-10 px-3 rounded-xl glass-input text-sm text-foreground placeholder:text-muted-foreground"
-              required
-              minLength={6}
-            />
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs text-muted-foreground font-medium">Senha</label>
+              {!isSignUp && (
+                <button
+                  type="button"
+                  onClick={() => navigate("/reset-password")}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Esqueceu a senha?
+                </button>
+              )}
+            </div>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full h-10 px-3 pr-10 rounded-xl glass-input text-sm text-foreground placeholder:text-muted-foreground"
+                required
+                minLength={6}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
           <button
             type="submit"

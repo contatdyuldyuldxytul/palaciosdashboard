@@ -29,6 +29,7 @@ import Comissoes from "@/pages/Comissoes";
 import Estrategias from "@/pages/Estrategias";
 
 import Login from "@/pages/Login";
+import ResetPassword from "@/pages/ResetPassword";
 import Placeholder from "@/pages/Placeholder";
 import NotFound from "@/pages/NotFound";
 import CeoFinanceiro from "@/pages/ceo/CeoFinanceiro";
@@ -60,6 +61,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route path="/" element={<Dashboard />} />
 
