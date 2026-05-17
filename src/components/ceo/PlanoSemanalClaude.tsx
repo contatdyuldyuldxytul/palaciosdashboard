@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Plus, X, CheckCircle2, Sparkles, Calendar as CalendarIcon } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, useLayoutEffect } from "react";
+import { Plus, X, CheckCircle2, Sparkles, Calendar as CalendarIcon, Sun, Moon } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
