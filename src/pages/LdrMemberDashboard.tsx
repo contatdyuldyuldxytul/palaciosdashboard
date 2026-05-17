@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { RefinamentoDados } from "@/components/milena/RefinamentoDados";
 import { HistoricoPipedrive } from "@/components/milena/HistoricoPipedrive";
 import { LockedCommission } from "@/components/LockedCommission";
-import { CadenceChecklist } from "@/components/CadenceChecklist";
+
 import { CalendarioVendas } from "@/components/CalendarioVendas";
 import { useMetasComerciais } from "@/hooks/useMetasComerciais";
 import { DailyTasksPanel } from "@/components/DailyTasksPanel";
