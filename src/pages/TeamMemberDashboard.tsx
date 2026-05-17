@@ -8,7 +8,7 @@ import { CircularProgress } from "@/components/CircularProgress";
 import { MeetingTracker } from "@/components/MeetingTracker";
 import { LockedCommission } from "@/components/LockedCommission";
 import { Plus, Search, Phone, FileText, TrendingUp, Users, Target, CalendarCheck, CheckCircle2, Activity, AlertTriangle } from "lucide-react";
-import { CadenceChecklist } from "@/components/CadenceChecklist";
+
 import { CalendarioVendas } from "@/components/CalendarioVendas";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
