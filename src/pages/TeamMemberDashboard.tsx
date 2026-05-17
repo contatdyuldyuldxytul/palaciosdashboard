@@ -336,12 +336,8 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
         </motion.div>
       </div>
 
-      {/* ROW 2 — Checklist + Activity Feed */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Checklist */}
-        <CadenceChecklist colaborador={memberName} accentColor="hsl(160,100%,39%)" />
-
-        {/* Meeting Tracker */}
+      {/* ROW 2 — Meeting Tracker */}
+      <div className="grid grid-cols-1 gap-4">
         <MeetingTracker colaborador={memberName} onCommissionChange={setMeetingsRealized} onAgendadasChange={setMeetingsAgendadas} />
       </div>
 
