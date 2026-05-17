@@ -294,12 +294,7 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
         </div>
       </motion.div>
 
-      {/* Checklist Hoje/Semana — Milena (mapeamento temporário sem pipedrive_user_id) */}
-      <DailyTasksPanel
-        mode={{ kind: "milena" }}
-        title="Checklist"
-        subtitle="Tarefas atribuídas · cadência, follow-ups, estratégia"
-      />
+
 
       {/* ROW 1 — 4 Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
