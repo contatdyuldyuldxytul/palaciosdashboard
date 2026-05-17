@@ -481,61 +481,13 @@ export default function PlanoSemanalClaude() {
         />
       </div>
 
-      {/* Cadência separada por pessoa */}
-      <div className="space-y-5">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground">
-          Cadência da semana
-        </p>
-        {PESSOAS.map((p) => (
-          <div key={p.key} className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span
-                className="w-2 h-2 rounded-full"
-                style={{ background: p.color }}
-              />
-              <h4 className="text-sm font-semibold text-white">{p.label}</h4>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-              {DIAS.map((label, i) => {
-                const key = `d${i}`;
-                const dia = plan.cadencia_semana?.[key] || emptyDia();
-                return (
-                  <div
-                    key={`${p.key}-${key}`}
-                    style={{
-                      background: "rgba(255,255,255,0.03)",
-                      border: `1px solid ${p.color}22`,
-                      borderRadius: 12,
-                    }}
-                    className="p-3 space-y-3"
-                  >
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-semibold text-white">{label}</p>
-                      <span className="text-[10px] text-muted-foreground">
-                        {fmtDate(addDaysISO(plan.week_start, i))}
-                      </span>
-                    </div>
-                    <PeriodoBlock
-                      label="Manhã"
-                      items={dia[p.key]?.manha || []}
-                      onChange={(idx, v) => updateCadencia(key, p.key, "manha", idx, v)}
-                      onAdd={() => addCadencia(key, p.key, "manha")}
-                      onRemove={(idx) => removeCadencia(key, p.key, "manha", idx)}
-                    />
-                    <PeriodoBlock
-                      label="Tarde"
-                      items={dia[p.key]?.tarde || []}
-                      onChange={(idx, v) => updateCadencia(key, p.key, "tarde", idx, v)}
-                      onAdd={() => addCadencia(key, p.key, "tarde")}
-                      onRemove={(idx) => removeCadencia(key, p.key, "tarde", idx)}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
+      {/* Cadência separada por pessoa — tabs por dia */}
+      <CadenciaSection
+        plan={plan}
+        onUpdate={updateCadencia}
+        onAdd={addCadencia}
+        onRemove={removeCadencia}
+      />
 
       {/* Meta Milena */}
       <div className="flex flex-wrap items-end gap-4">
