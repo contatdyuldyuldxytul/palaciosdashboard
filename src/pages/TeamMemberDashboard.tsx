@@ -330,7 +330,15 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
       {/* ROW 2 — Checklist + Activity Feed */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Checklist */}
-        <CadenceChecklist colaborador={memberName} accentColor="hsl(160,100%,39%)" />
+        <DailyTasksPanel
+          mode={
+            memberName === "Aline"
+              ? { kind: "pipedrive", pipedriveUserId: 24578358 }
+              : { kind: "disabled", emptyMessage: `${memberName} ainda não tem tarefas.` }
+          }
+          title="Checklist"
+          subtitle="Tarefas atribuídas · cadência, follow-ups, estratégia"
+        />
 
         {/* Meeting Tracker */}
         <MeetingTracker colaborador={memberName} onCommissionChange={setMeetingsRealized} onAgendadasChange={setMeetingsAgendadas} />
