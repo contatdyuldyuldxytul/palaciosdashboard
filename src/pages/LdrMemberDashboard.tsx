@@ -364,7 +364,11 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
 
       {/* ROW 2 — Checklist + Activity Feed */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <CadenceChecklist colaborador={memberName} accentColor="hsl(45,80%,55%)" />
+        <DailyTasksPanel
+          mode={{ kind: "milena" }}
+          title="Checklist"
+          subtitle="Tarefas atribuídas · cadência, follow-ups, estratégia"
+        />
 
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.35 }} className="glass-card p-5">
           <div className="flex items-center gap-2 mb-4">
