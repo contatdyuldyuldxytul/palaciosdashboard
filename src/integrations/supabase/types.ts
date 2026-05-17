@@ -1495,12 +1495,15 @@ export type Database = {
       weekly_plans: {
         Row: {
           approved_at: string | null
+          cadencia_semana: Json
           created_at: string
           estrategia_semana: string | null
+          estrategias_fora_da_caixa: Json
           extras_aline: Json
           extras_felipe: Json
           extras_milena: Json
           id: string
+          meta_milena_dia: number
           prioridades: Json
           status: string
           updated_at: string
@@ -1509,12 +1512,15 @@ export type Database = {
         }
         Insert: {
           approved_at?: string | null
+          cadencia_semana?: Json
           created_at?: string
           estrategia_semana?: string | null
+          estrategias_fora_da_caixa?: Json
           extras_aline?: Json
           extras_felipe?: Json
           extras_milena?: Json
           id?: string
+          meta_milena_dia?: number
           prioridades?: Json
           status?: string
           updated_at?: string
@@ -1523,12 +1529,15 @@ export type Database = {
         }
         Update: {
           approved_at?: string | null
+          cadencia_semana?: Json
           created_at?: string
           estrategia_semana?: string | null
+          estrategias_fora_da_caixa?: Json
           extras_aline?: Json
           extras_felipe?: Json
           extras_milena?: Json
           id?: string
+          meta_milena_dia?: number
           prioridades?: Json
           status?: string
           updated_at?: string
