@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Plus, X, CheckCircle2, Sparkles, Calendar as CalendarIcon } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, useLayoutEffect } from "react";
+import { Plus, X, CheckCircle2, Sparkles, Calendar as CalendarIcon, Sun, Moon } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -481,61 +481,13 @@ export default function PlanoSemanalClaude() {
         />
       </div>
 
-      {/* Cadência separada por pessoa */}
-      <div className="space-y-5">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground">
-          Cadência da semana
-        </p>
-        {PESSOAS.map((p) => (
-          <div key={p.key} className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span
-                className="w-2 h-2 rounded-full"
-                style={{ background: p.color }}
-              />
-              <h4 className="text-sm font-semibold text-white">{p.label}</h4>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-              {DIAS.map((label, i) => {
-                const key = `d${i}`;
-                const dia = plan.cadencia_semana?.[key] || emptyDia();
-                return (
-                  <div
-                    key={`${p.key}-${key}`}
-                    style={{
-                      background: "rgba(255,255,255,0.03)",
-                      border: `1px solid ${p.color}22`,
-                      borderRadius: 12,
-                    }}
-                    className="p-3 space-y-3"
-                  >
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-semibold text-white">{label}</p>
-                      <span className="text-[10px] text-muted-foreground">
-                        {fmtDate(addDaysISO(plan.week_start, i))}
-                      </span>
-                    </div>
-                    <PeriodoBlock
-                      label="Manhã"
-                      items={dia[p.key]?.manha || []}
-                      onChange={(idx, v) => updateCadencia(key, p.key, "manha", idx, v)}
-                      onAdd={() => addCadencia(key, p.key, "manha")}
-                      onRemove={(idx) => removeCadencia(key, p.key, "manha", idx)}
-                    />
-                    <PeriodoBlock
-                      label="Tarde"
-                      items={dia[p.key]?.tarde || []}
-                      onChange={(idx, v) => updateCadencia(key, p.key, "tarde", idx, v)}
-                      onAdd={() => addCadencia(key, p.key, "tarde")}
-                      onRemove={(idx) => removeCadencia(key, p.key, "tarde", idx)}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
+      {/* Cadência separada por pessoa — tabs por dia */}
+      <CadenciaSection
+        plan={plan}
+        onUpdate={updateCadencia}
+        onAdd={addCadencia}
+        onRemove={removeCadencia}
+      />
 
       {/* Meta Milena */}
       <div className="flex flex-wrap items-end gap-4">
@@ -621,14 +573,178 @@ function Field({
   );
 }
 
+/** Textarea que cresce conforme o conteúdo, sem scroll interno */
+function AutoTextarea({
+  value,
+  onChange,
+  placeholder,
+  minRows = 1,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  minRows?: number;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [value]);
+  return (
+    <textarea
+      ref={ref}
+      value={value || ""}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      rows={minRows}
+      className="w-full resize-none outline-none leading-relaxed"
+      style={{
+        background: "rgba(255,255,255,0.05)",
+        border: "1px solid rgba(255,255,255,0.1)",
+        color: "white",
+        borderRadius: 8,
+        padding: "8px 10px",
+        fontSize: 13,
+        overflow: "hidden",
+      }}
+    />
+  );
+}
+
+function CadenciaSection({
+  plan,
+  onUpdate,
+  onAdd,
+  onRemove,
+}: {
+  plan: any;
+  onUpdate: (dayKey: string, pessoa: Pessoa, per: Periodo, idx: number, v: string) => void;
+  onAdd: (dayKey: string, pessoa: Pessoa, per: Periodo) => void;
+  onRemove: (dayKey: string, pessoa: Pessoa, per: Periodo, idx: number) => void;
+}) {
+  const [activeDay, setActiveDay] = useState(0);
+  const dayKey = `d${activeDay}`;
+  const dia = plan.cadencia_semana?.[dayKey] || emptyDia();
+  const dataDia = fmtDate(addDaysISO(plan.week_start, activeDay));
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">
+          Cadência da semana
+        </p>
+        <span className="text-xs text-muted-foreground">{dataDia}</span>
+      </div>
+
+      {/* Tabs dos dias */}
+      <div
+        className="flex gap-1 p-1 rounded-xl"
+        style={{
+          background: "rgba(255,255,255,0.03)",
+          border: "1px solid rgba(255,255,255,0.06)",
+        }}
+      >
+        {DIAS.map((d, i) => {
+          const active = i === activeDay;
+          const count =
+            (plan.cadencia_semana?.[`d${i}`]?.aline?.manha?.length || 0) +
+            (plan.cadencia_semana?.[`d${i}`]?.aline?.tarde?.length || 0) +
+            (plan.cadencia_semana?.[`d${i}`]?.felipe?.manha?.length || 0) +
+            (plan.cadencia_semana?.[`d${i}`]?.felipe?.tarde?.length || 0);
+          return (
+            <button
+              key={i}
+              onClick={() => setActiveDay(i)}
+              className="flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2"
+              style={
+                active
+                  ? {
+                      background: "rgba(255,255,255,0.08)",
+                      border: "1px solid rgba(255,255,255,0.15)",
+                      color: "white",
+                    }
+                  : {
+                      background: "transparent",
+                      color: "rgba(255,255,255,0.55)",
+                    }
+              }
+            >
+              <span>{d}</span>
+              {count > 0 && (
+                <span
+                  className="text-[10px] px-1.5 py-0.5 rounded-full"
+                  style={{
+                    background: active ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.06)",
+                    color: active ? "white" : "rgba(255,255,255,0.5)",
+                  }}
+                >
+                  {count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Aline x Felipe lado a lado */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {PESSOAS.map((p) => (
+          <div
+            key={p.key}
+            style={{
+              background: "rgba(255,255,255,0.03)",
+              border: `1px solid ${p.color}33`,
+              borderRadius: 14,
+            }}
+            className="p-4 space-y-4"
+          >
+            <div className="flex items-center gap-2">
+              <span
+                className="w-2.5 h-2.5 rounded-full"
+                style={{ background: p.color, boxShadow: `0 0 12px ${p.color}` }}
+              />
+              <h4 className="text-sm font-semibold text-white">{p.label}</h4>
+            </div>
+
+            <PeriodoBlock
+              label="Manhã"
+              icon={<Sun className="w-3.5 h-3.5" />}
+              accent={p.color}
+              items={dia[p.key]?.manha || []}
+              onChange={(idx, v) => onUpdate(dayKey, p.key, "manha", idx, v)}
+              onAdd={() => onAdd(dayKey, p.key, "manha")}
+              onRemove={(idx) => onRemove(dayKey, p.key, "manha", idx)}
+            />
+            <PeriodoBlock
+              label="Tarde"
+              icon={<Moon className="w-3.5 h-3.5" />}
+              accent={p.color}
+              items={dia[p.key]?.tarde || []}
+              onChange={(idx, v) => onUpdate(dayKey, p.key, "tarde", idx, v)}
+              onAdd={() => onAdd(dayKey, p.key, "tarde")}
+              onRemove={(idx) => onRemove(dayKey, p.key, "tarde", idx)}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function PeriodoBlock({
   label,
+  icon,
+  accent,
   items,
   onChange,
   onAdd,
   onRemove,
 }: {
   label: string;
+  icon?: React.ReactNode;
+  accent?: string;
   items: string[];
   onChange: (i: number, v: string) => void;
   onAdd: () => void;
@@ -636,40 +752,42 @@ function PeriodoBlock({
 }) {
   return (
     <div>
-      <div className="flex items-center justify-between mb-1.5">
-        <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1.5">
+          {icon}
           {label}
         </p>
         <button
           onClick={onAdd}
           aria-label={`Adicionar tarefa ${label}`}
-          className="text-[10px] p-1 rounded text-white/80 hover:text-white transition-colors"
+          className="text-xs px-2 py-1 rounded-md text-white/80 hover:text-white flex items-center gap-1 transition-colors"
           style={{
-            background: "rgba(255,255,255,0.06)",
-            border: "1px solid rgba(255,255,255,0.1)",
+            background: accent ? `${accent}1a` : "rgba(255,255,255,0.06)",
+            border: `1px solid ${accent ? `${accent}40` : "rgba(255,255,255,0.1)"}`,
           }}
         >
-          <Plus className="w-3 h-3" />
+          <Plus className="w-3 h-3" /> Adicionar
         </button>
       </div>
       {items.length === 0 ? (
-        <p className="text-[11px] text-muted-foreground italic">—</p>
+        <p className="text-xs text-muted-foreground italic py-2">Nenhuma tarefa.</p>
       ) : (
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           {items.map((it, i) => (
-            <div key={i} className="flex items-start gap-1">
-              <textarea
-                value={it || ""}
-                onChange={(e) => onChange(i, e.target.value)}
-                rows={2}
-                style={{ ...inputStyle, fontSize: 11, padding: "6px 8px" }}
-              />
+            <div key={i} className="flex items-start gap-2">
+              <div className="flex-1">
+                <AutoTextarea value={it} onChange={(v) => onChange(i, v)} />
+              </div>
               <button
                 onClick={() => onRemove(i)}
                 aria-label="Remover tarefa"
-                className="text-white/50 hover:text-destructive p-1 transition-colors"
+                className="text-white/50 hover:text-destructive p-2 rounded-md transition-colors"
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                }}
               >
-                <X className="w-3 h-3" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
           ))}
