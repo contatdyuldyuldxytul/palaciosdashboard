@@ -26,7 +26,7 @@ export interface ColabStats {
 
 const FIXED_SALARY: Record<string, number> = {
   Aline: 2000,
-  Felipe: 2000,
+  Felipe: 1000,
   Milena: 1500,
   Thiago: 0,
 };
