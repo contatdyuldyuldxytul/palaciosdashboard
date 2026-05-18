@@ -335,6 +335,8 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
           mode={
             memberName === "Aline"
               ? { kind: "pipedrive", pipedriveUserId: 24578358 }
+              : memberName === "Felipe"
+              ? { kind: "pipedrive", pipedriveUserId: 26351800 }
               : { kind: "disabled", emptyMessage: `${memberName} ainda não tem tarefas.` }
           }
           title="Checklist"

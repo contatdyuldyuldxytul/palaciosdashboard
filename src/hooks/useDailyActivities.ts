@@ -74,7 +74,7 @@ export function useDailyActivities(opts: Opts = {}) {
       if (opts.pipedriveUserId != null) {
         q = q.eq("user_pipedrive_id", opts.pipedriveUserId);
       } else if (opts.milenaMode) {
-        q = q.is("user_pipedrive_id", null).ilike("task_description", "%Milena%");
+        q = q.is("user_pipedrive_id", null).eq("assignee_label", "Milena");
       } else if (opts.assignee) {
         q = q.eq("assignee_label", opts.assignee);
       }
