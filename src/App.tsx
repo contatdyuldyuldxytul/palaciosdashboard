@@ -112,9 +112,7 @@ const App = () => (
               {/* Hunter de Negócios */}
               <Route path="/hunter" element={<HunterGate />} />
 
-              {/* CRM Integrado */}
-              <Route path="/crm" element={<Crm />} />
-              <Route path="/crm/deal/:id" element={<CrmDealDetail />} />
+              {/* CRM redirects handled outside AppLayout */}
 
               {/* Redirects */}
               <Route path="/leads" element={<Navigate to="/vendas" replace />} />
