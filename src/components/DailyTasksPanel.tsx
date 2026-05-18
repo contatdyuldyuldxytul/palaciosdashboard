@@ -34,7 +34,11 @@ const TYPE_STYLES: Record<DailyActivity["task_type"], { label: string; bg: strin
   meeting:      { label: "reunião",    bg: "rgba(236,72,153,0.12)",  fg: "hsl(330,75%,62%)", bd: "rgba(236,72,153,0.3)"   },
 };
 
-export function DailyTasksPanel({ mode, title = "Checklist", subtitle }: Props) {
+export function DailyTasksPanel({ mode, title = "Checklist", subtitle, assigneeLabel }: Props) {
+  const { hasRole } = useAuth();
+  const isFundador = hasRole("fundador");
+  const [addOpen, setAddOpen] = useState(false);
+  const canAdd = isFundador && !!assigneeLabel;
   const [tab, setTab] = useState<"hoje" | "semana">("hoje");
 
   // Detect weekend in São Paulo (UTC-3)
