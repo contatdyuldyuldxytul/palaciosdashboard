@@ -1,32 +1,44 @@
-## Objetivo
+# Corrigir duplicação de atividades semanais
 
-Aos sábados e domingos, a aba **Hoje** do "Checklist" (em `/equipe/aline`, `/equipe/felipe`, `/equipe/milena`) deve mostrar um estado vazio claro — sem tentar puxar tarefas — porque a cadência só roda de segunda a sexta.
+## Causa raiz
+`PlanoSemanalClaude.tsx > approveAndDistribute()` insere as linhas em `daily_activities` sem qualquer deduplicação. Cada clique em **"Aprovar e distribuir"** (ou re-aprovação) duplica todas as tarefas da semana com `source = 'claude_briefing'`. Confirmado no banco: Felipe tem até 4 cópias da mesma tarefa em 20/05.
 
-## Mudança
+## Correção
 
-Arquivo: `src/components/DailyTasksPanel.tsx`
+### 1. `src/components/ceo/PlanoSemanalClaude.tsx` — `approveAndDistribute`
+Antes do `insert(rows)`, apagar tudo que já existe para a janela do plano:
 
-1. Detectar fim de semana em São Paulo (UTC-3): reaproveitar `todayISO()` de `useDailyActivities` e calcular `getDay()` (0 = domingo, 6 = sábado).
-2. Quando `tab === "hoje"` e for fim de semana:
-   - Desativar a query (`enabled: false`) para não buscar nada.
-   - Renderizar `EmptyState` com:
-     - Mensagem: **"Fim de semana — sem tarefas de cadência."**
-     - Hint: **"A cadência roda de segunda a sexta. Veja a 'Semana' para se preparar."**
-3. Aba **Semana** continua igual (mostra próximos 7 dias).
-4. O modo `disabled` existente segue funcionando para colaboradores sem mapping.
+```ts
+// Apagar atividades 'claude_briefing' da janela week_start..week_start+4
+// dos 3 assignees (Aline, Felipe, Milena) para evitar duplicação ao re-aprovar
+await supabase
+  .from("daily_activities")
+  .delete()
+  .eq("source", "claude_briefing")
+  .gte("scheduled_date", plan.week_start)
+  .lte("scheduled_date", addDaysISO(plan.week_start, 4))
+  .in("assignee_label", ["Aline", "Felipe", "Milena"]);
+```
 
-## Detalhes técnicos
+Isso torna a aprovação **idempotente**: clicar 2x produz o mesmo resultado de clicar 1x. Mantém as tarefas `custom` (manuais ⭐ do usuário) e as `auto` da função nightly intactas, pois filtramos por `source = 'claude_briefing'`.
 
-- Cálculo do dia da semana em SP:
-  ```ts
-  const spNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-  const isWeekend = spNow.getDay() === 0 || spNow.getDay() === 6;
-  ```
-- A lógica entra antes do bloco `mode.kind === "disabled"`, só aplicada quando `tab === "hoje"`.
-- Nenhuma mudança em hooks, banco, ou na distribuição de tarefas.
+### 2. Limpeza das duplicatas atuais
+Migration única que mantém apenas o `id` mais antigo de cada combinação (assignee_label, scheduled_date, task_type, task_description, source) com `source = 'claude_briefing'`:
 
-## Fora do escopo
+```sql
+DELETE FROM daily_activities a
+USING daily_activities b
+WHERE a.source = 'claude_briefing'
+  AND b.source = 'claude_briefing'
+  AND a.assignee_label IS NOT DISTINCT FROM b.assignee_label
+  AND a.scheduled_date = b.scheduled_date
+  AND a.task_type = b.task_type
+  AND a.task_description = b.task_description
+  AND a.completed = false      -- nunca apaga tarefas já concluídas
+  AND a.id > b.id;
+```
 
-- Não vou mudar a aba "Semana".
-- Não vou alterar como o `PlanoSemanalClaude` distribui tarefas (já é seg–sex).
-- Não vou adicionar lógica de "antecipar próxima segunda".
+## O que NÃO vou mexer
+- `generate-daily-activities` (edge function): está correta, gera com `source: 'auto'`.
+- Tarefas manuais (`source = 'manual'` ou `task_type = 'custom'` criadas pelo usuário): preservadas.
+- Schema/RLS: sem mudanças.

@@ -275,6 +275,16 @@ export default function PlanoSemanalClaude() {
         .eq("id", plan.id);
       if (upErr) throw upErr;
 
+      // Idempotência: apaga atividades 'claude_briefing' já distribuídas para a janela
+      // do plano antes de re-inserir, evitando duplicação ao re-aprovar.
+      await (supabase as any)
+        .from("daily_activities")
+        .delete()
+        .eq("source", "claude_briefing")
+        .gte("scheduled_date", plan.week_start)
+        .lte("scheduled_date", addDaysISO(plan.week_start, 4))
+        .in("assignee_label", ["Aline", "Felipe", "Milena"]);
+
       const rows: any[] = [];
       const metaMilena = Number(plan.meta_milena_dia) || 0;
 
