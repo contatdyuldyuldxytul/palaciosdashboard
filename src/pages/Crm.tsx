@@ -82,7 +82,7 @@ export default function Crm() {
       {/* Header */}
       <div className="flex flex-wrap items-start gap-4 justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground tracking-tight">CRM</h1>
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight">Pipeline de Deals</h1>
           <p className="text-xs text-muted-foreground mt-0.5">Gestão integrada de deals e relacionamentos</p>
         </div>
         <div className="flex items-center gap-2">

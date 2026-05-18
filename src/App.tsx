@@ -12,6 +12,7 @@ import { VendasLayout } from "@/layouts/VendasLayout";
 
 import { ClientesLayout } from "@/layouts/ClientesLayout";
 import { CeoLayout } from "@/layouts/CeoLayout";
+import { CrmLayout } from "@/layouts/CrmLayout";
 import Dashboard from "@/pages/Dashboard";
 import Leads from "@/pages/Leads";
 import TeamMemberDashboard from "@/pages/TeamMemberDashboard";
@@ -111,9 +112,7 @@ const App = () => (
               {/* Hunter de Negócios */}
               <Route path="/hunter" element={<HunterGate />} />
 
-              {/* CRM Integrado */}
-              <Route path="/crm" element={<Crm />} />
-              <Route path="/crm/deal/:id" element={<CrmDealDetail />} />
+              {/* CRM redirects handled outside AppLayout */}
 
               {/* Redirects */}
               <Route path="/leads" element={<Navigate to="/vendas" replace />} />
@@ -123,6 +122,11 @@ const App = () => (
               <Route path="/comissoes" element={<Navigate to="/clientes/comissoes" replace />} />
               <Route path="/estrategias" element={<Navigate to="/ceo/estrategias" replace />} />
               <Route path="/clientes-ativos" element={<Navigate to="/clientes" replace />} />
+            </Route>
+            {/* CRM Integrado — standalone layout */}
+            <Route element={<ProtectedRoute><CrmLayout /></ProtectedRoute>}>
+              <Route path="/crm" element={<Crm />} />
+              <Route path="/crm/deal/:id" element={<CrmDealDetail />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -1,53 +1,37 @@
-## Foco: Design do CRM nativo
+## Objetivo
+Transformar o CRM em uma página standalone com layout próprio (sem sidebar nem ticker do app principal), mantendo a mesma janela do navegador.
 
-Vamos priorizar o **visual e UX do CRM** agora. A importação dos deals do Pipedrive fica para depois — trabalharemos com dados mock/seed enquanto refinamos a interface.
+## Mudanças
 
-## Escopo desta etapa
+### 1. Novo layout dedicado `src/layouts/CrmLayout.tsx`
+- Fundo escuro com a mesma cena animada glassmorphism (`glass-bg-scene`, partículas) para manter consistência visual.
+- **Header próprio minimalista** (sticky top, altura ~56px, glass-card border-bottom):
+  - Esquerda: logo Palacios (ícone + wordmark) + separador + título "CRM Integrado".
+  - Centro/direita: link "← Voltar ao app" (navega para `/`) + toggle de tema + avatar/nome do usuário logado.
+- `<Outlet />` para renderizar as páginas filhas em tela cheia (max-w livre, padding generoso).
 
-### 1. Seed de dados realistas (mock)
-Inserir dados fictícios consistentes nas tabelas `crm_pipelines`, `crm_stages`, `crm_deals`, `crm_persons`, `crm_organizations`, `crm_activities` para que o design seja testado com volume real:
-- 3 pipelines (ex: ALFA, BETA, Pós-venda)
-- 6–8 stages por pipeline com cores
-- ~40 deals distribuídos entre stages, com valores, owners, datas
-- Pessoas/orgs vinculadas e algumas atividades agendadas
+### 2. Reestruturar rotas em `src/App.tsx`
+- Tirar `/crm` e `/crm/deal/:id` de dentro do `AppLayout`.
+- Criar uma nova árvore de rotas irmã, ainda protegida por `ProtectedRoute`, usando `CrmLayout`:
+  ```text
+  <Route element={<ProtectedRoute><CrmLayout /></ProtectedRoute>}>
+    <Route path="/crm" element={<Crm />} />
+    <Route path="/crm/deal/:id" element={<CrmDealDetail />} />
+  </Route>
+  ```
 
-### 2. Refinamento visual do Kanban (`/crm`)
-- Header premium com seletor de pipeline (pill tabs ou dropdown elegante), busca, filtros (owner, valor, data), toggle Kanban/Lista
-- Cards de deal com glassmorphism: nome, organização, valor (R$), owner avatar, tags de stage, indicador de inatividade, próxima atividade
-- Colunas com soma total, contagem de deals, cor sutil do stage no topo
-- Drag-and-drop com feedback visual (sombra, escala, drop zones)
-- Empty states ilustrados, skeletons no loading
-- Animações de entrada (framer-motion)
+### 3. Ajustes em `src/components/AppSidebar.tsx`
+- O item "CRM" continua na sidebar do app principal, mas a navegação leva para `/crm` que agora renderiza o layout próprio (mesma janela, experiência separada).
+- O destaque "ativo" não vai mais aparecer porque o usuário sai do `AppLayout` — comportamento esperado.
 
-### 3. Refinamento da Lista (`/crm` toggle)
-- Tabela densa com colunas configuráveis: deal, org, valor, stage, owner, próxima atividade, dias parado
-- Linha hover com ações rápidas
-- Filtros e busca compartilhados com o Kanban
-- Ordenação por coluna
+### 4. Ajustes visuais em `src/pages/Crm.tsx` e `src/pages/CrmDealDetail.tsx`
+- Remover o título "CRM" do header da página (já está no header do layout) e manter apenas o subtítulo + ações (pipeline tabs, KPIs, view toggle, botões).
+- Aumentar o padding lateral para aproveitar a tela cheia (sem a sidebar de 56px–224px).
 
-### 4. Detalhe do Deal (`/crm/deal/:id`) — esqueleto visual
-Página com layout finalizado mas ainda sem todas as integrações:
-- Header com nome, valor, stage atual (pipeline visual de progresso), owner, ações (Ganho/Perdido/Editar)
-- Sidebar direita: organização, pessoas vinculadas, campos custom
-- Tabs principais: **Timeline | Notas | Atividades | Histórico**
-- Visual cumprindo o padrão glassmorphism dark da plataforma
+## Não escopo
+- Não mexe em lógica de dados, hooks do CRM, edge functions ou banco.
+- Não abre em nova aba do navegador (decisão do usuário: mesma janela).
+- Outras páginas do app continuam idênticas.
 
-### 5. Modal "Novo Deal" refinado
-- Multi-step ou single elegante: pipeline → stage → nome → org/pessoa → valor → owner → data esperada
-- Validação visual, autocomplete em org/pessoa
-
-### 6. Botão "Importar do Pipedrive" mantido
-Disponível para o fundador no header, mas **não acionado agora**. Fica pronto para quando você quiser puxar os dados.
-
-## Não está nesta etapa
-- Importação real do Pipedrive
-- Edição completa de deal (write-back, mudança de stage via API)
-- Atividades CRUD completo / calendário integrado
-- Gestão de pessoas e organizações (CRUD)
-- Permissões RLS refinadas por owner
-
-Essas fases vêm depois, sobre a base visual aprovada.
-
-## Pergunta antes de seguir
-
-Confirma se posso **inserir dados mock** no banco para popular o design (eles serão apagados ou substituídos quando importarmos o Pipedrive)?
+## Resultado
+Clicar em **CRM** na sidebar do app principal leva o usuário a uma experiência standalone em tela cheia, com header próprio e botão "Voltar ao app" para retornar ao Dashboard.
