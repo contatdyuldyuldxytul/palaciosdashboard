@@ -78,7 +78,7 @@ const App = () => (
               {/* Team member dashboards */}
               <Route path="/equipe/aline" element={<TeamMemberDashboard memberName="Aline" initials="AL" />} />
               <Route path="/equipe/milena" element={<LdrMemberDashboard memberName="Milena" initials="MI" avatarColor="hsl(45,80%,45%)" />} />
-              <Route path="/equipe/thiago" element={<ThiagoDashboard />} />
+              <Route path="/equipe/thiago" element={<ProtectedRoute requireSlug="thiago"><ThiagoDashboard /></ProtectedRoute>} />
               <Route path="/equipe/felipe" element={<TeamMemberDashboard memberName="Felipe" initials="FE" />} />
 
               {/* Clientes */}

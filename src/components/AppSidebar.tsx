@@ -64,7 +64,13 @@ export function AppSidebar() {
         <ul className="space-y-1">
           {visibleItems.map((item) => {
             const active = isActive(item.url);
-            const children = item.hasChildren ? subItems.filter((s) => item.url.startsWith(s.parentUrl)) : [];
+            const allChildren = item.hasChildren ? subItems.filter((s) => item.url.startsWith(s.parentUrl)) : [];
+            const children = allChildren.filter((s) => {
+              if (s.url === "/equipe/thiago") {
+                return hasRole("fundador") || profile?.colaborador_slug === "thiago";
+              }
+              return true;
+            });
             return (
               <li key={item.url} className="space-y-0.5">
                 <Link
