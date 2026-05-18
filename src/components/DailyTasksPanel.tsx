@@ -182,6 +182,15 @@ export function DailyTasksPanel({ mode, title = "Checklist", subtitle, assigneeL
           })}
         </ul>
       )}
+
+      {canAdd && assigneeLabel && (
+        <AddDailyActivityModal
+          open={addOpen}
+          onOpenChange={setAddOpen}
+          assigneeLabel={assigneeLabel}
+          pipedriveUserId={mode.kind === "pipedrive" ? mode.pipedriveUserId : null}
+        />
+      )}
     </motion.div>
   );
 }
