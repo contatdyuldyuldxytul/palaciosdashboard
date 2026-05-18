@@ -1,33 +1,32 @@
 ## Objetivo
 
-Nos dashboards de colaboradores, remover o "Checklist do Dia" (componente `CadenceChecklist`) e mover o "Checklist" grande (componente `DailyTasksPanel` com subtítulo "Tarefas atribuídas · cadência, follow-ups, estratégia") para o lugar dele — ficando lado a lado com "Reuniões do Mês" / "Feed de Atividades", ocupando a mesma metade da grid.
+Aos sábados e domingos, a aba **Hoje** do "Checklist" (em `/equipe/aline`, `/equipe/felipe`, `/equipe/milena`) deve mostrar um estado vazio claro — sem tentar puxar tarefas — porque a cadência só roda de segunda a sexta.
 
-## Arquivos afetados
+## Mudança
 
-- `src/pages/TeamMemberDashboard.tsx` (Aline e demais SDRs)
-- `src/pages/LdrMemberDashboard.tsx` (Milena)
-- `src/pages/ThiagoDashboard.tsx` — já está no formato correto (sem `CadenceChecklist` e com `DailyTasksPanel` em meia coluna). **Sem mudanças.**
+Arquivo: `src/components/DailyTasksPanel.tsx`
 
-## Mudanças
+1. Detectar fim de semana em São Paulo (UTC-3): reaproveitar `todayISO()` de `useDailyActivities` e calcular `getDay()` (0 = domingo, 6 = sábado).
+2. Quando `tab === "hoje"` e for fim de semana:
+   - Desativar a query (`enabled: false`) para não buscar nada.
+   - Renderizar `EmptyState` com:
+     - Mensagem: **"Fim de semana — sem tarefas de cadência."**
+     - Hint: **"A cadência roda de segunda a sexta. Veja a 'Semana' para se preparar."**
+3. Aba **Semana** continua igual (mostra próximos 7 dias).
+4. O modo `disabled` existente segue funcionando para colaboradores sem mapping.
 
-### TeamMemberDashboard.tsx
-1. Remover o bloco full-width `DailyTasksPanel` (linhas ~261–270, comentário "Checklist Hoje/Semana").
-2. Na ROW 2 (`grid lg:grid-cols-2`, linha ~340), substituir `<CadenceChecklist ... />` por `<DailyTasksPanel mode={...} title="Checklist" subtitle="Tarefas atribuídas · cadência, follow-ups, estratégia" />` com o mesmo `mode` que estava no full-width (pipedrive id 24578358 para Aline, `disabled` para os outros).
-3. Remover o import de `CadenceChecklist` se não houver outro uso na página.
+## Detalhes técnicos
 
-### LdrMemberDashboard.tsx
-1. Remover o bloco full-width `DailyTasksPanel` (linhas ~297–302).
-2. Na ROW 2 (linha ~371), substituir `<CadenceChecklist colaborador={memberName} accentColor="hsl(45,80%,55%)" />` por `<DailyTasksPanel mode={{ kind: "milena" }} title="Checklist" subtitle="Tarefas atribuídas · cadência, follow-ups, estratégia" />`.
-3. Remover o import de `CadenceChecklist` se não houver outro uso.
+- Cálculo do dia da semana em SP:
+  ```ts
+  const spNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const isWeekend = spNow.getDay() === 0 || spNow.getDay() === 6;
+  ```
+- A lógica entra antes do bloco `mode.kind === "disabled"`, só aplicada quando `tab === "hoje"`.
+- Nenhuma mudança em hooks, banco, ou na distribuição de tarefas.
 
-## Resultado
+## Fora do escopo
 
-```text
-ROW 2 (lg:grid-cols-2):
-┌─────────────────────────────┬─────────────────────────────┐
-│  Checklist (DailyTasksPanel)│  Reuniões do Mês / Feed     │
-│  Hoje · Semana              │                             │
-└─────────────────────────────┴─────────────────────────────┘
-```
-
-O componente `CadenceChecklist` continua existindo no codebase (não vou apagar o arquivo) caso seja usado em outro lugar no futuro, mas deixa de aparecer nos dashboards dos colaboradores.
+- Não vou mudar a aba "Semana".
+- Não vou alterar como o `PlanoSemanalClaude` distribui tarefas (já é seg–sex).
+- Não vou adicionar lógica de "antecipar próxima segunda".
