@@ -188,6 +188,7 @@ export default function ThiagoDashboard() {
           mode={{ kind: "pipedrive", pipedriveUserId: THIAGO_PIPEDRIVE_ID }}
           title="Checklist do Dia"
           subtitle="Reuniões · Propostas · Ligações estratégicas"
+          assigneeLabel="Thiago"
         />
 
         {/* Pipeline Quente */}
