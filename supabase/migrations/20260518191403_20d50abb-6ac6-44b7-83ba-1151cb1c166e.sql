@@ -1,0 +1,1 @@
+ALTER TABLE public.crm_pipelines ADD CONSTRAINT crm_pipelines_nome_unique UNIQUE (nome);
