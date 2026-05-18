@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, ExternalLink } from "lucide-react";
+import { CheckCircle2, ExternalLink, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -9,6 +9,8 @@ import {
   useToggleActivity,
   type DailyActivity,
 } from "@/hooks/useDailyActivities";
+import { useAuth } from "@/contexts/AuthContext";
+import { AddDailyActivityModal } from "@/components/AddDailyActivityModal";
 
 type Mode =
   | { kind: "pipedrive"; pipedriveUserId: number }
@@ -19,6 +21,8 @@ type Props = {
   mode: Mode;
   title?: string;
   subtitle?: string;
+  /** Label for who the task is assigned to (e.g. "Aline", "Felipe", "Milena", "Thiago"). Required to enable the CEO "+ Nova tarefa" button. */
+  assigneeLabel?: string;
 };
 
 const TYPE_STYLES: Record<DailyActivity["task_type"], { label: string; bg: string; fg: string; bd: string }> = {
