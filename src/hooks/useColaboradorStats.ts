@@ -26,7 +26,7 @@ export interface ColabStats {
 
 const FIXED_SALARY: Record<string, number> = {
   Aline: 2000,
-  Felipe: 2000,
+  Felipe: 1000,
   Milena: 1500,
   Thiago: 0,
 };
@@ -120,7 +120,7 @@ export function useColaboradorStats(memberName: string): ColabStats {
   let primaryPct = 0;
   if (kind === "sdr") {
     // EXACT formula from TeamMemberDashboard.tsx
-    commission = 2000 + meetingsRealized * 30 + closedValue * 0.04 + projetos.comissao;
+    commission = (FIXED_SALARY[memberName] ?? 2000) + meetingsRealized * 30 + closedValue * 0.04 + projetos.comissao;
     primaryPct = metaDemos > 0 ? (meetingsAgendadas / metaDemos) * 100 : 0;
   } else {
     // EXACT formula from LdrMemberDashboard.tsx

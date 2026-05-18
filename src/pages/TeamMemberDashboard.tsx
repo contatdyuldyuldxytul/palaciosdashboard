@@ -105,8 +105,9 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
   const metaMensal = metaComercial ? Number(metaComercial.meta_receita) || 0 : 0;
   const metaReunioes = metaComercial ? Number(metaComercial.meta_demos) || 0 : 0;
 
-  // SDR Commission: R$2,000 fixed + R$30/meeting (from tracker) + 4% contracts
-  const commission = 2000 + (meetingsRealized * 30) + (closedValue * 0.04) + projetosComissao.comissao;
+  // SDR Commission: fixed salary + R$30/meeting (from tracker) + 4% contracts
+  const fixedSalary = memberName === "Felipe" ? 1000 : 2000;
+  const commission = fixedSalary + (meetingsRealized * 30) + (closedValue * 0.04) + projetosComissao.comissao;
   const metaPct = metaMensal > 0 ? (closedValue / metaMensal) * 100 : 0;
   const reunioesRestantes = Math.max(metaReunioes - meetingsDone, 0);
 
@@ -292,7 +293,7 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
               </div>
             </div>
             <p className="text-xl font-bold text-foreground"><AnimatedNumber value={commission} formatAsCurrency /></p>
-            <p className="text-[10px] text-muted-foreground mt-1">R$2.000 + ({meetingsRealized}×R$30) + (4%×{formatCurrency(closedValue)})</p>
+            <p className="text-[10px] text-muted-foreground mt-1">{formatCurrency(fixedSalary)} + ({meetingsRealized}×R$30) + (4%×{formatCurrency(closedValue)})</p>
             {projetosComissao.clientesCount > 0 && (
               <p className="text-[10px] text-amber-300/90 mt-0.5">+ 4% projetos: {formatCurrency(projetosComissao.comissao)} ({projetosComissao.clientesCount} cliente{projetosComissao.clientesCount === 1 ? "" : "s"})</p>
             )}
