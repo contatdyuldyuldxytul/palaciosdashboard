@@ -293,7 +293,7 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
               </div>
             </div>
             <p className="text-xl font-bold text-foreground"><AnimatedNumber value={commission} formatAsCurrency /></p>
-            <p className="text-[10px] text-muted-foreground mt-1">R$2.000 + ({meetingsRealized}×R$30) + (4%×{formatCurrency(closedValue)})</p>
+            <p className="text-[10px] text-muted-foreground mt-1">{formatCurrency(fixedSalary)} + ({meetingsRealized}×R$30) + (4%×{formatCurrency(closedValue)})</p>
             {projetosComissao.clientesCount > 0 && (
               <p className="text-[10px] text-amber-300/90 mt-0.5">+ 4% projetos: {formatCurrency(projetosComissao.comissao)} ({projetosComissao.clientesCount} cliente{projetosComissao.clientesCount === 1 ? "" : "s"})</p>
             )}
