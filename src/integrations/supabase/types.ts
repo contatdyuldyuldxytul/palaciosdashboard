@@ -483,6 +483,394 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_activities: {
+        Row: {
+          concluida: boolean
+          concluida_em: string | null
+          created_at: string
+          deal_id: string | null
+          descricao: string | null
+          duracao_min: number | null
+          id: string
+          owner_label: string | null
+          owner_user_id: string | null
+          person_id: string | null
+          pipedrive_activity_id: number | null
+          resultado: string | null
+          scheduled_at: string | null
+          tipo: Database["public"]["Enums"]["crm_activity_type"]
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          concluida?: boolean
+          concluida_em?: string | null
+          created_at?: string
+          deal_id?: string | null
+          descricao?: string | null
+          duracao_min?: number | null
+          id?: string
+          owner_label?: string | null
+          owner_user_id?: string | null
+          person_id?: string | null
+          pipedrive_activity_id?: number | null
+          resultado?: string | null
+          scheduled_at?: string | null
+          tipo?: Database["public"]["Enums"]["crm_activity_type"]
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          concluida?: boolean
+          concluida_em?: string | null
+          created_at?: string
+          deal_id?: string | null
+          descricao?: string | null
+          duracao_min?: number | null
+          id?: string
+          owner_label?: string | null
+          owner_user_id?: string | null
+          person_id?: string | null
+          pipedrive_activity_id?: number | null
+          resultado?: string | null
+          scheduled_at?: string | null
+          tipo?: Database["public"]["Enums"]["crm_activity_type"]
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_activities_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_activities_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "crm_persons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_deal_history: {
+        Row: {
+          actor_label: string | null
+          actor_user_id: string | null
+          created_at: string
+          deal_id: string
+          evento: string
+          id: string
+          payload: Json | null
+        }
+        Insert: {
+          actor_label?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          deal_id: string
+          evento: string
+          id?: string
+          payload?: Json | null
+        }
+        Update: {
+          actor_label?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          deal_id?: string
+          evento?: string
+          id?: string
+          payload?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_deal_history_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_deals: {
+        Row: {
+          created_at: string
+          data_fechamento: string | null
+          expected_close_date: string | null
+          id: string
+          motivo_perda: string | null
+          notas: string | null
+          organization_id: string | null
+          origem: string | null
+          owner_label: string | null
+          owner_user_id: string | null
+          person_id: string | null
+          pipedrive_id: number | null
+          pipeline_id: string
+          stage_entered_at: string
+          stage_id: string
+          status: Database["public"]["Enums"]["crm_deal_status"]
+          titulo: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          created_at?: string
+          data_fechamento?: string | null
+          expected_close_date?: string | null
+          id?: string
+          motivo_perda?: string | null
+          notas?: string | null
+          organization_id?: string | null
+          origem?: string | null
+          owner_label?: string | null
+          owner_user_id?: string | null
+          person_id?: string | null
+          pipedrive_id?: number | null
+          pipeline_id: string
+          stage_entered_at?: string
+          stage_id: string
+          status?: Database["public"]["Enums"]["crm_deal_status"]
+          titulo: string
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          created_at?: string
+          data_fechamento?: string | null
+          expected_close_date?: string | null
+          id?: string
+          motivo_perda?: string | null
+          notas?: string | null
+          organization_id?: string | null
+          origem?: string | null
+          owner_label?: string | null
+          owner_user_id?: string | null
+          person_id?: string | null
+          pipedrive_id?: number | null
+          pipeline_id?: string
+          stage_entered_at?: string
+          stage_id?: string
+          status?: Database["public"]["Enums"]["crm_deal_status"]
+          titulo?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_deals_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "crm_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deals_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "crm_persons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deals_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "crm_pipelines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deals_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "crm_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_notes: {
+        Row: {
+          author_label: string | null
+          author_user_id: string | null
+          conteudo: string
+          created_at: string
+          deal_id: string
+          id: string
+        }
+        Insert: {
+          author_label?: string | null
+          author_user_id?: string | null
+          conteudo: string
+          created_at?: string
+          deal_id: string
+          id?: string
+        }
+        Update: {
+          author_label?: string | null
+          author_user_id?: string | null
+          conteudo?: string
+          created_at?: string
+          deal_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_notes_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_organizations: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          notas: string | null
+          pipedrive_org_id: number | null
+          segmento: string | null
+          site: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          notas?: string | null
+          pipedrive_org_id?: number | null
+          segmento?: string | null
+          site?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          notas?: string | null
+          pipedrive_org_id?: number | null
+          segmento?: string | null
+          site?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      crm_persons: {
+        Row: {
+          cargo: string | null
+          created_at: string
+          email: string | null
+          id: string
+          nome: string
+          organization_id: string | null
+          pipedrive_person_id: number | null
+          telefone: string | null
+          updated_at: string
+        }
+        Insert: {
+          cargo?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome: string
+          organization_id?: string | null
+          pipedrive_person_id?: number | null
+          telefone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cargo?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome?: string
+          organization_id?: string | null
+          pipedrive_person_id?: number | null
+          telefone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_persons_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "crm_organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_pipelines: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+          ordem: number
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+          ordem?: number
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          ordem?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      crm_stages: {
+        Row: {
+          cor: string | null
+          created_at: string
+          id: string
+          is_lost: boolean
+          is_won: boolean
+          nome: string
+          ordem: number
+          pipedrive_stage_id: number | null
+          pipeline_id: string
+        }
+        Insert: {
+          cor?: string | null
+          created_at?: string
+          id?: string
+          is_lost?: boolean
+          is_won?: boolean
+          nome: string
+          ordem?: number
+          pipedrive_stage_id?: number | null
+          pipeline_id: string
+        }
+        Update: {
+          cor?: string | null
+          created_at?: string
+          id?: string
+          is_lost?: boolean
+          is_won?: boolean
+          nome?: string
+          ordem?: number
+          pipedrive_stage_id?: number | null
+          pipeline_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_stages_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "crm_pipelines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_activities: {
         Row: {
           concluido: boolean
@@ -1632,6 +2020,14 @@ export type Database = {
         | "freela_hunter"
         | "custom"
       campaign_status: "active" | "paused" | "done" | "cancelled"
+      crm_activity_type:
+        | "ligacao"
+        | "email"
+        | "reuniao"
+        | "tarefa"
+        | "followup"
+        | "outro"
+      crm_deal_status: "open" | "won" | "lost"
       lead_status:
         | "lead"
         | "contatado"
@@ -1795,6 +2191,15 @@ export const Constants = {
         "custom",
       ],
       campaign_status: ["active", "paused", "done", "cancelled"],
+      crm_activity_type: [
+        "ligacao",
+        "email",
+        "reuniao",
+        "tarefa",
+        "followup",
+        "outro",
+      ],
+      crm_deal_status: ["open", "won", "lost"],
       lead_status: [
         "lead",
         "contatado",
