@@ -94,6 +94,9 @@ export function AppSidebar() {
                   {!collapsed && (item as any).hasChildren && (
                     <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
                   )}
+                  {!collapsed && (item as any).isExternal && (
+                    <ExternalLink className="w-3 h-3 text-muted-foreground/60" />
+                  )}
                 </Link>
                 {/* Sub-items (team members) */}
                 {!collapsed && active && children.length > 0 && (
