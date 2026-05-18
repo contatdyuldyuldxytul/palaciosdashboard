@@ -14,7 +14,7 @@ import logoPalaciosIcon from "@/assets/logo-palacios-icon.png";
 const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Vendas", url: "/vendas/funil", icon: TrendingUp, hasChildren: true },
-  { title: "CRM", url: "/crm", icon: Kanban },
+  { title: "CRM", url: "/crm", icon: Kanban, isExternal: true },
   { title: "Hunter de Negócios", url: "/hunter", icon: Target },
   { title: "CEO", url: "/ceo", icon: Crown, requireRole: "fundador" as const, isCeo: true },
   { title: "Assistente IA", url: "/assistente", icon: MessageSquare },
