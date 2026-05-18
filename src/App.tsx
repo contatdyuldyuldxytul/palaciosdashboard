@@ -41,6 +41,7 @@ import CeoProcessos from "@/pages/ceo/CeoProcessos";
 import CeoMemoria from "@/pages/ceo/CeoMemoria";
 import CeoClientes from "@/pages/ceo/CeoClientes";
 import CeoColaboradores from "@/pages/ceo/CeoColaboradores";
+import Crm from "@/pages/Crm";
 import { useAuth } from "@/contexts/AuthContext";
 
 function HunterGate() {
@@ -108,6 +109,9 @@ const App = () => (
 
               {/* Hunter de Negócios */}
               <Route path="/hunter" element={<HunterGate />} />
+
+              {/* CRM Integrado */}
+              <Route path="/crm" element={<Crm />} />
 
               {/* Redirects */}
               <Route path="/leads" element={<Navigate to="/vendas" replace />} />

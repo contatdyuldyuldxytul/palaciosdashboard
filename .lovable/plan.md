@@ -1,44 +1,109 @@
-# Corrigir duplicação de atividades semanais
+# CRM Integrado — Substituir Pipedrive
 
-## Causa raiz
-`PlanoSemanalClaude.tsx > approveAndDistribute()` insere as linhas em `daily_activities` sem qualquer deduplicação. Cada clique em **"Aprovar e distribuir"** (ou re-aprovação) duplica todas as tarefas da semana com `source = 'claude_briefing'`. Confirmado no banco: Felipe tem até 4 cópias da mesma tarefa em 20/05.
+Construir um CRM nativo dentro da plataforma com dados próprios no Supabase. Pipedrive será usado **apenas como import inicial** (one-shot) e depois desligado da operação. A partir daí, todas as ações (criar deal, mover de estágio, won/lost, notas, atividades) acontecem dentro da plataforma.
 
-## Correção
+## Escopo do MVP
 
-### 1. `src/components/ceo/PlanoSemanalClaude.tsx` — `approveAndDistribute`
-Antes do `insert(rows)`, apagar tudo que já existe para a janela do plano:
+- **Múltiplos pipelines** (Aline ALFA, Hunter, Farmer, BKV, etc.) com estágios customizáveis
+- **Kanban** drag-and-drop por estágio (réplica visual da foto do Pipedrive)
+- **Lista/Tabela** com filtros, busca, ordenação, colunas configuráveis
+- **Detalhe do deal** com timeline, notas, atividades, contatos vinculados
+- **Atividades vinculadas** (ligação, e-mail, reunião, tarefa) com calendário
+- **Pessoas e organizações** como entidades próprias
+- **Permissões por colaborador** (Aline, Milena, Felipe, Thiago, CEO)
 
-```ts
-// Apagar atividades 'claude_briefing' da janela week_start..week_start+4
-// dos 3 assignees (Aline, Felipe, Milena) para evitar duplicação ao re-aprovar
-await supabase
-  .from("daily_activities")
-  .delete()
-  .eq("source", "claude_briefing")
-  .gte("scheduled_date", plan.week_start)
-  .lte("scheduled_date", addDaysISO(plan.week_start, 4))
-  .in("assignee_label", ["Aline", "Felipe", "Milena"]);
+## Fora do MVP (fase posterior)
+
+- Automações/workflows ("quando deal entra em X, criar Y")
+- Forecast/relatórios avançados (continuam usando os dashboards atuais)
+- E-mails enviados de dentro do CRM
+- Integração com calendário externo (Google/Outlook)
+
+---
+
+## Fases
+
+### Fase 1 — Schema + Importação do Pipedrive
+- Criar tabelas `crm_pipelines`, `crm_stages`, `crm_deals`, `crm_persons`, `crm_organizations`, `crm_activities`, `crm_notes`, `crm_deal_history` (timeline imutável de eventos)
+- RLS: leitura geral autenticada; escrita restrita ao **owner do deal**, ao seu manager, e ao fundador
+- Edge function `import-pipedrive-once`: puxa tudo do Pipedrive (deals, persons, orgs, stages, activities, notes) e popula as tabelas. Idempotente (delete+insert por `pipedrive_id` na primeira execução, opção de re-rodar)
+- Mapear `responsavel_nome` do Pipedrive → `owner_user_id` (Aline, Milena, Felipe, Thiago)
+
+### Fase 2 — Listagem (Kanban + Lista)
+- Nova rota `/crm` no sidebar (CEO + comerciais)
+- Seletor de pipeline no topo
+- **Kanban view**: colunas por estágio, cards drag-and-drop, contagem + soma de valores no header da coluna, paginação por coluna (limite 50 + "carregar mais")
+- **Lista view**: tabela com empresa, contato, estágio, valor, owner, última atividade, dias no estágio; filtros (owner, estágio, valor, data); busca por empresa/contato
+- Toggle Kanban ↔ Lista preserva filtros
+- Botão **+ Novo deal** abre modal (empresa, contato, valor, estágio inicial, owner)
+
+### Fase 3 — Detalhe do deal
+- Rota `/crm/deal/:id` (modal ou página)
+- Header: nome, valor, estágio (dropdown para mover), owner, won/lost
+- 4 abas:
+  1. **Timeline** — eventos automáticos (estágio mudou, atividade criada, valor alterado) misturados com notas
+  2. **Notas** — markdown simples, criar/editar/deletar
+  3. **Atividades** — lista de atividades vinculadas (ver Fase 4)
+  4. **Contatos** — pessoas e organização vinculadas
+- Marcar como Won → modal pede data de fechamento e cria contrato em `clientes_ativos`. Marcar como Lost → modal pede motivo
+
+### Fase 4 — Atividades + Calendário
+- Tipos: ligação, e-mail, reunião, tarefa, follow-up
+- Criar atividade vinculada a deal e/ou pessoa, com data/hora, duração, descrição
+- Marcar como concluída (com nota de resultado)
+- Vista de calendário do colaborador (semana/mês) com todas as atividades do CRM
+- Reaproveita visual e padrões do `CalendarioVendas.tsx` existente
+
+### Fase 5 — Pessoas, Organizações e Permissões
+- CRUD de pessoas (nome, e-mail, telefone, cargo, organização) e organizações (nome, site, segmento)
+- Página de detalhe da organização com todos os deals + pessoas + histórico
+- Refinamento de RLS por papel
+- Migrar componentes existentes que liam `usePipedrive` para usar os novos hooks `useCrmDeals`, `useCrmActivities`
+
+### Fase 6 — Desligamento do Pipedrive (opcional, após validação)
+- Marcar `sync-pipedrive` como deprecated
+- Manter botão "Re-importar do Pipedrive" para casos de fallback
+
+---
+
+## Detalhes técnicos
+
+**Schema principal (Fase 1)**
+
+```text
+crm_pipelines (id, nome, ordem, ativo)
+crm_stages    (id, pipeline_id, nome, ordem, cor, won, lost)
+crm_organizations (id, nome, site, segmento, notas)
+crm_persons   (id, organization_id, nome, email, telefone, cargo)
+crm_deals     (id, pipeline_id, stage_id, organization_id, person_id,
+               titulo, valor, owner_user_id, status [open|won|lost],
+               motivo_perda, data_fechamento, expected_close_date,
+               pipedrive_id (legado), stage_entered_at,
+               created_at, updated_at)
+crm_activities (id, deal_id, person_id, owner_user_id, tipo, titulo,
+                descricao, scheduled_at, duracao_min, concluida,
+                concluida_em, resultado)
+crm_notes      (id, deal_id, author_user_id, conteudo, created_at)
+crm_deal_history (id, deal_id, actor_user_id, evento, payload jsonb, created_at)
 ```
 
-Isso torna a aprovação **idempotente**: clicar 2x produz o mesmo resultado de clicar 1x. Mantém as tarefas `custom` (manuais ⭐ do usuário) e as `auto` da função nightly intactas, pois filtramos por `source = 'claude_briefing'`.
+**Hooks**
+- `useCrmPipelines`, `useCrmDeals(pipelineId, filters)`, `useCrmDeal(id)`, `useCrmActivities`, `useCrmOrganizations`
+- Realtime via `supabase.channel` em `crm_deals` para Kanban sincronizado entre abas
 
-### 2. Limpeza das duplicatas atuais
-Migration única que mantém apenas o `id` mais antigo de cada combinação (assignee_label, scheduled_date, task_type, task_description, source) com `source = 'claude_briefing'`:
+**RLS**
+- Leitura: `authenticated` vê tudo (mantém transparência atual da equipe)
+- Escrita em `crm_deals`/`crm_activities`/`crm_notes`: owner do registro OU `fundador`
+- `crm_pipelines`/`crm_stages`: somente `fundador`
 
-```sql
-DELETE FROM daily_activities a
-USING daily_activities b
-WHERE a.source = 'claude_briefing'
-  AND b.source = 'claude_briefing'
-  AND a.assignee_label IS NOT DISTINCT FROM b.assignee_label
-  AND a.scheduled_date = b.scheduled_date
-  AND a.task_type = b.task_type
-  AND a.task_description = b.task_description
-  AND a.completed = false      -- nunca apaga tarefas já concluídas
-  AND a.id > b.id;
-```
+**Drag-and-drop**: `@dnd-kit/core` (já no projeto via shadcn) ou adicionar `@hello-pangea/dnd`
 
-## O que NÃO vou mexer
-- `generate-daily-activities` (edge function): está correta, gera com `source: 'auto'`.
-- Tarefas manuais (`source = 'manual'` ou `task_type = 'custom'` criadas pelo usuário): preservadas.
-- Schema/RLS: sem mudanças.
+**Importação**: edge function lê toda a pipeline "ALINE'S PIPELINE - ALFA" via Pipedrive API (já temos `PIPEDRIVE_API_KEY`), normaliza e insere. Estima ~500 deals → 1 execução, ~30s.
+
+---
+
+## Marco de aprovação
+
+Cada fase é entregue funcional e testável. **Sugiro começar pelas Fases 1 + 2** (schema + import + Kanban/Lista). Isso já dá visibilidade total dentro da plataforma. Detalhe do deal, atividades e desligamento do Pipedrive vêm em seguida.
+
+Quer que eu comece pela Fase 1 + 2, ou prefere outro recorte?
