@@ -33,7 +33,12 @@ const TYPE_STYLES: Record<DailyActivity["task_type"], { label: string; bg: strin
 export function DailyTasksPanel({ mode, title = "Checklist", subtitle }: Props) {
   const [tab, setTab] = useState<"hoje" | "semana">("hoje");
 
-  const enabled = mode.kind !== "disabled";
+  // Detect weekend in São Paulo (UTC-3)
+  const spNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const isWeekend = spNow.getDay() === 0 || spNow.getDay() === 6;
+  const skipForWeekend = tab === "hoje" && isWeekend;
+
+  const enabled = mode.kind !== "disabled" && !skipForWeekend;
   const { data: activities = [], isLoading } = useDailyActivities({
     enabled,
     pipedriveUserId: mode.kind === "pipedrive" ? mode.pipedriveUserId : undefined,
@@ -83,6 +88,11 @@ export function DailyTasksPanel({ mode, title = "Checklist", subtitle }: Props) 
 
       {mode.kind === "disabled" ? (
         <EmptyState message={mode.emptyMessage} />
+      ) : skipForWeekend ? (
+        <EmptyState
+          message="Fim de semana — sem tarefas de cadência."
+          hint="A cadência roda de segunda a sexta. Veja a 'Semana' para se preparar."
+        />
       ) : isLoading ? (
         <p className="text-xs text-muted-foreground py-6 text-center">Carregando…</p>
       ) : activities.length === 0 ? (
