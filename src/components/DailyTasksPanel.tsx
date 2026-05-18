@@ -91,6 +91,15 @@ export function DailyTasksPanel({ mode, title = "Checklist", subtitle, assigneeL
               ? format(today, "EEEE, dd 'de' MMM", { locale: ptBR })
               : "Próximos 7 dias"}
           </span>
+          {canAdd && (
+            <button
+              onClick={() => setAddOpen(true)}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 border border-amber-500/30 transition-all"
+              title={`Adicionar tarefa para ${assigneeLabel}`}
+            >
+              <Plus className="w-3 h-3" /> Nova
+            </button>
+          )}
         </div>
       </div>
 
