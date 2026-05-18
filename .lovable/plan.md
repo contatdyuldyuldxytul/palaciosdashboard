@@ -1,109 +1,53 @@
-# CRM Integrado — Substituir Pipedrive
+## Foco: Design do CRM nativo
 
-Construir um CRM nativo dentro da plataforma com dados próprios no Supabase. Pipedrive será usado **apenas como import inicial** (one-shot) e depois desligado da operação. A partir daí, todas as ações (criar deal, mover de estágio, won/lost, notas, atividades) acontecem dentro da plataforma.
+Vamos priorizar o **visual e UX do CRM** agora. A importação dos deals do Pipedrive fica para depois — trabalharemos com dados mock/seed enquanto refinamos a interface.
 
-## Escopo do MVP
+## Escopo desta etapa
 
-- **Múltiplos pipelines** (Aline ALFA, Hunter, Farmer, BKV, etc.) com estágios customizáveis
-- **Kanban** drag-and-drop por estágio (réplica visual da foto do Pipedrive)
-- **Lista/Tabela** com filtros, busca, ordenação, colunas configuráveis
-- **Detalhe do deal** com timeline, notas, atividades, contatos vinculados
-- **Atividades vinculadas** (ligação, e-mail, reunião, tarefa) com calendário
-- **Pessoas e organizações** como entidades próprias
-- **Permissões por colaborador** (Aline, Milena, Felipe, Thiago, CEO)
+### 1. Seed de dados realistas (mock)
+Inserir dados fictícios consistentes nas tabelas `crm_pipelines`, `crm_stages`, `crm_deals`, `crm_persons`, `crm_organizations`, `crm_activities` para que o design seja testado com volume real:
+- 3 pipelines (ex: ALFA, BETA, Pós-venda)
+- 6–8 stages por pipeline com cores
+- ~40 deals distribuídos entre stages, com valores, owners, datas
+- Pessoas/orgs vinculadas e algumas atividades agendadas
 
-## Fora do MVP (fase posterior)
+### 2. Refinamento visual do Kanban (`/crm`)
+- Header premium com seletor de pipeline (pill tabs ou dropdown elegante), busca, filtros (owner, valor, data), toggle Kanban/Lista
+- Cards de deal com glassmorphism: nome, organização, valor (R$), owner avatar, tags de stage, indicador de inatividade, próxima atividade
+- Colunas com soma total, contagem de deals, cor sutil do stage no topo
+- Drag-and-drop com feedback visual (sombra, escala, drop zones)
+- Empty states ilustrados, skeletons no loading
+- Animações de entrada (framer-motion)
 
-- Automações/workflows ("quando deal entra em X, criar Y")
-- Forecast/relatórios avançados (continuam usando os dashboards atuais)
-- E-mails enviados de dentro do CRM
-- Integração com calendário externo (Google/Outlook)
+### 3. Refinamento da Lista (`/crm` toggle)
+- Tabela densa com colunas configuráveis: deal, org, valor, stage, owner, próxima atividade, dias parado
+- Linha hover com ações rápidas
+- Filtros e busca compartilhados com o Kanban
+- Ordenação por coluna
 
----
+### 4. Detalhe do Deal (`/crm/deal/:id`) — esqueleto visual
+Página com layout finalizado mas ainda sem todas as integrações:
+- Header com nome, valor, stage atual (pipeline visual de progresso), owner, ações (Ganho/Perdido/Editar)
+- Sidebar direita: organização, pessoas vinculadas, campos custom
+- Tabs principais: **Timeline | Notas | Atividades | Histórico**
+- Visual cumprindo o padrão glassmorphism dark da plataforma
 
-## Fases
+### 5. Modal "Novo Deal" refinado
+- Multi-step ou single elegante: pipeline → stage → nome → org/pessoa → valor → owner → data esperada
+- Validação visual, autocomplete em org/pessoa
 
-### Fase 1 — Schema + Importação do Pipedrive
-- Criar tabelas `crm_pipelines`, `crm_stages`, `crm_deals`, `crm_persons`, `crm_organizations`, `crm_activities`, `crm_notes`, `crm_deal_history` (timeline imutável de eventos)
-- RLS: leitura geral autenticada; escrita restrita ao **owner do deal**, ao seu manager, e ao fundador
-- Edge function `import-pipedrive-once`: puxa tudo do Pipedrive (deals, persons, orgs, stages, activities, notes) e popula as tabelas. Idempotente (delete+insert por `pipedrive_id` na primeira execução, opção de re-rodar)
-- Mapear `responsavel_nome` do Pipedrive → `owner_user_id` (Aline, Milena, Felipe, Thiago)
+### 6. Botão "Importar do Pipedrive" mantido
+Disponível para o fundador no header, mas **não acionado agora**. Fica pronto para quando você quiser puxar os dados.
 
-### Fase 2 — Listagem (Kanban + Lista)
-- Nova rota `/crm` no sidebar (CEO + comerciais)
-- Seletor de pipeline no topo
-- **Kanban view**: colunas por estágio, cards drag-and-drop, contagem + soma de valores no header da coluna, paginação por coluna (limite 50 + "carregar mais")
-- **Lista view**: tabela com empresa, contato, estágio, valor, owner, última atividade, dias no estágio; filtros (owner, estágio, valor, data); busca por empresa/contato
-- Toggle Kanban ↔ Lista preserva filtros
-- Botão **+ Novo deal** abre modal (empresa, contato, valor, estágio inicial, owner)
+## Não está nesta etapa
+- Importação real do Pipedrive
+- Edição completa de deal (write-back, mudança de stage via API)
+- Atividades CRUD completo / calendário integrado
+- Gestão de pessoas e organizações (CRUD)
+- Permissões RLS refinadas por owner
 
-### Fase 3 — Detalhe do deal
-- Rota `/crm/deal/:id` (modal ou página)
-- Header: nome, valor, estágio (dropdown para mover), owner, won/lost
-- 4 abas:
-  1. **Timeline** — eventos automáticos (estágio mudou, atividade criada, valor alterado) misturados com notas
-  2. **Notas** — markdown simples, criar/editar/deletar
-  3. **Atividades** — lista de atividades vinculadas (ver Fase 4)
-  4. **Contatos** — pessoas e organização vinculadas
-- Marcar como Won → modal pede data de fechamento e cria contrato em `clientes_ativos`. Marcar como Lost → modal pede motivo
+Essas fases vêm depois, sobre a base visual aprovada.
 
-### Fase 4 — Atividades + Calendário
-- Tipos: ligação, e-mail, reunião, tarefa, follow-up
-- Criar atividade vinculada a deal e/ou pessoa, com data/hora, duração, descrição
-- Marcar como concluída (com nota de resultado)
-- Vista de calendário do colaborador (semana/mês) com todas as atividades do CRM
-- Reaproveita visual e padrões do `CalendarioVendas.tsx` existente
+## Pergunta antes de seguir
 
-### Fase 5 — Pessoas, Organizações e Permissões
-- CRUD de pessoas (nome, e-mail, telefone, cargo, organização) e organizações (nome, site, segmento)
-- Página de detalhe da organização com todos os deals + pessoas + histórico
-- Refinamento de RLS por papel
-- Migrar componentes existentes que liam `usePipedrive` para usar os novos hooks `useCrmDeals`, `useCrmActivities`
-
-### Fase 6 — Desligamento do Pipedrive (opcional, após validação)
-- Marcar `sync-pipedrive` como deprecated
-- Manter botão "Re-importar do Pipedrive" para casos de fallback
-
----
-
-## Detalhes técnicos
-
-**Schema principal (Fase 1)**
-
-```text
-crm_pipelines (id, nome, ordem, ativo)
-crm_stages    (id, pipeline_id, nome, ordem, cor, won, lost)
-crm_organizations (id, nome, site, segmento, notas)
-crm_persons   (id, organization_id, nome, email, telefone, cargo)
-crm_deals     (id, pipeline_id, stage_id, organization_id, person_id,
-               titulo, valor, owner_user_id, status [open|won|lost],
-               motivo_perda, data_fechamento, expected_close_date,
-               pipedrive_id (legado), stage_entered_at,
-               created_at, updated_at)
-crm_activities (id, deal_id, person_id, owner_user_id, tipo, titulo,
-                descricao, scheduled_at, duracao_min, concluida,
-                concluida_em, resultado)
-crm_notes      (id, deal_id, author_user_id, conteudo, created_at)
-crm_deal_history (id, deal_id, actor_user_id, evento, payload jsonb, created_at)
-```
-
-**Hooks**
-- `useCrmPipelines`, `useCrmDeals(pipelineId, filters)`, `useCrmDeal(id)`, `useCrmActivities`, `useCrmOrganizations`
-- Realtime via `supabase.channel` em `crm_deals` para Kanban sincronizado entre abas
-
-**RLS**
-- Leitura: `authenticated` vê tudo (mantém transparência atual da equipe)
-- Escrita em `crm_deals`/`crm_activities`/`crm_notes`: owner do registro OU `fundador`
-- `crm_pipelines`/`crm_stages`: somente `fundador`
-
-**Drag-and-drop**: `@dnd-kit/core` (já no projeto via shadcn) ou adicionar `@hello-pangea/dnd`
-
-**Importação**: edge function lê toda a pipeline "ALINE'S PIPELINE - ALFA" via Pipedrive API (já temos `PIPEDRIVE_API_KEY`), normaliza e insere. Estima ~500 deals → 1 execução, ~30s.
-
----
-
-## Marco de aprovação
-
-Cada fase é entregue funcional e testável. **Sugiro começar pelas Fases 1 + 2** (schema + import + Kanban/Lista). Isso já dá visibilidade total dentro da plataforma. Detalhe do deal, atividades e desligamento do Pipedrive vêm em seguida.
-
-Quer que eu comece pela Fase 1 + 2, ou prefere outro recorte?
+Confirma se posso **inserir dados mock** no banco para popular o design (eles serão apagados ou substituídos quando importarmos o Pipedrive)?
