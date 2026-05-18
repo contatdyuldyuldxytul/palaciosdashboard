@@ -341,6 +341,7 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
           }
           title="Checklist"
           subtitle="Tarefas atribuídas · cadência, follow-ups, estratégia"
+          assigneeLabel={memberName}
         />
 
         {/* Meeting Tracker */}

@@ -368,6 +368,7 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
           mode={{ kind: "milena" }}
           title="Checklist"
           subtitle="Tarefas atribuídas · cadência, follow-ups, estratégia"
+          assigneeLabel="Milena"
         />
 
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.35 }} className="glass-card p-5">

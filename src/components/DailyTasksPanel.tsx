@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, ExternalLink } from "lucide-react";
+import { CheckCircle2, ExternalLink, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -9,6 +9,8 @@ import {
   useToggleActivity,
   type DailyActivity,
 } from "@/hooks/useDailyActivities";
+import { useAuth } from "@/contexts/AuthContext";
+import { AddDailyActivityModal } from "@/components/AddDailyActivityModal";
 
 type Mode =
   | { kind: "pipedrive"; pipedriveUserId: number }
@@ -19,6 +21,8 @@ type Props = {
   mode: Mode;
   title?: string;
   subtitle?: string;
+  /** Label for who the task is assigned to (e.g. "Aline", "Felipe", "Milena", "Thiago"). Required to enable the CEO "+ Nova tarefa" button. */
+  assigneeLabel?: string;
 };
 
 const TYPE_STYLES: Record<DailyActivity["task_type"], { label: string; bg: string; fg: string; bd: string }> = {
@@ -30,7 +34,11 @@ const TYPE_STYLES: Record<DailyActivity["task_type"], { label: string; bg: strin
   meeting:      { label: "reunião",    bg: "rgba(236,72,153,0.12)",  fg: "hsl(330,75%,62%)", bd: "rgba(236,72,153,0.3)"   },
 };
 
-export function DailyTasksPanel({ mode, title = "Checklist", subtitle }: Props) {
+export function DailyTasksPanel({ mode, title = "Checklist", subtitle, assigneeLabel }: Props) {
+  const { hasRole } = useAuth();
+  const isFundador = hasRole("fundador");
+  const [addOpen, setAddOpen] = useState(false);
+  const canAdd = isFundador && !!assigneeLabel;
   const [tab, setTab] = useState<"hoje" | "semana">("hoje");
 
   // Detect weekend in São Paulo (UTC-3)
@@ -83,6 +91,15 @@ export function DailyTasksPanel({ mode, title = "Checklist", subtitle }: Props) 
               ? format(today, "EEEE, dd 'de' MMM", { locale: ptBR })
               : "Próximos 7 dias"}
           </span>
+          {canAdd && (
+            <button
+              onClick={() => setAddOpen(true)}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 border border-amber-500/30 transition-all"
+              title={`Adicionar tarefa para ${assigneeLabel}`}
+            >
+              <Plus className="w-3 h-3" /> Nova
+            </button>
+          )}
         </div>
       </div>
 
@@ -164,6 +181,15 @@ export function DailyTasksPanel({ mode, title = "Checklist", subtitle }: Props) 
             );
           })}
         </ul>
+      )}
+
+      {canAdd && assigneeLabel && (
+        <AddDailyActivityModal
+          open={addOpen}
+          onOpenChange={setAddOpen}
+          assigneeLabel={assigneeLabel}
+          pipedriveUserId={mode.kind === "pipedrive" ? mode.pipedriveUserId : null}
+        />
       )}
     </motion.div>
   );
