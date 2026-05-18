@@ -1,7 +1,8 @@
 import { useLocation, Link } from "react-router-dom";
 import {
   LayoutDashboard, TrendingUp, Users, MessageSquare, Target, Kanban,
-  ChevronLeft, ChevronRight, ChevronDown, LogOut, Crown, User, Sun, Moon
+  ChevronLeft, ChevronRight, ChevronDown, LogOut, Crown, User, Sun, Moon,
+  ExternalLink
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
