@@ -123,6 +123,11 @@ const App = () => (
               <Route path="/estrategias" element={<Navigate to="/ceo/estrategias" replace />} />
               <Route path="/clientes-ativos" element={<Navigate to="/clientes" replace />} />
             </Route>
+            {/* CRM Integrado — standalone layout */}
+            <Route element={<ProtectedRoute><CrmLayout /></ProtectedRoute>}>
+              <Route path="/crm" element={<Crm />} />
+              <Route path="/crm/deal/:id" element={<CrmDealDetail />} />
+            </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
