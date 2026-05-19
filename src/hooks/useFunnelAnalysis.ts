@@ -43,15 +43,12 @@ export function useFunnelAnalysis(funnelData: FunnelData | null) {
     }
   }, [funnelData]);
 
-  // Auto-refresh every 30 minutes
+  // Initial fetch only — user can refresh via `refresh()`
   useEffect(() => {
     if (!funnelData) return;
-    // Initial fetch only if no analysis yet
     if (!analysis) fetchAnalysis();
-
-    const interval = setInterval(fetchAnalysis, 30 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [funnelData !== null]); // only re-run when data availability changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [funnelData !== null]);
 
   return { analysis, loading, updatedAt, refresh: fetchAnalysis };
 }

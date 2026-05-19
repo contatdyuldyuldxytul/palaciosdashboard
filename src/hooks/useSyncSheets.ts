@@ -3,7 +3,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 
-const SYNC_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+const SYNC_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
+
+const SYNC_INVALIDATE_KEYS: string[][] = [
+  ["lancamentos"],
+  ["leads"],
+  ["clientes_ativos"],
+  ["balanco"],
+  ["fluxo_caixa"],
+  ["custos_config"],
+  ["financeiro_empresa"],
+  ["financeiro_clientes"],
+  ["metas"],
+  ["metas_mensais"],
+  ["metas_comerciais"],
+];
 
 interface SyncResult {
   success: boolean;
@@ -59,7 +73,7 @@ export function useSyncSheets() {
         }
       }
 
-      queryClient.invalidateQueries();
+      SYNC_INVALIDATE_KEYS.forEach((k) => queryClient.invalidateQueries({ queryKey: k }));
       return result;
     } catch (err: any) {
       if (!silent) {
@@ -80,13 +94,13 @@ export function useSyncSheets() {
     localStorage.setItem("autoSyncEnabled", String(enabled));
   }, []);
 
-  // Auto-sync interval
+  // Auto-sync interval — paused while tab is hidden
   useEffect(() => {
-    if (autoSync) {
-      intervalRef.current = setInterval(() => {
-        sync(undefined, true); // silent auto-sync
-      }, SYNC_INTERVAL_MS);
-    }
+    if (!autoSync) return;
+    intervalRef.current = setInterval(() => {
+      if (typeof document !== "undefined" && document.hidden) return;
+      sync(undefined, true);
+    }, SYNC_INTERVAL_MS);
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
