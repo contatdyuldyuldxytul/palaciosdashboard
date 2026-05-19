@@ -86,13 +86,14 @@ export function AppSidebar() {
         <ul className="space-y-1">
           {visibleItems.map((item) => {
             const active = isActive(item.url);
-            const allChildren = item.hasChildren ? subItems.filter((s) => item.url.startsWith(s.parentUrl)) : [];
+            const allChildren = item.hasChildren ? subItems.filter((s) => s.parentUrl === (item.url.startsWith("/crm") ? "/crm" : "/vendas")) : [];
             const children = allChildren.filter((s) => {
               if (s.url === "/equipe/thiago") {
                 return hasRole("fundador") || profile?.colaborador_slug === "thiago";
               }
               return true;
             });
+            const showChildren = !collapsed && (item as any).hasChildren && ((item as any).alwaysExpanded || active) && children.length > 0;
             return (
               <li key={item.url} className="space-y-0.5">
                 <Link
@@ -115,15 +116,14 @@ export function AppSidebar() {
                   {!collapsed && (item as any).hasChildren && (
                     <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
                   )}
-                  {!collapsed && (item as any).isExternal && (
-                    <ExternalLink className="w-3 h-3 text-muted-foreground/60" />
-                  )}
                 </Link>
-                {/* Sub-items (team members) */}
-                {!collapsed && active && children.length > 0 && (
+                {showChildren && (
                   <ul className="ml-5 pl-3 space-y-0.5" style={{ borderLeft: '1px solid var(--glass-border)' }}>
                     {children.map((sub) => {
-                      const subActive = location.pathname === sub.url;
+                      const subActive = sub.exact
+                        ? location.pathname === sub.url
+                        : location.pathname === sub.url || location.pathname.startsWith(sub.url + "/");
+                      const SubIcon = sub.icon;
                       return (
                         <li key={sub.url}>
                           <Link
@@ -134,12 +134,16 @@ export function AppSidebar() {
                                 : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"
                             }`}
                           >
-                            <span
-                              className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0"
-                              style={{ background: (sub as any).color || "hsl(160,60%,38%)" }}
-                            >
-                              {sub.initials}
-                            </span>
+                            {SubIcon ? (
+                              <SubIcon className="w-3.5 h-3.5 flex-shrink-0" />
+                            ) : (
+                              <span
+                                className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0"
+                                style={{ background: sub.color || "hsl(160,60%,38%)" }}
+                              >
+                                {sub.initials}
+                              </span>
+                            )}
                             <span>{sub.title}</span>
                           </Link>
                         </li>
@@ -149,6 +153,7 @@ export function AppSidebar() {
                 )}
               </li>
             );
+
           })}
         </ul>
       </nav>
