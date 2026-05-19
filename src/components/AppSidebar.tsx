@@ -113,9 +113,6 @@ export function AppSidebar() {
                 >
                   <item.icon className="w-[18px] h-[18px] flex-shrink-0" />
                   {!collapsed && <span className="flex-1">{item.title}</span>}
-                  {!collapsed && (item as any).hasChildren && (
-                    <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-                  )}
                 </Link>
                 {showChildren && (
                   <ul className="ml-5 pl-3 space-y-0.5" style={{ borderLeft: '1px solid var(--glass-border)' }}>
