@@ -1,9 +1,34 @@
-import { Outlet, Link } from "react-router-dom";
-import { ArrowLeft, Sun, Moon } from "lucide-react";
+import { Outlet, NavLink, Link } from "react-router-dom";
+import {
+  ArrowLeft,
+  Sun,
+  Moon,
+  DollarSign,
+  ClipboardList,
+  Calendar,
+  Mail,
+  Instagram,
+  Users,
+  TrendingUp,
+  Sparkles,
+  Settings,
+} from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import logoPalacios from "@/assets/logo-palacios.png";
 import logoPalaciosLight from "@/assets/logo-palacios-light.png";
+
+const navItems = [
+  { to: "/crm", label: "Deals", icon: DollarSign, end: true },
+  { to: "/crm/projects", label: "Projects", icon: ClipboardList },
+  { to: "/crm/atividades", label: "Atividades", icon: Calendar },
+  { to: "/crm/email", label: "E-mail", icon: Mail },
+  { to: "/crm/instagram", label: "Leads Instagram", icon: Instagram },
+  { to: "/crm/contatos", label: "Contatos", icon: Users },
+  { to: "/crm/insights", label: "Insights & Forecast", icon: TrendingUp },
+  { to: "/crm/automacoes", label: "Automações I.A", icon: Sparkles },
+  { to: "/crm/configuracoes", label: "Configurações", icon: Settings },
+];
 
 export function CrmLayout() {
   const { profile } = useAuth();
@@ -63,7 +88,10 @@ export function CrmLayout() {
             {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
           {profile && (
-            <div className="hidden md:flex flex-col items-end pl-3 ml-1" style={{ borderLeft: "1px solid var(--glass-border)" }}>
+            <div
+              className="hidden md:flex flex-col items-end pl-3 ml-1"
+              style={{ borderLeft: "1px solid var(--glass-border)" }}
+            >
               <span className="text-xs text-foreground font-medium truncate max-w-[180px]">
                 {profile.full_name || profile.email}
               </span>
@@ -73,9 +101,43 @@ export function CrmLayout() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto relative z-10">
-        <Outlet />
-      </main>
+      <div className="flex-1 flex relative z-10 min-h-0">
+        {/* Sidebar */}
+        <aside
+          className="w-16 hover:w-56 transition-all duration-300 ease-out group glass-sidebar flex flex-col py-3 overflow-hidden"
+          style={{ borderRight: "1px solid var(--glass-border)" }}
+        >
+          <nav className="flex flex-col gap-1 px-2">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 h-10 px-3 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                      isActive
+                        ? "bg-primary/15 text-primary"
+                        : "text-muted-foreground hover:text-foreground hover:bg-white/[0.06]"
+                    }`
+                  }
+                  title={item.label}
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    {item.label}
+                  </span>
+                </NavLink>
+              );
+            })}
+          </nav>
+        </aside>
+
+        <main className="flex-1 overflow-y-auto min-w-0">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }

@@ -137,6 +137,14 @@ const App = () => (
             <Route element={<ProtectedRoute><CrmLayout /></ProtectedRoute>}>
               <Route path="/crm" element={<Crm />} />
               <Route path="/crm/deal/:id" element={<CrmDealDetail />} />
+              <Route path="/crm/projects" element={<Placeholder title="Projects" />} />
+              <Route path="/crm/atividades" element={<Placeholder title="Atividades" />} />
+              <Route path="/crm/email" element={<Placeholder title="Integração de E-mail" />} />
+              <Route path="/crm/instagram" element={<Placeholder title="Leads do Instagram" />} />
+              <Route path="/crm/contatos" element={<Placeholder title="Contatos" />} />
+              <Route path="/crm/insights" element={<Placeholder title="Insights & Forecast" />} />
+              <Route path="/crm/automacoes" element={<Placeholder title="Automações de I.A" />} />
+              <Route path="/crm/configuracoes" element={<Placeholder title="Configurações" />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
