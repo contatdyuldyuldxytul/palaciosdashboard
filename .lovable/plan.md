@@ -1,69 +1,30 @@
-## Diagnóstico — o que está consumindo o disco IO
+## Objetivo
+Integrar todo o CRM ao app principal: eliminar a janela/layout separados do CRM e mostrar suas 9 páginas como sub-abas fixas (sempre visíveis, sem precisar expandir) abaixo do item "CRM" no `AppSidebar`, no mesmo padrão visual usado por "Vendas".
 
-Mapeei as fontes principais de pressão no banco:
+## Mudanças
 
-1. **Sem `staleTime` global no React Query** — toda navegação entre páginas refaz `SELECT *` em `leads`, `lancamentos`, `crm_*`, `clientes_ativos`, `metas_*`, etc. Em tabs como Dashboard / CEO isso dispara 10+ queries simultâneas a cada foco da janela.
-2. **`useSyncSheets`** roda **a cada 5 min** e ao final chama `queryClient.invalidateQueries()` **sem chave** → invalida **todas** as queries do app → tempestade de SELECTs no Supabase.
-3. **`usePalaciosData`** chama `useLancamentos(mes)` **e** `useLancamentos()` (sem filtro). O segundo puxa a tabela inteira mas o resultado nem é usado.
-4. **`useCrmDeals`** faz `SELECT * + joins (organizations, persons)` com `LIMIT 2000` toda vez que o pipeline monta, **e** abre realtime `postgres_changes` em `crm_deals` por pipeline.
-5. **Realtime extra**: `useColaboradorStats` e `TeamMemberDashboard` assinam `meeting_checks` (canal duplicado por dashboard aberto). Realtime mantém replicação WAL ativa, contribuindo bastante para disk IO.
-6. **`useFunnelAnalysis`** dispara edge function a cada **30 min** via `setInterval`, mesmo com a aba inativa.
-7. **`useLeads`** puxa `*` da tabela inteira sem `staleTime`, usado em ~10 lugares.
-8. **Faltam índices** em colunas usadas em filtro/ordem: `lancamentos(mes, data)`, `crm_deals(pipeline_id, updated_at)`, `meeting_checks(colaborador, mes)`, `leads(data_criacao)`.
+### 1. `src/components/AppSidebar.tsx`
+- Remover `isExternal: true` do item CRM (não abre mais em nova área).
+- Adicionar lista de sub-itens do CRM com os 9 destinos:
+  - Deals → `/crm`
+  - Projects → `/crm/projects`
+  - Atividades → `/crm/atividades`
+  - E-mail → `/crm/email`
+  - Leads Instagram → `/crm/instagram`
+  - Contatos → `/crm/contatos`
+  - Insights & Forecast → `/crm/insights`
+  - Automações I.A → `/crm/automacoes`
+  - Configurações → `/crm/configuracoes`
+- Renderizar essas sub-abas SEMPRE que a sidebar não estiver `collapsed` (não condicionar a `active`), usando o mesmo bloco visual de filhos já existente (linha divisória à esquerda + ícone Lucide pequeno em vez de avatar).
+- Marcar a sub-aba ativa via `location.pathname` (Deals usa match exato em `/crm`).
+- Remover o ícone `ExternalLink` ao lado de CRM.
 
-## Plano de otimização (somente front-end + 1 migration de índices)
+### 2. `src/App.tsx`
+- Mover as 9 rotas `/crm/*` (incluindo `/crm/deal/:id`) para dentro do bloco `<Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>`.
+- Remover o bloco standalone com `<CrmLayout />` e o import correspondente.
 
-### 1. Defaults globais do QueryClient (`src/App.tsx`)
-Configurar:
-- `staleTime: 5 * 60_000` (5 min) — dados ficam "fresh" entre navegações.
-- `gcTime: 30 * 60_000`.
-- `refetchOnWindowFocus: false`, `refetchOnReconnect: false`, `retry: 1`.
-
-Impacto: corta a maior parte dos refetchs redundantes.
-
-### 2. Corrigir `useSyncSheets`
-- Aumentar `SYNC_INTERVAL_MS` de **5 min → 30 min**.
-- Pausar o intervalo quando `document.hidden` (não sincronizar com aba em segundo plano).
-- Trocar `queryClient.invalidateQueries()` global por invalidação **direcionada** apenas às queries afetadas pela sync (ex.: `["lancamentos"]`, `["leads"]`, `["clientes_ativos"]`, `["balanco"]`, `["fluxo_caixa"]`, `["custos_config"]`).
-
-### 3. `usePalaciosData`
-- Remover a chamada redundante `useLancamentos()` (sem filtro).
-- Manter apenas `useLancamentos(mes)`.
-
-### 4. `useCrmDeals`
-- Reduzir `LIMIT` de 2000 → 500 e ordenar por `updated_at`.
-- Remover o `select` aninhado de `organizations` e `persons`; buscar essas tabelas uma vez via hooks próprios cacheados (`useCrmOrganizations`, `useCrmPersons`) com `staleTime: 10min` e fazer o join em memória.
-- Remover a subscrição realtime em `crm_deals` — substituir por `staleTime: 60_000` + refetch manual após mutations (já invalida via `onSuccess`).
-
-### 5. Realtime `meeting_checks`
-- Remover assinaturas em `useColaboradorStats` e `TeamMemberDashboard`.
-- Substituir por `useQuery` com `staleTime: 2min` + invalidação explícita após o usuário marcar uma reunião (já fazemos isso na mutation).
-
-### 6. `useFunnelAnalysis`
-- Remover o `setInterval` de 30 min. Manter só o fetch inicial + botão "atualizar análise" (`refresh`) já exposto.
-
-### 7. `useLeads`
-- Adicionar `staleTime: 5 * 60_000` (alinha com o default mas explicito).
-- Onde só precisamos contagem/agregação (TickerBar, CeoMetricsAndAlerts), trocar `select("*")` por `select("id,status,responsavel_nome,valor_estimado,data_criacao,data_fechamento")`.
-
-### 8. Migration — índices (única alteração no banco)
-```sql
-CREATE INDEX IF NOT EXISTS idx_lancamentos_mes      ON public.lancamentos (mes);
-CREATE INDEX IF NOT EXISTS idx_lancamentos_data     ON public.lancamentos (data DESC);
-CREATE INDEX IF NOT EXISTS idx_crm_deals_pipeline   ON public.crm_deals (pipeline_id, updated_at DESC);
-CREATE INDEX IF NOT EXISTS idx_meeting_checks_colab ON public.meeting_checks (colaborador, mes);
-CREATE INDEX IF NOT EXISTS idx_leads_data_criacao   ON public.leads (data_criacao DESC);
-CREATE INDEX IF NOT EXISTS idx_crm_acts_deal        ON public.crm_activities (deal_id, scheduled_at);
-```
+### 3. `src/layouts/CrmLayout.tsx`
+- Excluir (não é mais usado).
 
 ## Fora de escopo
-- Nada de alteração em layout/UX, autenticação, lógica de negócio, comissões, metas, ou cálculo financeiro.
-- Sem mudança em edge functions (sync-sheets, sync-pipedrive permanecem como estão).
-- Sem alterar a sincronização do Pipedrive (já roda a cada 2h, ok).
-
-## Resultado esperado
-- Redução drástica de SELECTs disparados por refocus de aba e por sincronização automática.
-- Menos pressão de WAL/replicação ao remover assinaturas realtime de tabelas muito ativas.
-- Queries que sobram passam a usar índices apropriados → menos IO por query.
-
-Se aprovar, eu aplico tudo isso em um único passo de implementação.
+Conteúdo das páginas placeholder, lógica de deals, queries, autenticação, comissões.
