@@ -83,13 +83,8 @@ export function useColaboradorStats(memberName: string): ColabStats {
       setMeetingsRealized(rows.filter((r: any) => r.realizada).length);
     }
     fetchChecks();
-    const ch = supabase
-      .channel("meeting-checks-stats-" + memberName)
-      .on("postgres_changes", { event: "*", schema: "public", table: "meeting_checks" }, fetchChecks)
-      .subscribe();
     return () => {
       cancelled = true;
-      supabase.removeChannel(ch);
     };
   }, [memberName, mesMMYYYY]);
 
