@@ -12,7 +12,7 @@ import { VendasLayout } from "@/layouts/VendasLayout";
 
 import { ClientesLayout } from "@/layouts/ClientesLayout";
 import { CeoLayout } from "@/layouts/CeoLayout";
-import { CrmLayout } from "@/layouts/CrmLayout";
+
 import Dashboard from "@/pages/Dashboard";
 import Leads from "@/pages/Leads";
 import TeamMemberDashboard from "@/pages/TeamMemberDashboard";
@@ -122,19 +122,7 @@ const App = () => (
               {/* Hunter de Negócios */}
               <Route path="/hunter" element={<HunterGate />} />
 
-              {/* CRM redirects handled outside AppLayout */}
-
-              {/* Redirects */}
-              <Route path="/leads" element={<Navigate to="/vendas" replace />} />
-              <Route path="/funil" element={<Navigate to="/vendas/funil" replace />} />
-              <Route path="/metas" element={<Navigate to="/vendas/metas" replace />} />
-              <Route path="/scripts" element={<Navigate to="/vendas/scripts" replace />} />
-              <Route path="/comissoes" element={<Navigate to="/clientes/comissoes" replace />} />
-              <Route path="/estrategias" element={<Navigate to="/ceo/estrategias" replace />} />
-              <Route path="/clientes-ativos" element={<Navigate to="/clientes" replace />} />
-            </Route>
-            {/* CRM Integrado — standalone layout */}
-            <Route element={<ProtectedRoute><CrmLayout /></ProtectedRoute>}>
+              {/* CRM Integrado */}
               <Route path="/crm" element={<Crm />} />
               <Route path="/crm/deal/:id" element={<CrmDealDetail />} />
               <Route path="/crm/projects" element={<Placeholder title="Projects" />} />
@@ -145,7 +133,17 @@ const App = () => (
               <Route path="/crm/insights" element={<Placeholder title="Insights & Forecast" />} />
               <Route path="/crm/automacoes" element={<Placeholder title="Automações de I.A" />} />
               <Route path="/crm/configuracoes" element={<Placeholder title="Configurações" />} />
+
+              {/* Redirects */}
+              <Route path="/leads" element={<Navigate to="/vendas" replace />} />
+              <Route path="/funil" element={<Navigate to="/vendas/funil" replace />} />
+              <Route path="/metas" element={<Navigate to="/vendas/metas" replace />} />
+              <Route path="/scripts" element={<Navigate to="/vendas/scripts" replace />} />
+              <Route path="/comissoes" element={<Navigate to="/clientes/comissoes" replace />} />
+              <Route path="/estrategias" element={<Navigate to="/ceo/estrategias" replace />} />
+              <Route path="/clientes-ativos" element={<Navigate to="/clientes" replace />} />
             </Route>
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
