@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect } from "react";
+import { useMemo } from "react";
 
 export interface CrmPipeline {
   id: string;
@@ -75,8 +75,39 @@ export function useCrmStages(pipelineId?: string) {
   });
 }
 
+export function useCrmOrganizations() {
+  return useQuery({
+    queryKey: ["crm", "organizations"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("crm_organizations")
+        .select("id,nome")
+        .limit(5000);
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+}
+
+export function useCrmPersons() {
+  return useQuery({
+    queryKey: ["crm", "persons"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("crm_persons")
+        .select("id,nome,email,telefone")
+        .limit(5000);
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+}
+
 export function useCrmDeals(pipelineId?: string) {
-  const qc = useQueryClient();
+  const orgsQ = useCrmOrganizations();
+  const personsQ = useCrmPersons();
 
   const query = useQuery({
     queryKey: ["crm", "deals", pipelineId],
@@ -84,35 +115,28 @@ export function useCrmDeals(pipelineId?: string) {
       if (!pipelineId) return [];
       const { data, error } = await supabase
         .from("crm_deals")
-        .select(
-          "*, organization:crm_organizations(id,nome), person:crm_persons(id,nome,email,telefone)"
-        )
+        .select("*")
         .eq("pipeline_id", pipelineId)
         .order("updated_at", { ascending: false })
-        .limit(2000);
+        .limit(500);
       if (error) throw error;
       return (data || []) as CrmDeal[];
     },
     enabled: !!pipelineId,
+    staleTime: 60_000,
   });
 
-  // Realtime sync
-  useEffect(() => {
-    if (!pipelineId) return;
-    const ch = supabase
-      .channel(`crm-deals-${pipelineId}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "crm_deals", filter: `pipeline_id=eq.${pipelineId}` },
-        () => qc.invalidateQueries({ queryKey: ["crm", "deals", pipelineId] })
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(ch);
-    };
-  }, [pipelineId, qc]);
+  const deals = useMemo(() => {
+    const orgMap = new Map((orgsQ.data || []).map((o: any) => [o.id, o]));
+    const personMap = new Map((personsQ.data || []).map((p: any) => [p.id, p]));
+    return (query.data || []).map((d) => ({
+      ...d,
+      organization: d.organization_id ? (orgMap.get(d.organization_id) as any) || null : null,
+      person: d.person_id ? (personMap.get(d.person_id) as any) || null : null,
+    })) as CrmDeal[];
+  }, [query.data, orgsQ.data, personsQ.data]);
 
-  return query;
+  return { ...query, data: deals };
 }
 
 export function useMoveDealStage() {
