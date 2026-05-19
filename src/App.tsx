@@ -12,7 +12,7 @@ import { VendasLayout } from "@/layouts/VendasLayout";
 
 import { ClientesLayout } from "@/layouts/ClientesLayout";
 import { CeoLayout } from "@/layouts/CeoLayout";
-import { CrmLayout } from "@/layouts/CrmLayout";
+
 import Dashboard from "@/pages/Dashboard";
 import Leads from "@/pages/Leads";
 import TeamMemberDashboard from "@/pages/TeamMemberDashboard";
