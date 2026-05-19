@@ -12,7 +12,6 @@ function getMesAtual() {
 export function usePalaciosData() {
   const mes = getMesAtual();
   const lancamentos = useLancamentos(mes);
-  const allLancamentos = useLancamentos();
   const leads = useLeads();
   const metasQ = useMetasComerciais(mes);
 

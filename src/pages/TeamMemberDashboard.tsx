@@ -116,18 +116,13 @@ export default function TeamMemberDashboard({ memberName, initials }: TeamMember
     async function fetchMeetingAgendadas() {
       const { data } = await supabase
         .from("meeting_checks")
-        .select("*")
+        .select("id")
         .eq("colaborador", memberName)
         .eq("mes", currentMesForMetas)
         .eq("agendada", true);
       setMeetingsAgendadas((data || []).length);
     }
     fetchMeetingAgendadas();
-
-    const ch = supabase.channel('meeting-agendadas-' + memberName)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'meeting_checks' }, () => fetchMeetingAgendadas())
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
   }, [memberName, currentMesForMetas]);
 
   // Fetch checklist
