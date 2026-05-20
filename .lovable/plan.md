@@ -1,30 +1,25 @@
 ## Objetivo
-Integrar todo o CRM ao app principal: eliminar a janela/layout separados do CRM e mostrar suas 9 páginas como sub-abas fixas (sempre visíveis, sem precisar expandir) abaixo do item "CRM" no `AppSidebar`, no mesmo padrão visual usado por "Vendas".
+Substituir o placeholder da rota `/crm/instagram` pela estrutura base da página "Leads do Instagram", já consultando a tabela `leads_qualified` (quando existir), com estados de loading, vazio e erro.
 
 ## Mudanças
 
-### 1. `src/components/AppSidebar.tsx`
-- Remover `isExternal: true` do item CRM (não abre mais em nova área).
-- Adicionar lista de sub-itens do CRM com os 9 destinos:
-  - Deals → `/crm`
-  - Projects → `/crm/projects`
-  - Atividades → `/crm/atividades`
-  - E-mail → `/crm/email`
-  - Leads Instagram → `/crm/instagram`
-  - Contatos → `/crm/contatos`
-  - Insights & Forecast → `/crm/insights`
-  - Automações I.A → `/crm/automacoes`
-  - Configurações → `/crm/configuracoes`
-- Renderizar essas sub-abas SEMPRE que a sidebar não estiver `collapsed` (não condicionar a `active`), usando o mesmo bloco visual de filhos já existente (linha divisória à esquerda + ícone Lucide pequeno em vez de avatar).
-- Marcar a sub-aba ativa via `location.pathname` (Deals usa match exato em `/crm`).
-- Remover o ícone `ExternalLink` ao lado de CRM.
+### 1. Criar componente `src/pages/crm/InstagramLeads.tsx`
+- Cabeçalho com título "Leads do Instagram" e subtítulo "Prospecção qualificada por IA de escritórios de arquitetura e incorporadoras".
+- Hook `useInstagramLeads()` com `useQuery` do TanStack Query fazendo `select` em `leads_qualified` filtrando `status = 'aguardando_revisao'` e ordenando por `score` decrescente.
+- Campos exibidos: `username`, `score`, `tipo_lead`, `razao`, `mensagem_rascunho`, `processado_em`.
+- Grid de cards (1 col mobile, 2 tablet, 3 desktop). Cada card usa `.glass-card` seguindo o design system do projeto.
+- Estados:
+  - **Loading**: skeleton pulse no estilo já usado em `Crm.tsx` (glass-card animado).
+  - **Vazio**: ícone + texto "Nenhum lead aguardando revisão".
+  - **Erro**: mensagem de erro amigável.
 
-### 2. `src/App.tsx`
-- Mover as 9 rotas `/crm/*` (incluindo `/crm/deal/:id`) para dentro do bloco `<Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>`.
-- Remover o bloco standalone com `<CrmLayout />` e o import correspondente.
-
-### 3. `src/layouts/CrmLayout.tsx`
-- Excluir (não é mais usado).
+### 2. Atualizar `src/App.tsx`
+- Substituir `<Placeholder title="Leads do Instagram" />` pela importação e uso do novo `<InstagramLeads />` na rota `/crm/instagram`.
 
 ## Fora de escopo
-Conteúdo das páginas placeholder, lógica de deals, queries, autenticação, comissões.
+- Filtros, abas, botões de ação (aprovar/rejeitar), estatísticas do topo, modal de detalhes, botão "Gerar leads".
+- Criação da tabela `leads_qualified` no banco (o usuário configurará o Supabase depois).
+
+## Estilo
+- Segue o glassmorphism do projeto: `glass-card`, `--glass-border`, `--primary` (emerald `#00C896` para scores altos quando aplicável).
+- Ícones do Lucide (Instagram, User, MessageSquare, Clock).
