@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Instagram, MessageSquare, Inbox, AlertCircle, ExternalLink, Search, ArrowUpDown,
-  Check, Pencil, Trash2, Copy, Send, CheckCircle2,
+  Check, Pencil, Trash2, Copy, Send, CheckCircle2, Sparkles, Loader2,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
@@ -118,6 +118,28 @@ export default function InstagramLeads() {
   const [editingLead, setEditingLead] = useState<InstagramLead | null>(null);
   const [editingText, setEditingText] = useState("");
   const [confirmDiscardId, setConfirmDiscardId] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
+
+  const handleGenerateLeads = async () => {
+    setGenerating(true);
+    try {
+      const { error } = await supabase.functions.invoke("trigger-instagram-worker");
+      if (error) throw error;
+      toast.success("Worker iniciado! Os leads aparecerão em alguns minutos.");
+      setCooldown(60);
+    } catch (e: any) {
+      toast.error(e?.message || "Erro ao iniciar worker");
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const queryClient = useQueryClient();
   const { data: leads, isLoading, error } = useInstagramLeads(activeTab);
@@ -237,16 +259,31 @@ export default function InstagramLeads() {
   return (
     <div className="p-4 lg:p-6 space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-start gap-3">
-        <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-gradient-to-br from-pink-500/20 to-purple-500/20 border border-white/10">
-          <Instagram className="w-5 h-5 text-pink-400" />
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="flex items-start gap-3">
+          <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-gradient-to-br from-pink-500/20 to-purple-500/20 border border-white/10">
+            <Instagram className="w-5 h-5 text-pink-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground tracking-tight">Leads do Instagram</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Prospecção qualificada por IA de escritórios de arquitetura e incorporadoras
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground tracking-tight">Leads do Instagram</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Prospecção qualificada por IA de escritórios de arquitetura e incorporadoras
-          </p>
-        </div>
+        <Button
+          onClick={handleGenerateLeads}
+          disabled={generating || cooldown > 0}
+          className="h-9 bg-gradient-to-br from-pink-500/20 to-purple-500/20 border border-pink-500/30 text-pink-200 hover:from-pink-500/30 hover:to-purple-500/30"
+        >
+          {generating ? (
+            <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Iniciando…</>
+          ) : cooldown > 0 ? (
+            <><Sparkles className="w-3.5 h-3.5" /> Aguarde {cooldown}s</>
+          ) : (
+            <><Sparkles className="w-3.5 h-3.5" /> Gerar Novos Leads</>
+          )}
+        </Button>
       </div>
 
       {/* Tabs */}

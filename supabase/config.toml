@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.insert-strategic-input]
 verify_jwt = false
+
+[functions.trigger-instagram-worker]
+verify_jwt = false
