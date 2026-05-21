@@ -158,7 +158,7 @@ export default function InstagramLeads() {
 
   const queryClient = useQueryClient();
   const { data: leads, isLoading, error } = useInstagramLeads(activeTab);
-  const { data: counts } = useStatusCounts();
+  const { data: stats } = useStats();
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["instagram-leads"] });
