@@ -19,6 +19,7 @@ const navItems = [
   { title: "Hunter de Negócios", url: "/hunter", icon: Target },
   { title: "CEO", url: "/ceo", icon: Crown, requireRole: "fundador" as const, isCeo: true },
   { title: "Assistente IA", url: "/assistente", icon: MessageSquare },
+  { title: "Configurações", url: "/crm/configuracoes", icon: Settings },
 ];
 
 type SubItem = {
@@ -45,7 +46,6 @@ const subItems: SubItem[] = [
   { title: "Contatos", url: "/crm/contatos", parentUrl: "/crm", icon: Users },
   { title: "Insights & Forecast", url: "/crm/insights", parentUrl: "/crm", icon: TrendUp },
   { title: "Automações I.A", url: "/crm/automacoes", parentUrl: "/crm", icon: Sparkles },
-  { title: "Configurações", url: "/crm/configuracoes", parentUrl: "/crm", icon: Settings },
 ];
 
 export function AppSidebar() {
