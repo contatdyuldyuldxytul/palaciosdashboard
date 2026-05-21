@@ -237,16 +237,31 @@ export default function InstagramLeads() {
   return (
     <div className="p-4 lg:p-6 space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-start gap-3">
-        <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-gradient-to-br from-pink-500/20 to-purple-500/20 border border-white/10">
-          <Instagram className="w-5 h-5 text-pink-400" />
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="flex items-start gap-3">
+          <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-gradient-to-br from-pink-500/20 to-purple-500/20 border border-white/10">
+            <Instagram className="w-5 h-5 text-pink-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground tracking-tight">Leads do Instagram</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Prospecção qualificada por IA de escritórios de arquitetura e incorporadoras
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground tracking-tight">Leads do Instagram</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Prospecção qualificada por IA de escritórios de arquitetura e incorporadoras
-          </p>
-        </div>
+        <Button
+          onClick={handleGenerateLeads}
+          disabled={generating || cooldown > 0}
+          className="h-9 bg-gradient-to-br from-pink-500/20 to-purple-500/20 border border-pink-500/30 text-pink-200 hover:from-pink-500/30 hover:to-purple-500/30"
+        >
+          {generating ? (
+            <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Iniciando…</>
+          ) : cooldown > 0 ? (
+            <><Sparkles className="w-3.5 h-3.5" /> Aguarde {cooldown}s</>
+          ) : (
+            <><Sparkles className="w-3.5 h-3.5" /> Gerar Novos Leads</>
+          )}
+        </Button>
       </div>
 
       {/* Tabs */}
