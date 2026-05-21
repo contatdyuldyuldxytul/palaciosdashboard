@@ -14,8 +14,12 @@ Deno.serve(async (req) => {
       );
     }
 
+    const githubOwner = 'contatdyuldyuldxytul';
+    const githubRepo = 'Palacios-Instagram';
+    const dispatchUrl = `https://api.github.com/repos/${githubOwner}/${githubRepo}/dispatches`;
+
     const ghRes = await fetch(
-      'https://api.github.com/repos/contatdyuldyuldxytul/Palacios-Instagram/dispatches',
+      dispatchUrl,
       {
         method: 'POST',
         headers: {
@@ -31,8 +35,15 @@ Deno.serve(async (req) => {
 
     if (!ghRes.ok) {
       const text = await ghRes.text();
+      const permissionHint = ghRes.status === 403
+        ? 'O token GITHUB_PAT_INSTAGRAM precisa ter acesso ao repositório contatdyuldyuldxytul/Palacios-Instagram e permissão Contents: Read and write (fine-grained PAT) ou escopo repo (classic PAT). Se o repositório estiver em organização, aprove o token na organização.'
+        : undefined;
       return new Response(
-        JSON.stringify({ error: `GitHub API ${ghRes.status}: ${text}` }),
+        JSON.stringify({
+          error: `GitHub API ${ghRes.status}: ${text}`,
+          repository: `${githubOwner}/${githubRepo}`,
+          permissionHint,
+        }),
         { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
