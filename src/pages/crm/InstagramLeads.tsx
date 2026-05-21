@@ -118,6 +118,28 @@ export default function InstagramLeads() {
   const [editingLead, setEditingLead] = useState<InstagramLead | null>(null);
   const [editingText, setEditingText] = useState("");
   const [confirmDiscardId, setConfirmDiscardId] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
+
+  const handleGenerateLeads = async () => {
+    setGenerating(true);
+    try {
+      const { error } = await supabase.functions.invoke("trigger-instagram-worker");
+      if (error) throw error;
+      toast.success("Worker iniciado! Os leads aparecerão em alguns minutos.");
+      setCooldown(60);
+    } catch (e: any) {
+      toast.error(e?.message || "Erro ao iniciar worker");
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const queryClient = useQueryClient();
   const { data: leads, isLoading, error } = useInstagramLeads(activeTab);
