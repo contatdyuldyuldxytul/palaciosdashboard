@@ -1,6 +1,7 @@
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Instagram, MessageSquare, Inbox, AlertCircle, ExternalLink, User } from "lucide-react";
+import { Instagram, MessageSquare, Inbox, AlertCircle, ExternalLink, Search, ArrowUpDown } from "lucide-react";
 
 interface InstagramLead {
   id: string;
@@ -13,26 +14,57 @@ interface InstagramLead {
   processado_em: string | null;
 }
 
-function useInstagramLeads() {
+type StatusKey = "aguardando_revisao" | "aprovado" | "contatado" | "descartado";
+
+const TABS: { key: StatusKey; label: string }[] = [
+  { key: "aguardando_revisao", label: "Aguardando Revisão" },
+  { key: "aprovado", label: "Aprovados" },
+  { key: "contatado", label: "Contatados" },
+  { key: "descartado", label: "Descartados" },
+];
+
+const TIPO_OPTIONS = [
+  { value: "todos", label: "Todos os tipos" },
+  { value: "arquiteto", label: "Arquiteto" },
+  { value: "incorporadora", label: "Incorporadora" },
+  { value: "construtora", label: "Construtora" },
+  { value: "outro", label: "Outro" },
+];
+
+function useInstagramLeads(status: StatusKey) {
   return useQuery<InstagramLead[]>({
-    queryKey: ["instagram-leads", "aguardando_revisao"],
+    queryKey: ["instagram-leads", status],
     queryFn: async () => {
-      const filtered = await (supabase as any)
+      const res = await (supabase as any)
         .from("leads_qualified")
         .select("id, username, score, razao, tipo_lead, mensagem_rascunho, status, processado_em")
-        .eq("status", "aguardando_revisao")
+        .eq("status", status)
         .order("score", { ascending: false });
 
-      const all = await (supabase as any)
+      if (res.error) throw res.error;
+      return (res.data || []) as InstagramLead[];
+    },
+  });
+}
+
+function useStatusCounts() {
+  return useQuery<Record<StatusKey, number>>({
+    queryKey: ["instagram-leads", "counts"],
+    queryFn: async () => {
+      const res = await (supabase as any)
         .from("leads_qualified")
-        .select("id, status")
-        .limit(20);
-
-      console.log("[InstagramLeads] filtered (status=aguardando_revisao):", filtered);
-      console.log("[InstagramLeads] sample of all rows (sem filtro):", all);
-
-      if (filtered.error) throw filtered.error;
-      return (filtered.data || []) as InstagramLead[];
+        .select("status");
+      if (res.error) throw res.error;
+      const counts: Record<StatusKey, number> = {
+        aguardando_revisao: 0,
+        aprovado: 0,
+        contatado: 0,
+        descartado: 0,
+      };
+      (res.data || []).forEach((r: { status: string }) => {
+        if (r.status in counts) counts[r.status as StatusKey]++;
+      });
+      return counts;
     },
   });
 }
@@ -63,8 +95,35 @@ const tipoLabel = (tipo: string | null) => {
   return map[tipo?.toLowerCase() || "outro"] || (tipo || "Outro");
 };
 
+const emptyMessages: Record<StatusKey, string> = {
+  aguardando_revisao: "Nenhum lead aguardando revisão",
+  aprovado: "Nenhum lead aprovado",
+  contatado: "Nenhum lead contatado",
+  descartado: "Nenhum lead descartado",
+};
+
 export default function InstagramLeads() {
-  const { data: leads, isLoading, error } = useInstagramLeads();
+  const [activeTab, setActiveTab] = useState<StatusKey>("aguardando_revisao");
+  const [tipoFilter, setTipoFilter] = useState<string>("todos");
+  const [search, setSearch] = useState("");
+  const [sortDesc, setSortDesc] = useState(true);
+
+  const { data: leads, isLoading, error } = useInstagramLeads(activeTab);
+  const { data: counts } = useStatusCounts();
+
+  const filtered = useMemo(() => {
+    if (!leads) return [];
+    let out = leads;
+    if (tipoFilter !== "todos") {
+      out = out.filter((l) => (l.tipo_lead || "outro").toLowerCase() === tipoFilter);
+    }
+    if (search.trim()) {
+      const q = search.trim().toLowerCase().replace(/^@/, "");
+      out = out.filter((l) => l.username.toLowerCase().includes(q));
+    }
+    out = [...out].sort((a, b) => (sortDesc ? b.score - a.score : a.score - b.score));
+    return out;
+  }, [leads, tipoFilter, search, sortDesc]);
 
   return (
     <div className="p-4 lg:p-6 space-y-6 animate-fade-in">
@@ -81,6 +140,70 @@ export default function InstagramLeads() {
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="flex items-center gap-1 border-b border-white/[0.06] overflow-x-auto">
+        {TABS.map((t) => {
+          const isActive = activeTab === t.key;
+          const count = counts?.[t.key];
+          return (
+            <button
+              key={t.key}
+              onClick={() => setActiveTab(t.key)}
+              className={`relative px-4 py-2.5 text-xs font-medium whitespace-nowrap transition-colors ${
+                isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground/80"
+              }`}
+            >
+              <span className="inline-flex items-center gap-2">
+                {t.label}
+                {typeof count === "number" && (
+                  <span
+                    className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                      isActive ? "bg-primary/15 text-primary" : "bg-white/5 text-muted-foreground"
+                    }`}
+                  >
+                    {count}
+                  </span>
+                )}
+              </span>
+              {isActive && <span className="absolute bottom-0 left-0 right-0 h-px bg-primary" />}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1 min-w-0">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar por @username..."
+            className="w-full h-9 pl-9 pr-3 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/40 focus:bg-white/[0.06] transition-colors"
+          />
+        </div>
+        <select
+          value={tipoFilter}
+          onChange={(e) => setTipoFilter(e.target.value)}
+          className="h-9 px-3 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-foreground focus:outline-none focus:border-primary/40 transition-colors min-w-[160px]"
+        >
+          {TIPO_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value} className="bg-background">
+              {o.label}
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={() => setSortDesc((v) => !v)}
+          className="h-9 px-3 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-foreground hover:bg-white/[0.06] transition-colors inline-flex items-center gap-1.5"
+          title={sortDesc ? "Maior score primeiro" : "Menor score primeiro"}
+        >
+          <ArrowUpDown className="w-3 h-3" />
+          Score {sortDesc ? "↓" : "↑"}
+        </button>
+      </div>
+
       {/* States */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -94,22 +217,27 @@ export default function InstagramLeads() {
           <h3 className="text-sm font-medium text-foreground mb-1">Erro ao carregar leads</h3>
           <p className="text-xs text-muted-foreground">{(error as Error).message}</p>
         </div>
-      ) : !leads || leads.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="glass-card rounded-xl p-12 flex flex-col items-center text-center max-w-md mx-auto">
           <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
             <Inbox className="w-7 h-7 text-muted-foreground" />
           </div>
-          <h3 className="text-sm font-medium text-foreground mb-1">Nenhum lead aguardando revisão</h3>
-          <p className="text-xs text-muted-foreground">Os próximos leads qualificados pela IA aparecerão aqui.</p>
+          <h3 className="text-sm font-medium text-foreground mb-1">
+            {leads && leads.length > 0 ? "Nenhum resultado para os filtros" : emptyMessages[activeTab]}
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            {leads && leads.length > 0
+              ? "Tente ajustar a busca ou o tipo selecionado."
+              : "Os próximos leads aparecerão aqui."}
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {leads.map((lead) => (
+          {filtered.map((lead) => (
             <article
               key={lead.id}
               className="glass-card rounded-xl p-5 flex flex-col gap-4 hover:bg-white/[0.06] transition-all duration-300"
             >
-              {/* Header: username + badges */}
               <header className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <a
@@ -134,7 +262,6 @@ export default function InstagramLeads() {
                 </div>
               </header>
 
-              {/* Razão */}
               {lead.razao && (
                 <div className="space-y-1">
                   <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
@@ -144,7 +271,6 @@ export default function InstagramLeads() {
                 </div>
               )}
 
-              {/* Mensagem rascunho — estilo DM */}
               {lead.mensagem_rascunho && (
                 <div className="mt-auto">
                   <div className="flex items-center gap-1.5 mb-2">
