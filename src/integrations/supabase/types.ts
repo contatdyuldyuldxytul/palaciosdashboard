@@ -1317,6 +1317,131 @@ export type Database = {
         }
         Relationships: []
       }
+      leads_qualified: {
+        Row: {
+          aprovado_em: string | null
+          assigned_to: string | null
+          contatado_em: string | null
+          created_at: string | null
+          id: string
+          lead_raw_id: string | null
+          mensagem_aprovada: string | null
+          mensagem_editada: string | null
+          mensagem_rascunho: string | null
+          processado_em: string | null
+          qualificado: boolean | null
+          razao: string | null
+          score: number | null
+          status: string | null
+          tipo_lead: string | null
+          username: string
+        }
+        Insert: {
+          aprovado_em?: string | null
+          assigned_to?: string | null
+          contatado_em?: string | null
+          created_at?: string | null
+          id?: string
+          lead_raw_id?: string | null
+          mensagem_aprovada?: string | null
+          mensagem_editada?: string | null
+          mensagem_rascunho?: string | null
+          processado_em?: string | null
+          qualificado?: boolean | null
+          razao?: string | null
+          score?: number | null
+          status?: string | null
+          tipo_lead?: string | null
+          username: string
+        }
+        Update: {
+          aprovado_em?: string | null
+          assigned_to?: string | null
+          contatado_em?: string | null
+          created_at?: string | null
+          id?: string
+          lead_raw_id?: string | null
+          mensagem_aprovada?: string | null
+          mensagem_editada?: string | null
+          mensagem_rascunho?: string | null
+          processado_em?: string | null
+          qualificado?: boolean | null
+          razao?: string | null
+          score?: number | null
+          status?: string | null
+          tipo_lead?: string | null
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_qualified_lead_raw_id_fkey"
+            columns: ["lead_raw_id"]
+            isOneToOne: false
+            referencedRelation: "leads_raw"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads_raw: {
+        Row: {
+          bio: string | null
+          created_at: string | null
+          fonte: string
+          fonte_detalhe: string | null
+          hashtags_usadas: string | null
+          id: string
+          localizacao: string | null
+          nome_completo: string | null
+          posts_count: number | null
+          seguidores: number | null
+          seguindo: number | null
+          status: string | null
+          temas_posts: string | null
+          ultimo_post_em: string | null
+          updated_at: string | null
+          username: string
+          website: string | null
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string | null
+          fonte: string
+          fonte_detalhe?: string | null
+          hashtags_usadas?: string | null
+          id?: string
+          localizacao?: string | null
+          nome_completo?: string | null
+          posts_count?: number | null
+          seguidores?: number | null
+          seguindo?: number | null
+          status?: string | null
+          temas_posts?: string | null
+          ultimo_post_em?: string | null
+          updated_at?: string | null
+          username: string
+          website?: string | null
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string | null
+          fonte?: string
+          fonte_detalhe?: string | null
+          hashtags_usadas?: string | null
+          id?: string
+          localizacao?: string | null
+          nome_completo?: string | null
+          posts_count?: number | null
+          seguidores?: number | null
+          seguindo?: number | null
+          status?: string | null
+          temas_posts?: string | null
+          ultimo_post_em?: string | null
+          updated_at?: string | null
+          username?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
       login_events: {
         Row: {
           email: string | null
