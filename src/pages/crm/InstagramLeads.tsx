@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Instagram, MessageSquare, Inbox, AlertCircle } from "lucide-react";
+import { Instagram, MessageSquare, Inbox, AlertCircle, ExternalLink, User } from "lucide-react";
 
 interface InstagramLead {
   id: string;
@@ -23,7 +23,6 @@ function useInstagramLeads() {
         .eq("status", "aguardando_revisao")
         .order("score", { ascending: false });
 
-      // Debug: também busca sem filtro para inspecionar todos os status existentes
       const all = await (supabase as any)
         .from("leads_qualified")
         .select("id, status")
@@ -38,10 +37,30 @@ function useInstagramLeads() {
   });
 }
 
-const scoreColor = (s: number) => {
-  if (s >= 80) return "text-primary bg-primary/10 border-primary/30";
-  if (s >= 60) return "text-amber-400 bg-amber-500/10 border-amber-500/30";
-  return "text-muted-foreground bg-white/[0.04] border-white/10";
+const scoreBadge = (s: number) => {
+  if (s >= 8) return "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
+  if (s >= 6) return "bg-amber-500/15 text-amber-400 border-amber-500/30";
+  return "bg-red-500/15 text-red-400 border-red-500/30";
+};
+
+const tipoBadge = (tipo: string | null) => {
+  const map: Record<string, string> = {
+    arquiteto: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+    incorporadora: "bg-purple-500/15 text-purple-400 border-purple-500/30",
+    construtora: "bg-orange-500/15 text-orange-400 border-orange-500/30",
+    outro: "bg-white/5 text-muted-foreground border-white/10",
+  };
+  return map[tipo?.toLowerCase() || "outro"] || map.outro;
+};
+
+const tipoLabel = (tipo: string | null) => {
+  const map: Record<string, string> = {
+    arquiteto: "Arquiteto",
+    incorporadora: "Incorporadora",
+    construtora: "Construtora",
+    outro: "Outro",
+  };
+  return map[tipo?.toLowerCase() || "outro"] || (tipo || "Outro");
 };
 
 export default function InstagramLeads() {
@@ -64,9 +83,9 @@ export default function InstagramLeads() {
 
       {/* States */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="h-48 glass-card rounded-xl animate-pulse" />
+            <div key={i} className="h-64 glass-card rounded-xl animate-pulse" />
           ))}
         </div>
       ) : error ? (
@@ -84,43 +103,61 @@ export default function InstagramLeads() {
           <p className="text-xs text-muted-foreground">Os próximos leads qualificados pela IA aparecerão aqui.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {leads.map((lead) => (
             <article
               key={lead.id}
-              className="glass-card rounded-xl p-4 flex flex-col gap-3 hover:bg-white/[0.06] transition-colors"
+              className="glass-card rounded-xl p-5 flex flex-col gap-4 hover:bg-white/[0.06] transition-all duration-300"
             >
-              <header className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <h3 className="text-sm font-semibold text-foreground truncate">@{lead.username}</h3>
-                  {lead.tipo_lead && (
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">
-                      {lead.tipo_lead}
-                    </p>
-                  )}
+              {/* Header: username + badges */}
+              <header className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <a
+                    href={`https://instagram.com/${lead.username}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 group"
+                  >
+                    <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+                      @{lead.username}
+                    </span>
+                    <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                  </a>
+                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${scoreBadge(lead.score)}`}>
+                      Score {lead.score}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${tipoBadge(lead.tipo_lead)}`}>
+                      {tipoLabel(lead.tipo_lead)}
+                    </span>
+                  </div>
                 </div>
-                <span
-                  className={`px-2 py-0.5 rounded-full text-[11px] font-semibold tabular-nums border ${scoreColor(lead.score)}`}
-                >
-                  {lead.score}
-                </span>
               </header>
 
+              {/* Razão */}
               {lead.razao && (
-                <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">{lead.razao}</p>
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                    Por quê qualificou
+                  </span>
+                  <p className="text-xs text-foreground/80 leading-relaxed line-clamp-3">{lead.razao}</p>
+                </div>
               )}
 
+              {/* Mensagem rascunho — estilo DM */}
               {lead.mensagem_rascunho && (
-                <div className="mt-auto rounded-lg border border-white/10 bg-white/[0.03] p-2.5">
-                  <div className="flex items-center gap-1.5 mb-1">
+                <div className="mt-auto">
+                  <div className="flex items-center gap-1.5 mb-2">
                     <MessageSquare className="w-3 h-3 text-primary" />
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
                       Mensagem rascunho
                     </span>
                   </div>
-                  <p className="text-xs text-foreground/90 leading-relaxed line-clamp-4 whitespace-pre-wrap">
-                    {lead.mensagem_rascunho}
-                  </p>
+                  <div className="rounded-xl border border-white/[0.06] bg-gradient-to-br from-white/[0.06] to-white/[0.02] p-3.5">
+                    <p className="text-xs text-foreground/90 leading-relaxed whitespace-pre-wrap">
+                      {lead.mensagem_rascunho}
+                    </p>
+                  </div>
                 </div>
               )}
             </article>
