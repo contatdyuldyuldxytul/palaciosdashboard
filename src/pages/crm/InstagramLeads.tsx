@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Instagram, MessageSquare, Inbox, AlertCircle, ExternalLink, Search, ArrowUpDown,
   Check, Pencil, Trash2, Copy, Send, CheckCircle2, Sparkles, Loader2,
+  Clock, ThumbsUp, Mail, Percent,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
@@ -61,22 +62,36 @@ function useInstagramLeads(status: StatusKey) {
   });
 }
 
-function useStatusCounts() {
-  return useQuery<Record<string, number>>({
-    queryKey: ["instagram-leads", "counts"],
+interface StatsResult {
+  counts: Record<string, number>;
+  totalQualified: number;
+  approvalRate: number;
+}
+
+function useStats() {
+  return useQuery<StatsResult>({
+    queryKey: ["instagram-leads", "stats"],
     queryFn: async () => {
-      const res = await (supabase as any).from("leads_qualified").select("status");
+      const res = await (supabase as any)
+        .from("leads_qualified")
+        .select("status, qualificado");
       if (res.error) throw res.error;
       const counts: Record<string, number> = {
         aguardando_revisao: 0, aprovado: 0, contatado: 0, descartado: 0, respondeu: 0,
       };
-      (res.data || []).forEach((r: { status: string }) => {
+      let totalQualified = 0;
+      (res.data || []).forEach((r: { status: string; qualificado: boolean | null }) => {
         if (r.status in counts) counts[r.status]++;
+        if (r.qualificado === true) totalQualified++;
       });
-      return counts;
+      const approvalRate = totalQualified > 0
+        ? Math.round(((counts.aprovado || 0) / totalQualified) * 100)
+        : 0;
+      return { counts, totalQualified, approvalRate };
     },
   });
 }
+
 
 const scoreBadge = (s: number) => {
   if (s >= 8) return "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
