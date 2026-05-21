@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
     }
 
     const ghRes = await fetch(
-      'https://api.github.com/repos/contatdyuldxytul/Palacios-Instagram/dispatches',
+      'https://api.github.com/repos/contatdyuldyuldxytul/Palacios-Instagram/dispatches',
       {
         method: 'POST',
         headers: {
