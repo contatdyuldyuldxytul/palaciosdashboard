@@ -98,32 +98,34 @@ function StageColumn({ stage, deals, onOpen }: { stage: CrmStage; deals: CrmDeal
   const color = stage.cor || "#3b82f6";
 
   return (
-    <div className="flex flex-col w-[280px] flex-shrink-0">
-      <div
-        className="glass-card rounded-xl mb-2.5 overflow-hidden"
-        style={{ boxShadow: `inset 0 2px 0 0 ${color}` }}
-      >
-        <div className="px-3 pt-2.5 pb-2">
-          <div className="flex items-center justify-between mb-0.5">
-            <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full" style={{ background: color }} />
-              <span className="text-[12px] font-semibold text-foreground tracking-wide">{stage.nome}</span>
-            </div>
-            <span className="text-[10px] text-muted-foreground bg-white/5 px-1.5 py-0.5 rounded-full">{deals.length}</span>
+    <div
+      className={`flex flex-col w-[280px] flex-shrink-0 rounded-2xl border backdrop-blur-xl transition-all overflow-hidden ${
+        isOver ? "border-primary/60 ring-2 ring-primary/30" : "border-white/10"
+      }`}
+      style={{
+        background: `linear-gradient(180deg, ${color}10 0%, rgba(255,255,255,0.02) 30%, rgba(255,255,255,0.02) 100%)`,
+        boxShadow: `inset 0 3px 0 0 ${color}, 0 4px 24px -8px ${color}25`,
+      }}
+    >
+      <div className="px-3 pt-3 pb-2.5 border-b border-white/5 sticky top-0 backdrop-blur-xl z-10" style={{ background: `linear-gradient(180deg, ${color}15, transparent)` }}>
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color, boxShadow: `0 0 8px ${color}80` }} />
+            <span className="text-[12px] font-semibold text-foreground tracking-wide uppercase truncate">{stage.nome}</span>
           </div>
-          <div className="text-[11px] text-muted-foreground tabular-nums pl-3.5">{fmt(total)}</div>
+          <span className="text-[10px] text-muted-foreground bg-white/10 px-1.5 py-0.5 rounded-full flex-shrink-0">{deals.length}</span>
         </div>
+        <div className="text-[11px] text-muted-foreground tabular-nums pl-4">{fmt(total)}</div>
       </div>
+
       <div
         ref={setNodeRef}
-        className={`flex-1 space-y-2 p-1 rounded-xl min-h-[200px] transition-all ${
-          isOver ? "bg-primary/10 ring-1 ring-primary/40 ring-inset" : ""
-        }`}
+        className="flex-1 space-y-2 p-2 min-h-[300px] overflow-y-auto"
       >
         {deals.map(d => <DealCard key={d.id} deal={d} onOpen={() => onOpen(d.id)} />)}
         {deals.length === 0 && (
-          <div className="flex items-center justify-center text-[10px] text-muted-foreground/60 py-8 italic">
-            sem deals
+          <div className="flex items-center justify-center text-[10px] text-muted-foreground/50 py-12 italic border border-dashed border-white/5 rounded-lg">
+            arraste deals aqui
           </div>
         )}
       </div>

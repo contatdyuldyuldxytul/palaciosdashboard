@@ -804,25 +804,40 @@ export type Database = {
         Row: {
           ativo: boolean
           created_at: string
+          flow_type: Database["public"]["Enums"]["pipeline_flow_type"]
           id: string
           nome: string
           ordem: number
+          owner_label: string | null
+          owner_user_id: string | null
+          sheet_id: string | null
+          sheet_tab: string | null
           updated_at: string
         }
         Insert: {
           ativo?: boolean
           created_at?: string
+          flow_type?: Database["public"]["Enums"]["pipeline_flow_type"]
           id?: string
           nome: string
           ordem?: number
+          owner_label?: string | null
+          owner_user_id?: string | null
+          sheet_id?: string | null
+          sheet_tab?: string | null
           updated_at?: string
         }
         Update: {
           ativo?: boolean
           created_at?: string
+          flow_type?: Database["public"]["Enums"]["pipeline_flow_type"]
           id?: string
           nome?: string
           ordem?: number
+          owner_label?: string | null
+          owner_user_id?: string | null
+          sheet_id?: string | null
+          sheet_tab?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -2162,6 +2177,11 @@ export type Database = {
         | "fechado"
         | "perdido"
       payment_status: "pendente" | "pago" | "atrasado" | "cancelado"
+      pipeline_flow_type:
+        | "cadencia_10_dias"
+        | "nutricao"
+        | "vendas"
+        | "personalizado"
       strategic_input_source:
         | "stale_proposal"
         | "hot_lead"
@@ -2335,6 +2355,12 @@ export const Constants = {
         "perdido",
       ],
       payment_status: ["pendente", "pago", "atrasado", "cancelado"],
+      pipeline_flow_type: [
+        "cadencia_10_dias",
+        "nutricao",
+        "vendas",
+        "personalizado",
+      ],
       strategic_input_source: [
         "stale_proposal",
         "hot_lead",

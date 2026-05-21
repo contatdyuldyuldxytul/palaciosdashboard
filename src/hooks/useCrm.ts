@@ -2,11 +2,18 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useMemo } from "react";
 
+export type PipelineFlowType = "cadencia_10_dias" | "nutricao" | "vendas" | "personalizado";
+
 export interface CrmPipeline {
   id: string;
   nome: string;
   ordem: number;
   ativo: boolean;
+  flow_type: PipelineFlowType;
+  owner_user_id: string | null;
+  owner_label: string | null;
+  sheet_id: string | null;
+  sheet_tab: string | null;
 }
 
 export interface CrmStage {
@@ -224,3 +231,245 @@ export function useImportPipedrive() {
     },
   });
 }
+
+// ============ Pipeline CRUD ============
+
+export interface StageInput {
+  id?: string;
+  nome: string;
+  ordem: number;
+  cor: string;
+  is_won?: boolean;
+  is_lost?: boolean;
+}
+
+export const FLOW_TYPE_LABELS: Record<PipelineFlowType, string> = {
+  cadencia_10_dias: "Fluxo de Cadência 10 Dias",
+  nutricao: "Fluxo de Nutrição",
+  vendas: "Fluxo de Vendas",
+  personalizado: "Fluxo Personalizado",
+};
+
+export const FLOW_TYPE_STAGE_TEMPLATES: Record<PipelineFlowType, StageInput[]> = {
+  cadencia_10_dias: [
+    { nome: "Dia 1 – Contato", ordem: 0, cor: "#3b82f6" },
+    { nome: "Dia 3 – Follow-up", ordem: 1, cor: "#8b5cf6" },
+    { nome: "Dia 5 – Material", ordem: 2, cor: "#ec4899" },
+    { nome: "Dia 7 – Call", ordem: 3, cor: "#f59e0b" },
+    { nome: "Dia 10 – Decisão", ordem: 4, cor: "#10b981" },
+  ],
+  nutricao: [
+    { nome: "Frio", ordem: 0, cor: "#64748b" },
+    { nome: "Engajado", ordem: 1, cor: "#3b82f6" },
+    { nome: "Quente", ordem: 2, cor: "#f59e0b" },
+    { nome: "Pronto p/ Vendas", ordem: 3, cor: "#10b981" },
+  ],
+  vendas: [
+    { nome: "Lead", ordem: 0, cor: "#3b82f6" },
+    { nome: "Qualificado", ordem: 1, cor: "#8b5cf6" },
+    { nome: "Proposta", ordem: 2, cor: "#f59e0b" },
+    { nome: "Negociação", ordem: 3, cor: "#ec4899" },
+    { nome: "Ganho", ordem: 4, cor: "#10b981", is_won: true },
+    { nome: "Perdido", ordem: 5, cor: "#ef4444", is_lost: true },
+  ],
+  personalizado: [
+    { nome: "Nova Etapa", ordem: 0, cor: "#3b82f6" },
+  ],
+};
+
+export function useCollaborators() {
+  return useQuery({
+    queryKey: ["crm", "collaborators"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name, email, colaborador_slug, status")
+        .eq("status", "approved")
+        .order("full_name");
+      if (error) throw error;
+      return (data || []) as Array<{ id: string; full_name: string; email: string | null; colaborador_slug: string | null; status: string }>;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useCreatePipeline() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      nome: string;
+      flow_type: PipelineFlowType;
+      owner_user_id?: string | null;
+      owner_label?: string | null;
+      stages: StageInput[];
+    }) => {
+      const { data: maxRow } = await supabase
+        .from("crm_pipelines")
+        .select("ordem")
+        .order("ordem", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const ordem = (maxRow?.ordem ?? -1) + 1;
+
+      const { data: pipe, error } = await supabase
+        .from("crm_pipelines")
+        .insert({
+          nome: payload.nome,
+          ordem,
+          ativo: true,
+          flow_type: payload.flow_type,
+          owner_user_id: payload.owner_user_id ?? null,
+          owner_label: payload.owner_label ?? null,
+        } as any)
+        .select("id")
+        .single();
+      if (error) throw error;
+
+      if (payload.stages.length > 0) {
+        const { error: sErr } = await supabase.from("crm_stages").insert(
+          payload.stages.map((s) => ({
+            pipeline_id: pipe.id,
+            nome: s.nome,
+            ordem: s.ordem,
+            cor: s.cor,
+            is_won: !!s.is_won,
+            is_lost: !!s.is_lost,
+          })),
+        );
+        if (sErr) throw sErr;
+      }
+      return pipe;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["crm"] }),
+  });
+}
+
+export function useUpdatePipeline() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      nome?: string;
+      flow_type?: PipelineFlowType;
+      owner_user_id?: string | null;
+      owner_label?: string | null;
+      ativo?: boolean;
+      sheet_id?: string | null;
+      sheet_tab?: string | null;
+    }) => {
+      const { id, ...rest } = payload;
+      const { error } = await supabase.from("crm_pipelines").update(rest as any).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["crm"] }),
+  });
+}
+
+export function useDeletePipeline() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      // soft-delete: set ativo=false to preserve deals
+      const { error } = await supabase.from("crm_pipelines").update({ ativo: false }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["crm"] }),
+  });
+}
+
+export function useReplaceStages() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ pipeline_id, stages }: { pipeline_id: string; stages: StageInput[] }) => {
+      // Upsert existing + insert new + delete removed
+      const { data: current } = await supabase.from("crm_stages").select("id").eq("pipeline_id", pipeline_id);
+      const currentIds = new Set((current || []).map((s: any) => s.id));
+      const keepIds = new Set(stages.filter((s) => s.id).map((s) => s.id!));
+      const toDelete = [...currentIds].filter((id) => !keepIds.has(id as string));
+
+      for (const s of stages) {
+        if (s.id) {
+          await supabase.from("crm_stages").update({
+            nome: s.nome, ordem: s.ordem, cor: s.cor, is_won: !!s.is_won, is_lost: !!s.is_lost,
+          }).eq("id", s.id);
+        } else {
+          await supabase.from("crm_stages").insert({
+            pipeline_id, nome: s.nome, ordem: s.ordem, cor: s.cor, is_won: !!s.is_won, is_lost: !!s.is_lost,
+          });
+        }
+      }
+      if (toDelete.length) {
+        await supabase.from("crm_stages").delete().in("id", toDelete as string[]);
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["crm"] }),
+  });
+}
+
+export function useImportCrmCsv() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      pipeline_id: string;
+      default_stage_id: string;
+      rows: Array<{
+        titulo: string;
+        valor?: number;
+        empresa?: string;
+        contato?: string;
+        email?: string;
+        telefone?: string;
+        owner?: string;
+        stage_nome?: string;
+      }>;
+      stages: CrmStage[];
+    }) => {
+      const stageByName = new Map(payload.stages.map((s) => [s.nome.toLowerCase(), s.id]));
+      let ok = 0;
+      for (const r of payload.rows) {
+        if (!r.titulo?.trim()) continue;
+        let organization_id: string | null = null;
+        let person_id: string | null = null;
+
+        if (r.empresa?.trim()) {
+          const { data: org } = await supabase
+            .from("crm_organizations")
+            .insert({ nome: r.empresa.trim() })
+            .select("id")
+            .single();
+          organization_id = org?.id ?? null;
+        }
+        if (r.contato?.trim()) {
+          const { data: per } = await supabase
+            .from("crm_persons")
+            .insert({
+              nome: r.contato.trim(),
+              email: r.email?.trim() || null,
+              telefone: r.telefone?.trim() || null,
+              organization_id,
+            })
+            .select("id")
+            .single();
+          person_id = per?.id ?? null;
+        }
+
+        const stage_id = (r.stage_nome && stageByName.get(r.stage_nome.toLowerCase())) || payload.default_stage_id;
+
+        const { error } = await supabase.from("crm_deals").insert({
+          pipeline_id: payload.pipeline_id,
+          stage_id,
+          titulo: r.titulo.trim(),
+          valor: r.valor || 0,
+          owner_label: r.owner || null,
+          organization_id,
+          person_id,
+          origem: "csv",
+        });
+        if (!error) ok++;
+      }
+      return { imported: ok, total: payload.rows.length };
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["crm"] }),
+  });
+}
+
