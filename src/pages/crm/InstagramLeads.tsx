@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Instagram, MessageSquare, Inbox, AlertCircle, ExternalLink, Search, ArrowUpDown,
   Check, Pencil, Trash2, Copy, Send, CheckCircle2, Sparkles, Loader2,
+  Clock, ThumbsUp, Mail, Percent,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
@@ -61,22 +62,36 @@ function useInstagramLeads(status: StatusKey) {
   });
 }
 
-function useStatusCounts() {
-  return useQuery<Record<string, number>>({
-    queryKey: ["instagram-leads", "counts"],
+interface StatsResult {
+  counts: Record<string, number>;
+  totalQualified: number;
+  approvalRate: number;
+}
+
+function useStats() {
+  return useQuery<StatsResult>({
+    queryKey: ["instagram-leads", "stats"],
     queryFn: async () => {
-      const res = await (supabase as any).from("leads_qualified").select("status");
+      const res = await (supabase as any)
+        .from("leads_qualified")
+        .select("status, qualificado");
       if (res.error) throw res.error;
       const counts: Record<string, number> = {
         aguardando_revisao: 0, aprovado: 0, contatado: 0, descartado: 0, respondeu: 0,
       };
-      (res.data || []).forEach((r: { status: string }) => {
+      let totalQualified = 0;
+      (res.data || []).forEach((r: { status: string; qualificado: boolean | null }) => {
         if (r.status in counts) counts[r.status]++;
+        if (r.qualificado === true) totalQualified++;
       });
-      return counts;
+      const approvalRate = totalQualified > 0
+        ? Math.round(((counts.aprovado || 0) / totalQualified) * 100)
+        : 0;
+      return { counts, totalQualified, approvalRate };
     },
   });
 }
+
 
 const scoreBadge = (s: number) => {
   if (s >= 8) return "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
@@ -143,7 +158,7 @@ export default function InstagramLeads() {
 
   const queryClient = useQueryClient();
   const { data: leads, isLoading, error } = useInstagramLeads(activeTab);
-  const { data: counts } = useStatusCounts();
+  const { data: stats } = useStats();
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["instagram-leads"] });
@@ -286,11 +301,51 @@ export default function InstagramLeads() {
         </Button>
       </div>
 
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="glass-card rounded-xl p-4 flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-500/10 border border-amber-500/20">
+            <Clock className="w-5 h-5 text-amber-400" />
+          </div>
+          <div>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">Aguardando Revisão</p>
+            <p className="text-xl font-bold text-foreground tabular-nums">{stats?.counts?.aguardando_revisao ?? 0}</p>
+          </div>
+        </div>
+        <div className="glass-card rounded-xl p-4 flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-500/10 border border-emerald-500/20">
+            <ThumbsUp className="w-5 h-5 text-emerald-400" />
+          </div>
+          <div>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">Aprovados</p>
+            <p className="text-xl font-bold text-foreground tabular-nums">{stats?.counts?.aprovado ?? 0}</p>
+          </div>
+        </div>
+        <div className="glass-card rounded-xl p-4 flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-500/10 border border-blue-500/20">
+            <Mail className="w-5 h-5 text-blue-400" />
+          </div>
+          <div>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">Contatados</p>
+            <p className="text-xl font-bold text-foreground tabular-nums">{stats?.counts?.contatado ?? 0}</p>
+          </div>
+        </div>
+        <div className="glass-card rounded-xl p-4 flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/10 border border-primary/20">
+            <Percent className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">Taxa de Aprovação</p>
+            <p className="text-xl font-bold text-foreground tabular-nums">{stats?.approvalRate ?? 0}%</p>
+          </div>
+        </div>
+      </div>
+
       {/* Tabs */}
       <div className="flex items-center gap-1 border-b border-white/[0.06] overflow-x-auto">
         {TABS.map((t) => {
           const isActive = activeTab === t.key;
-          const count = counts?.[t.key];
+          const count = stats?.counts?.[t.key];
           return (
             <button
               key={t.key}
