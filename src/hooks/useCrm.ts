@@ -284,7 +284,7 @@ export function useCollaborators() {
       const { data, error } = await supabase
         .from("profiles")
         .select("id, full_name, email, colaborador_slug, status")
-        .eq("status", "active")
+        .eq("status", "approved")
         .order("full_name");
       if (error) throw error;
       return (data || []) as Array<{ id: string; full_name: string; email: string | null; colaborador_slug: string | null; status: string }>;
