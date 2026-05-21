@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Instagram, MessageSquare, Inbox, AlertCircle, ExternalLink, Search, ArrowUpDown,
-  Check, Pencil, Trash2, Copy, Send, CheckCircle2,
+  Check, Pencil, Trash2, Copy, Send, CheckCircle2, Sparkles, Loader2,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
