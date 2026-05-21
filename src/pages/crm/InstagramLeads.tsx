@@ -17,13 +17,23 @@ function useInstagramLeads() {
   return useQuery<InstagramLead[]>({
     queryKey: ["instagram-leads", "aguardando_revisao"],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const filtered = await (supabase as any)
         .from("leads_qualified")
         .select("id, username, score, razao, tipo_lead, mensagem_rascunho, status, processado_em")
         .eq("status", "aguardando_revisao")
         .order("score", { ascending: false });
-      if (error) throw error;
-      return (data || []) as InstagramLead[];
+
+      // Debug: também busca sem filtro para inspecionar todos os status existentes
+      const all = await (supabase as any)
+        .from("leads_qualified")
+        .select("id, status")
+        .limit(20);
+
+      console.log("[InstagramLeads] filtered (status=aguardando_revisao):", filtered);
+      console.log("[InstagramLeads] sample of all rows (sem filtro):", all);
+
+      if (filtered.error) throw filtered.error;
+      return (filtered.data || []) as InstagramLead[];
     },
   });
 }
