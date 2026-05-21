@@ -2,11 +2,18 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useMemo } from "react";
 
+export type PipelineFlowType = "cadencia_10_dias" | "nutricao" | "vendas" | "personalizado";
+
 export interface CrmPipeline {
   id: string;
   nome: string;
   ordem: number;
   ativo: boolean;
+  flow_type: PipelineFlowType;
+  owner_user_id: string | null;
+  owner_label: string | null;
+  sheet_id: string | null;
+  sheet_tab: string | null;
 }
 
 export interface CrmStage {
