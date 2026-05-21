@@ -1,7 +1,20 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Instagram, MessageSquare, Inbox, AlertCircle, ExternalLink, Search, ArrowUpDown } from "lucide-react";
+import {
+  Instagram, MessageSquare, Inbox, AlertCircle, ExternalLink, Search, ArrowUpDown,
+  Check, Pencil, Trash2, Copy, Send, CheckCircle2,
+} from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface InstagramLead {
   id: string;
@@ -10,6 +23,8 @@ interface InstagramLead {
   razao: string | null;
   tipo_lead: string | null;
   mensagem_rascunho: string | null;
+  mensagem_aprovada: string | null;
+  mensagem_editada: string | null;
   status: string;
   processado_em: string | null;
 }
@@ -37,10 +52,9 @@ function useInstagramLeads(status: StatusKey) {
     queryFn: async () => {
       const res = await (supabase as any)
         .from("leads_qualified")
-        .select("id, username, score, razao, tipo_lead, mensagem_rascunho, status, processado_em")
+        .select("id, username, score, razao, tipo_lead, mensagem_rascunho, mensagem_aprovada, mensagem_editada, status, processado_em")
         .eq("status", status)
         .order("score", { ascending: false });
-
       if (res.error) throw res.error;
       return (res.data || []) as InstagramLead[];
     },
@@ -48,21 +62,16 @@ function useInstagramLeads(status: StatusKey) {
 }
 
 function useStatusCounts() {
-  return useQuery<Record<StatusKey, number>>({
+  return useQuery<Record<string, number>>({
     queryKey: ["instagram-leads", "counts"],
     queryFn: async () => {
-      const res = await (supabase as any)
-        .from("leads_qualified")
-        .select("status");
+      const res = await (supabase as any).from("leads_qualified").select("status");
       if (res.error) throw res.error;
-      const counts: Record<StatusKey, number> = {
-        aguardando_revisao: 0,
-        aprovado: 0,
-        contatado: 0,
-        descartado: 0,
+      const counts: Record<string, number> = {
+        aguardando_revisao: 0, aprovado: 0, contatado: 0, descartado: 0, respondeu: 0,
       };
       (res.data || []).forEach((r: { status: string }) => {
-        if (r.status in counts) counts[r.status as StatusKey]++;
+        if (r.status in counts) counts[r.status]++;
       });
       return counts;
     },
@@ -87,10 +96,8 @@ const tipoBadge = (tipo: string | null) => {
 
 const tipoLabel = (tipo: string | null) => {
   const map: Record<string, string> = {
-    arquiteto: "Arquiteto",
-    incorporadora: "Incorporadora",
-    construtora: "Construtora",
-    outro: "Outro",
+    arquiteto: "Arquiteto", incorporadora: "Incorporadora",
+    construtora: "Construtora", outro: "Outro",
   };
   return map[tipo?.toLowerCase() || "outro"] || (tipo || "Outro");
 };
@@ -108,8 +115,110 @@ export default function InstagramLeads() {
   const [search, setSearch] = useState("");
   const [sortDesc, setSortDesc] = useState(true);
 
+  const [editingLead, setEditingLead] = useState<InstagramLead | null>(null);
+  const [editingText, setEditingText] = useState("");
+  const [confirmDiscardId, setConfirmDiscardId] = useState<string | null>(null);
+
+  const queryClient = useQueryClient();
   const { data: leads, isLoading, error } = useInstagramLeads(activeTab);
   const { data: counts } = useStatusCounts();
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ["instagram-leads"] });
+  };
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: Record<string, any> }) => {
+      const res = await (supabase as any)
+        .from("leads_qualified")
+        .update(patch)
+        .eq("id", id);
+      if (res.error) throw res.error;
+    },
+    onSuccess: () => invalidate(),
+    onError: (e: any) => toast.error(e.message || "Erro ao atualizar lead"),
+  });
+
+  const handleApprove = (lead: InstagramLead) => {
+    updateMutation.mutate(
+      {
+        id: lead.id,
+        patch: {
+          status: "aprovado",
+          aprovado_em: new Date().toISOString(),
+          mensagem_aprovada: lead.mensagem_rascunho || "",
+        },
+      },
+      { onSuccess: () => { invalidate(); toast.success("Lead aprovado"); } },
+    );
+  };
+
+  const openEdit = (lead: InstagramLead) => {
+    setEditingLead(lead);
+    setEditingText(lead.mensagem_editada || lead.mensagem_rascunho || "");
+  };
+
+  const saveEdit = () => {
+    if (!editingLead) return;
+    updateMutation.mutate(
+      {
+        id: editingLead.id,
+        patch: {
+          status: "aprovado",
+          aprovado_em: new Date().toISOString(),
+          mensagem_editada: editingText,
+          mensagem_aprovada: editingText,
+        },
+      },
+      {
+        onSuccess: () => {
+          invalidate();
+          toast.success("Mensagem salva e lead aprovado");
+          setEditingLead(null);
+        },
+      },
+    );
+  };
+
+  const handleDiscard = (id: string) => {
+    updateMutation.mutate(
+      { id, patch: { status: "descartado" } },
+      {
+        onSuccess: () => {
+          invalidate();
+          toast.success("Lead descartado");
+          setConfirmDiscardId(null);
+        },
+      },
+    );
+  };
+
+  const handleCopy = async (lead: InstagramLead) => {
+    const text = lead.mensagem_aprovada || lead.mensagem_editada || lead.mensagem_rascunho || "";
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Mensagem copiada");
+    } catch {
+      toast.error("Não foi possível copiar");
+    }
+  };
+
+  const handleContacted = (lead: InstagramLead) => {
+    updateMutation.mutate(
+      {
+        id: lead.id,
+        patch: { status: "contatado", contatado_em: new Date().toISOString() },
+      },
+      { onSuccess: () => { invalidate(); toast.success("Marcado como contatado"); } },
+    );
+  };
+
+  const handleResponded = (lead: InstagramLead) => {
+    updateMutation.mutate(
+      { id: lead.id, patch: { status: "respondeu" } },
+      { onSuccess: () => { invalidate(); toast.success("Marcado como respondeu"); } },
+    );
+  };
 
   const filtered = useMemo(() => {
     if (!leads) return [];
@@ -233,63 +342,199 @@ export default function InstagramLeads() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map((lead) => (
-            <article
-              key={lead.id}
-              className="glass-card rounded-xl p-5 flex flex-col gap-4 hover:bg-white/[0.06] transition-all duration-300"
-            >
-              <header className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <a
-                    href={`https://instagram.com/${lead.username}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 group"
-                  >
-                    <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
-                      @{lead.username}
-                    </span>
-                    <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-                  </a>
-                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${scoreBadge(lead.score)}`}>
-                      Score {lead.score}
-                    </span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${tipoBadge(lead.tipo_lead)}`}>
-                      {tipoLabel(lead.tipo_lead)}
-                    </span>
+          {filtered.map((lead) => {
+            const displayMessage =
+              lead.status === "aprovado" || lead.status === "contatado"
+                ? lead.mensagem_aprovada || lead.mensagem_editada || lead.mensagem_rascunho
+                : lead.mensagem_rascunho;
+            return (
+              <article
+                key={lead.id}
+                className="glass-card rounded-xl p-5 flex flex-col gap-4 hover:bg-white/[0.06] transition-all duration-300"
+              >
+                <header className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <a
+                      href={`https://instagram.com/${lead.username}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 group"
+                    >
+                      <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+                        @{lead.username}
+                      </span>
+                      <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                    </a>
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${scoreBadge(lead.score)}`}>
+                        Score {lead.score}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${tipoBadge(lead.tipo_lead)}`}>
+                        {tipoLabel(lead.tipo_lead)}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              </header>
+                </header>
 
-              {lead.razao && (
-                <div className="space-y-1">
-                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-                    Por quê qualificou
-                  </span>
-                  <p className="text-xs text-foreground/80 leading-relaxed line-clamp-3">{lead.razao}</p>
-                </div>
-              )}
-
-              {lead.mensagem_rascunho && (
-                <div className="mt-auto">
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <MessageSquare className="w-3 h-3 text-primary" />
+                {lead.razao && (
+                  <div className="space-y-1">
                     <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-                      Mensagem rascunho
+                      Por quê qualificou
                     </span>
+                    <p className="text-xs text-foreground/80 leading-relaxed line-clamp-3">{lead.razao}</p>
                   </div>
-                  <div className="rounded-xl border border-white/[0.06] bg-gradient-to-br from-white/[0.06] to-white/[0.02] p-3.5">
-                    <p className="text-xs text-foreground/90 leading-relaxed whitespace-pre-wrap">
-                      {lead.mensagem_rascunho}
-                    </p>
+                )}
+
+                {displayMessage && (
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <MessageSquare className="w-3 h-3 text-primary" />
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                        {lead.status === "aguardando_revisao" ? "Mensagem rascunho" : "Mensagem aprovada"}
+                      </span>
+                    </div>
+                    <div className="rounded-xl border border-white/[0.06] bg-gradient-to-br from-white/[0.06] to-white/[0.02] p-3.5">
+                      <p className="text-xs text-foreground/90 leading-relaxed whitespace-pre-wrap">
+                        {displayMessage}
+                      </p>
+                    </div>
                   </div>
+                )}
+
+                {/* Action buttons */}
+                <div className="mt-auto pt-2 flex flex-wrap gap-2">
+                  {lead.status === "aguardando_revisao" && (
+                    <>
+                      <Button
+                        size="sm"
+                        onClick={() => handleApprove(lead)}
+                        disabled={updateMutation.isPending}
+                        className="h-8 text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30"
+                      >
+                        <Check className="w-3 h-3" /> Aprovar
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openEdit(lead)}
+                        className="h-8 text-xs bg-white/[0.04] border-white/[0.08] hover:bg-white/[0.08]"
+                      >
+                        <Pencil className="w-3 h-3" /> Editar
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setConfirmDiscardId(lead.id)}
+                        className="h-8 text-xs bg-red-500/10 border-red-500/20 text-red-300 hover:bg-red-500/20"
+                      >
+                        <Trash2 className="w-3 h-3" /> Descartar
+                      </Button>
+                    </>
+                  )}
+
+                  {lead.status === "aprovado" && (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleCopy(lead)}
+                        className="h-8 text-xs bg-white/[0.04] border-white/[0.08] hover:bg-white/[0.08]"
+                      >
+                        <Copy className="w-3 h-3" /> Copiar
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        asChild
+                        className="h-8 text-xs bg-white/[0.04] border-white/[0.08] hover:bg-white/[0.08]"
+                      >
+                        <a
+                          href={`https://instagram.com/${lead.username}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Instagram className="w-3 h-3" /> Instagram
+                        </a>
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleContacted(lead)}
+                        disabled={updateMutation.isPending}
+                        className="h-8 text-xs bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30"
+                      >
+                        <Send className="w-3 h-3" /> Marcar contatado
+                      </Button>
+                    </>
+                  )}
+
+                  {lead.status === "contatado" && (
+                    <Button
+                      size="sm"
+                      onClick={() => handleResponded(lead)}
+                      disabled={updateMutation.isPending}
+                      className="h-8 text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30"
+                    >
+                      <CheckCircle2 className="w-3 h-3" /> Marcar respondeu
+                    </Button>
+                  )}
                 </div>
-              )}
-            </article>
-          ))}
+              </article>
+            );
+          })}
         </div>
       )}
+
+      {/* Edit modal */}
+      <Dialog open={!!editingLead} onOpenChange={(o) => !o && setEditingLead(null)}>
+        <DialogContent className="glass-card border-white/10">
+          <DialogHeader>
+            <DialogTitle>Editar mensagem</DialogTitle>
+            <DialogDescription>
+              @{editingLead?.username} — ao salvar, o lead é aprovado automaticamente.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={editingText}
+            onChange={(e) => setEditingText(e.target.value)}
+            rows={10}
+            className="bg-white/[0.04] border-white/[0.08] text-sm resize-none"
+            placeholder="Mensagem para o lead..."
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingLead(null)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={saveEdit}
+              disabled={updateMutation.isPending || !editingText.trim()}
+              className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30"
+            >
+              <Check className="w-3 h-3" /> Salvar e aprovar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Discard confirmation */}
+      <AlertDialog open={!!confirmDiscardId} onOpenChange={(o) => !o && setConfirmDiscardId(null)}>
+        <AlertDialogContent className="glass-card border-white/10">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Descartar lead?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O lead será movido para a aba "Descartados". Você pode reativá-lo depois se mudar de ideia.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => confirmDiscardId && handleDiscard(confirmDiscardId)}
+              className="bg-red-500/20 text-red-300 border border-red-500/30 hover:bg-red-500/30"
+            >
+              Descartar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
