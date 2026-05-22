@@ -161,6 +161,9 @@ export default function Crm() {
           </Button>
         </div>
       </div>
+      {/* Search + view toggle */}
+      <div className="flex flex-col md:flex-row gap-3 md:items-center">
+        <div className="relative flex-1 max-w-md">
           <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
           <Input
             value={search}
@@ -170,39 +173,23 @@ export default function Crm() {
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 md:ml-auto">
-          {pipelines.map(p => (
-            <button
-              key={p.id}
-              onClick={() => setPipelineId(p.id)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all border ${
-                pipelineId === p.id
-                  ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/30"
-                  : "glass-card text-muted-foreground hover:text-foreground hover:border-white/20"
-              }`}
-            >
-              {p.nome}
-            </button>
-          ))}
-
-          <div className="flex rounded-full border border-white/10 overflow-hidden glass-card p-0.5">
-            <button
-              onClick={() => setView("kanban")}
-              className={`px-3 py-1 rounded-full text-[11px] flex items-center gap-1.5 transition-colors ${
-                view === "kanban" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <LayoutGrid className="w-3 h-3" /> Kanban
-            </button>
-            <button
-              onClick={() => setView("list")}
-              className={`px-3 py-1 rounded-full text-[11px] flex items-center gap-1.5 transition-colors ${
-                view === "list" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <List className="w-3 h-3" /> Lista
-            </button>
-          </div>
+        <div className="flex rounded-full border border-white/10 overflow-hidden glass-card p-0.5 md:ml-auto">
+          <button
+            onClick={() => setView("kanban")}
+            className={`px-3 py-1 rounded-full text-[11px] flex items-center gap-1.5 transition-colors ${
+              view === "kanban" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <LayoutGrid className="w-3 h-3" /> Kanban
+          </button>
+          <button
+            onClick={() => setView("list")}
+            className={`px-3 py-1 rounded-full text-[11px] flex items-center gap-1.5 transition-colors ${
+              view === "list" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <List className="w-3 h-3" /> Lista
+          </button>
         </div>
       </div>
 
