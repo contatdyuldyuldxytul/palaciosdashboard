@@ -124,7 +124,8 @@ function StageColumn({ stage, deals, onOpen }: { stage: CrmStage; deals: CrmDeal
 
       <div
         ref={setNodeRef}
-        className="flex-1 space-y-2 p-2 min-h-[300px] overflow-y-auto"
+        className="flex-1 space-y-2 p-2 min-h-[300px] overflow-y-auto scrollbar-none [&::-webkit-scrollbar]:hidden"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" } as React.CSSProperties}
       >
         {deals.map(d => <DealCard key={d.id} deal={d} onOpen={() => onOpen(d.id)} />)}
         {deals.length === 0 && (
