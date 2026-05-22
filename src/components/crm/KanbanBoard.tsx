@@ -170,7 +170,7 @@ export function KanbanBoard({ stages, deals }: { stages: CrmStage[]; deals: CrmD
         }
       }}
     >
-      <div className="flex gap-3 overflow-x-auto pb-6 -mx-1 px-1">
+      <div className="flex gap-3 pb-6 -mx-1 px-1 w-full">
         {stages.map(s => (
           <StageColumn
             key={s.id}
