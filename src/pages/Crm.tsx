@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { LayoutGrid, List, Plus, Download, TrendingUp, Target, CheckCircle2, Search, Settings2, Upload, FileSpreadsheet, ChevronDown } from "lucide-react";
+import { LayoutGrid, List, Plus, Download, TrendingUp, Target, CheckCircle2, Search, Upload, FileSpreadsheet, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -7,8 +7,8 @@ import { useCrmPipelines, useCrmStages, useCrmDeals, useImportPipedrive, FLOW_TY
 import { KanbanBoard } from "@/components/crm/KanbanBoard";
 import { DealListView } from "@/components/crm/DealListView";
 import { NewDealModal } from "@/components/crm/NewDealModal";
-import { PipelineManagerModal } from "@/components/crm/PipelineManagerModal";
-import { PipelineEditorModal } from "@/components/crm/PipelineEditorModal";
+import { PipelineSwitcher } from "@/components/crm/PipelineSwitcher";
+import { PipelineEditorScreen } from "@/components/crm/PipelineEditorScreen";
 import { ImportCsvModal } from "@/components/crm/ImportCsvModal";
 import { ImportSheetsModal } from "@/components/crm/ImportSheetsModal";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,8 +23,7 @@ export default function Crm() {
   const [pipelineId, setPipelineId] = useState<string>("");
   const [view, setView] = useState<"kanban" | "list">("kanban");
   const [newOpen, setNewOpen] = useState(false);
-  const [managerOpen, setManagerOpen] = useState(false);
-  const [createPipelineOpen, setCreatePipelineOpen] = useState(false);
+  const [editor, setEditor] = useState<{ mode: "new" | "edit"; pipelineId?: string } | null>(null);
   const [csvOpen, setCsvOpen] = useState(false);
   const [sheetsOpen, setSheetsOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -91,7 +90,7 @@ export default function Crm() {
             Nenhum pipeline ainda. Crie seu primeiro pipeline ou importe dados.
           </p>
           <div className="flex justify-center gap-2">
-            <Button onClick={() => setCreatePipelineOpen(true)}>
+            <Button onClick={() => setEditor({ mode: "new" })}>
               <Plus className="w-4 h-4 mr-2" /> Criar Pipeline
             </Button>
             {isFundador && (
@@ -102,7 +101,14 @@ export default function Crm() {
             )}
           </div>
         </div>
-        <PipelineEditorModal open={createPipelineOpen} onOpenChange={setCreatePipelineOpen} pipeline={null} />
+        {editor && (
+          <PipelineEditorScreen
+            mode={editor.mode}
+            pipelineId={editor.pipelineId}
+            onClose={() => setEditor(null)}
+            onSaved={(id) => setPipelineId(id)}
+          />
+        )}
       </>
     );
   }
@@ -111,19 +117,24 @@ export default function Crm() {
     <div className="p-4 lg:p-6 space-y-5">
       {/* Header */}
       <div className="flex flex-wrap items-start gap-4 justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground tracking-tight">Pipeline de Deals</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {currentPipeline
-              ? `${FLOW_TYPE_LABELS[currentPipeline.flow_type]}${currentPipeline.owner_label ? ` · ${currentPipeline.owner_label}` : ""}`
-              : "Gestão integrada de deals e relacionamentos"}
-          </p>
+        <div className="flex items-center gap-3">
+          <PipelineSwitcher
+            pipelines={pipelines}
+            currentId={pipelineId}
+            onSelect={setPipelineId}
+            onEdit={(id) => setEditor({ mode: "edit", pipelineId: id })}
+            onCreate={() => setEditor({ mode: "new" })}
+          />
+          <div>
+            <h1 className="text-xl font-semibold text-foreground tracking-tight leading-none">Deals</h1>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              {currentPipeline
+                ? `${FLOW_TYPE_LABELS[currentPipeline.flow_type]}${currentPipeline.owner_label ? ` · ${currentPipeline.owner_label}` : ""}`
+                : "Gestão integrada de deals e relacionamentos"}
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => setManagerOpen(true)} className="text-xs">
-            <Settings2 className="w-3.5 h-3.5 mr-1.5" /> Gerenciar Pipelines
-          </Button>
-
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="text-xs">
@@ -150,8 +161,7 @@ export default function Crm() {
           </Button>
         </div>
       </div>
-
-      {/* Search + Pipeline pill tabs */}
+      {/* Search + view toggle */}
       <div className="flex flex-col md:flex-row gap-3 md:items-center">
         <div className="relative flex-1 max-w-md">
           <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
@@ -163,39 +173,23 @@ export default function Crm() {
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 md:ml-auto">
-          {pipelines.map(p => (
-            <button
-              key={p.id}
-              onClick={() => setPipelineId(p.id)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all border ${
-                pipelineId === p.id
-                  ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/30"
-                  : "glass-card text-muted-foreground hover:text-foreground hover:border-white/20"
-              }`}
-            >
-              {p.nome}
-            </button>
-          ))}
-
-          <div className="flex rounded-full border border-white/10 overflow-hidden glass-card p-0.5">
-            <button
-              onClick={() => setView("kanban")}
-              className={`px-3 py-1 rounded-full text-[11px] flex items-center gap-1.5 transition-colors ${
-                view === "kanban" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <LayoutGrid className="w-3 h-3" /> Kanban
-            </button>
-            <button
-              onClick={() => setView("list")}
-              className={`px-3 py-1 rounded-full text-[11px] flex items-center gap-1.5 transition-colors ${
-                view === "list" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <List className="w-3 h-3" /> Lista
-            </button>
-          </div>
+        <div className="flex rounded-full border border-white/10 overflow-hidden glass-card p-0.5 md:ml-auto">
+          <button
+            onClick={() => setView("kanban")}
+            className={`px-3 py-1 rounded-full text-[11px] flex items-center gap-1.5 transition-colors ${
+              view === "kanban" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <LayoutGrid className="w-3 h-3" /> Kanban
+          </button>
+          <button
+            onClick={() => setView("list")}
+            className={`px-3 py-1 rounded-full text-[11px] flex items-center gap-1.5 transition-colors ${
+              view === "list" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <List className="w-3 h-3" /> Lista
+          </button>
         </div>
       </div>
 
@@ -218,8 +212,14 @@ export default function Crm() {
       )}
 
       <NewDealModal open={newOpen} onOpenChange={setNewOpen} pipelineId={pipelineId} stages={stages} />
-      <PipelineManagerModal open={managerOpen} onOpenChange={setManagerOpen} />
-      <PipelineEditorModal open={createPipelineOpen} onOpenChange={setCreatePipelineOpen} pipeline={null} />
+      {editor && (
+        <PipelineEditorScreen
+          mode={editor.mode}
+          pipelineId={editor.pipelineId}
+          onClose={() => setEditor(null)}
+          onSaved={(id) => setPipelineId(id)}
+        />
+      )}
       <ImportCsvModal open={csvOpen} onOpenChange={setCsvOpen} pipelineId={pipelineId} stages={stages} />
       <ImportSheetsModal
         open={sheetsOpen}

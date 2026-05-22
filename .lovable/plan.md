@@ -1,101 +1,58 @@
-## CRM Completo — Plano
+## Refactor: Gerenciamento de Pipelines (estilo Pipedrive)
 
-Transformar `/crm` num CRM totalmente funcional, com gestão de pipelines, busca, importação de dados, colunas visualmente destacadas e tipos de fluxo configuráveis.
+Substituir o atual modal "Gerenciar Pipelines" + modal de edição por uma UX em duas camadas, igual ao Pipedrive das imagens enviadas.
 
----
+### 1. Seletor de Pipeline (substitui as pills atuais)
 
-### 1. Gestão de Pipelines (criar / editar / deletar)
+Trocar a fileira de pills no header por um **dropdown único** ao lado do título:
 
-Novo botão **"Gerenciar Pipelines"** ao lado dos pills no topo, abrindo um modal com:
-
-- Lista de pipelines existentes (renomear, reordenar, ativar/desativar, deletar).
-- Botão **"Novo Pipeline"** abre um formulário com:
-  - **Nome** do pipeline
-  - **Tipo de Fluxo** (select): `Fluxo de Cadência 10 Dias`, `Fluxo de Nutrição`, `Fluxo de Vendas`, `Fluxo Personalizado`
-  - **Responsável** (assign): select populado com colaboradores ativos (lidos da tabela `profiles` — mesma fonte usada no painel CEO).
-  - **Etapas iniciais**: editor inline para adicionar/remover/renomear etapas com cor; se for "Cadência 10 Dias" auto-popula com etapas pré-definidas.
-
-Em cada pipeline existente, ícone de lápis abre o mesmo editor para editar nome, tipo, responsável e etapas (CRUD sobre `crm_stages`).
-
-### 2. Tipo de Fluxo (preparado para configuração futura)
-
-- Novo enum `pipeline_flow_type` e coluna `flow_type` em `crm_pipelines`.
-- Nova coluna `owner_user_id` (uuid) e `owner_label` (text) em `crm_pipelines` para o assign.
-- A configuração detalhada de cada tipo (regras, automações) virá depois na futura aba **Configurações** — agora apenas registramos o tipo + UI básica.
-
-### 3. Barra de Busca
-
-Acima do board, input de busca (ícone lupa) que filtra deals em tempo real por:
-- Título do deal
-- Nome da organização
-- Nome / email da pessoa
-- Valor
-
-Filtra tanto Kanban quanto Lista. Mantém atalho `⌘K` / `Ctrl+K`.
-
-### 4. Importar CSV / Sync Google Sheets
-
-Botão **"Importar"** (dropdown) com 2 opções:
-
-- **Importar CSV**: modal com upload, preview das primeiras linhas, mapeamento de colunas (Título, Valor, Organização, Pessoa, Email, Telefone, Etapa, Responsável). Insere via `crm_deals` + cria/reaproveita `crm_organizations` e `crm_persons`.
-- **Sincronizar Google Sheets**: campo para URL/ID da planilha + aba. Usa a edge function existente `sync-sheets` (estendida com um endpoint `crm-deals`) ou nova função `import-crm-sheets`. Salva o ID da planilha no pipeline para re-sync manual.
-
-### 5. Colunas do Kanban demarcadas
-
-Refator visual em `KanbanBoard.tsx` / `StageColumn`:
-
-- Cada etapa vira um **container glass** semi-transparente (`bg-white/[0.03]`, `border border-white/8`, `backdrop-blur-xl`, `rounded-2xl`) envolvendo header **e** lista de cards.
-- Top border colorida (3px) usando `stage.cor`.
-- Header sticky dentro da coluna.
-- Padding interno consistente, drop zone destacada com `ring-2 ring-primary/40` em hover.
-- Background sutil com gradiente vertical da cor da etapa (5% → 0%) para reforçar identidade.
-
----
-
-### Detalhes técnicos
-
-**Migração (a aprovar):**
-```sql
-CREATE TYPE pipeline_flow_type AS ENUM
-  ('cadencia_10_dias','nutricao','vendas','personalizado');
-
-ALTER TABLE crm_pipelines
-  ADD COLUMN flow_type pipeline_flow_type NOT NULL DEFAULT 'personalizado',
-  ADD COLUMN owner_user_id uuid REFERENCES auth.users(id),
-  ADD COLUMN owner_label text,
-  ADD COLUMN sheet_id text,
-  ADD COLUMN sheet_tab text;
+```text
+[ Pipeline de Deals ▾ ]   [ ✎ Editar ]   ...resto do header
+       VENDAS
 ```
 
-**Novos arquivos:**
-- `src/components/crm/PipelineManagerModal.tsx` (lista + CRUD)
-- `src/components/crm/PipelineEditorModal.tsx` (form criar/editar + editor de etapas)
-- `src/components/crm/ImportCsvModal.tsx`
-- `src/components/crm/ImportSheetsModal.tsx`
-- `src/components/crm/CrmSearchBar.tsx`
-- `supabase/functions/import-crm-sheets/index.ts`
+Conteúdo do dropdown (mesmo padrão da imagem 1):
+- Header "Pipeline" com ícone de lápis (abre editor do pipeline ativo)
+- Lista de pipelines ativos, com ✓ marcando o atual
+- Separador
+- "➕ Novo pipeline" (abre o editor vazio)
+- "🗑 Desativar pipeline atual" (com confirmação)
 
-**Atualizados:**
-- `src/hooks/useCrm.ts` — hooks `useCreatePipeline`, `useUpdatePipeline`, `useDeletePipeline`, `useUpdateStages`, `useCollaborators`, `useImportCrmCsv`, `useSyncCrmSheets`.
-- `src/components/crm/KanbanBoard.tsx` — redesenho das colunas.
-- `src/pages/Crm.tsx` — busca, dropdown Importar, botão Gerenciar Pipelines.
+O botão "Gerenciar Pipelines" e o `PipelineManagerModal` antigo são **removidos** — toda a gestão acontece no dropdown + tela de edição.
 
-**Templates de etapas por tipo de fluxo** (pré-popular ao criar):
-- Cadência 10 Dias: `Dia 1 – Contato`, `Dia 3 – Follow-up`, `Dia 5 – Material`, `Dia 7 – Call`, `Dia 10 – Decisão`
-- Nutrição: `Frio`, `Engajado`, `Quente`, `Pronto p/ Vendas`
-- Vendas: `Lead`, `Qualificado`, `Proposta`, `Negociação`, `Ganho`, `Perdido`
-- Personalizado: vazio (usuário define)
+### 2. Tela de Edição (substitui o modal estreito)
 
----
+Em vez de `Dialog` apertado, abrir uma **rota/overlay full-screen** estilo Pipedrive (imagem 2):
 
-### Ordem de implementação
+- Header fixo com:
+  - "Editar Pipeline" + input inline `Pipeline name`
+  - Select de tipo de fluxo + select de responsável
+  - Botões `Cancelar` / `Salvar alterações`
+- Área principal: **colunas horizontais com scroll**, uma por etapa, igual o board real
+  - Cada coluna tem: nome editável, cor, toggles Ganho/Perda, botão "Excluir Etapa" no rodapé
+  - Drag & drop horizontal para reordenar (substitui as setas ▲▼)
+  - Botão `+ Adicionar Etapa` como coluna fantasma no final
 
-1. Migração (tipos + colunas em `crm_pipelines`)
-2. Hooks CRUD em `useCrm.ts` + hook de colaboradores
-3. `PipelineEditorModal` + `PipelineManagerModal`
-4. Redesenho visual das colunas do Kanban
-5. Barra de busca + filtragem
-6. `ImportCsvModal` (client-side parse com PapaParse)
-7. Edge function + `ImportSheetsModal`
+Implementação: novo componente `PipelineEditorScreen.tsx` montado como overlay (`fixed inset-0 z-50`) dentro do `Crm.tsx`, controlado por estado `editorPipelineId | "new" | null`. Reaproveita todos os hooks atuais (`useCreatePipeline`, `useUpdatePipeline`, `useReplaceStages`, `useCollaborators`).
 
-Pronto pra implementar — confirma e vou em frente?
+### 3. Arquivos
+
+**Novos**
+- `src/components/crm/PipelineSwitcher.tsx` — dropdown do seletor
+- `src/components/crm/PipelineEditorScreen.tsx` — tela full-screen com colunas
+
+**Editados**
+- `src/pages/Crm.tsx` — remove pills + botão "Gerenciar"; adiciona switcher e overlay
+- (opcional) usar `@dnd-kit/core` já presente no projeto para drag horizontal das etapas
+
+**Removidos**
+- `src/components/crm/PipelineManagerModal.tsx`
+- `src/components/crm/PipelineEditorModal.tsx` (substituído pela Screen)
+
+### 4. O que NÃO muda
+
+- Schema do banco (`crm_pipelines`, `crm_stages`) permanece igual
+- Hooks em `useCrm.ts` permanecem iguais
+- KanbanBoard, busca, importações CSV/Sheets/Pipedrive não são tocados
+
+Confirma que posso seguir?
