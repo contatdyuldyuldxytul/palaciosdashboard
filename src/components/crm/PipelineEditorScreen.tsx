@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { ArrowLeft, ArrowRight, Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -142,19 +143,28 @@ export function PipelineEditorScreen({ mode, pipelineId, onClose, onSaved }: Pro
 
   const pending = create.isPending || update.isPending || replace.isPending;
 
-  return (
-    <div className="fixed inset-0 z-[200] bg-background/98 backdrop-blur-2xl flex flex-col animate-in fade-in duration-200">
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
+
+  const editor = (
+    <div className="fixed inset-0 z-[9999] h-dvh max-h-dvh min-h-0 bg-background/98 backdrop-blur-2xl grid grid-rows-[auto_minmax(0,1fr)] animate-in fade-in duration-200">
       {/* Header */}
-      <div className="border-b border-white/10 px-6 py-4 flex flex-wrap items-center gap-4 bg-background/80">
+      <div className="shrink-0 border-b border-white/10 bg-background/95 px-4 py-3 shadow-2xl shadow-background/40 lg:px-6">
+        <div className="flex min-w-0 flex-wrap items-end gap-3 lg:gap-4">
         <button
           onClick={onClose}
-          className="p-2 rounded-lg hover:bg-white/10 text-muted-foreground hover:text-foreground"
+          className="mb-0.5 p-2 rounded-lg hover:bg-white/10 text-muted-foreground hover:text-foreground"
           title="Fechar"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <div className="flex flex-col">
+        <div className="flex min-w-[240px] flex-1 flex-col sm:max-w-sm">
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
             {isEdit ? "Editar Pipeline" : "Novo Pipeline"}
           </span>
@@ -162,11 +172,11 @@ export function PipelineEditorScreen({ mode, pipelineId, onClose, onSaved }: Pro
             value={nome}
             onChange={(e) => setNome(e.target.value)}
             placeholder="Nome do pipeline"
-            className="h-9 w-80 mt-1 bg-white/5 border-white/10 text-base font-semibold"
+            className="h-9 w-full mt-1 bg-white/5 border-white/10 text-base font-semibold"
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-wrap items-end gap-2">
           <div>
             <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Tipo</Label>
             <Select value={flowType} onValueChange={(v) => handleFlowTypeChange(v as PipelineFlowType)}>
@@ -208,15 +218,16 @@ export function PipelineEditorScreen({ mode, pipelineId, onClose, onSaved }: Pro
             {pending ? "Salvando…" : isEdit ? "Salvar alterações" : "Criar pipeline"}
           </Button>
         </div>
+        </div>
       </div>
 
       {/* Stage columns */}
-      <div className="flex-1 overflow-x-auto overflow-y-hidden p-6">
-        <div className="flex gap-3 h-full min-w-max">
+      <div className="min-h-0 overflow-auto p-4 lg:p-6">
+        <div className="flex min-h-full min-w-max items-stretch gap-3 pb-2">
           {stages.map((s, i) => (
             <div
               key={i}
-              className="w-72 flex-shrink-0 rounded-2xl bg-white/[0.03] backdrop-blur-xl border border-white/10 flex flex-col"
+              className="w-72 max-h-full min-h-[360px] flex-shrink-0 rounded-2xl bg-white/[0.03] backdrop-blur-xl border border-white/10 flex flex-col overflow-hidden"
               style={{ borderTopColor: s.cor, borderTopWidth: 3 }}
             >
               <div className="p-3 border-b border-white/5 flex items-center gap-1">
@@ -318,4 +329,6 @@ export function PipelineEditorScreen({ mode, pipelineId, onClose, onSaved }: Pro
       </div>
     </div>
   );
+
+  return createPortal(editor, document.body);
 }
