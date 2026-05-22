@@ -5,9 +5,14 @@ import {
   PointerSensor, useSensor, useSensors,
 } from "@dnd-kit/core";
 import { useDroppable, useDraggable } from "@dnd-kit/core";
-import { Calendar, Building2 } from "lucide-react";
+import { Calendar, Building2, Trash2, XCircle, Trophy, ArrowRightLeft } from "lucide-react";
 import { CrmDeal, CrmStage, useMoveDealStage } from "@/hooks/useCrm";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 
 const fmt = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
@@ -46,7 +51,6 @@ function DealCard({ deal, isDragging = false, onOpen }: { deal: CrmDeal; isDragg
       <div
         className="glass-card p-3 rounded-xl space-y-2 cursor-grab active:cursor-grabbing transition-all duration-200 hover:bg-white/[0.07] hover:border-white/20 hover:-translate-y-0.5"
         onClick={(e) => {
-          // single click also opens (but allow drag to override via constraint)
           if (e.detail === 1 && onOpen) onOpen();
         }}
       >
@@ -133,10 +137,44 @@ function StageColumn({ stage, deals, onOpen }: { stage: CrmStage; deals: CrmDeal
   );
 }
 
+const ACTION_IDS = ["__delete__", "__lost__", "__won__", "__moveto__"] as const;
+type ActionId = typeof ACTION_IDS[number];
+
+function ActionZone({
+  id, icon, label, tone,
+}: {
+  id: ActionId;
+  icon: React.ReactNode;
+  label: string;
+  tone: "danger" | "warning" | "success" | "info";
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id });
+  const toneMap = {
+    danger: { base: "text-red-300/70 border-red-500/20", active: "bg-red-500/20 text-red-200 border-red-400/60 ring-2 ring-red-400/40" },
+    warning: { base: "text-amber-300/70 border-amber-500/20", active: "bg-amber-500/20 text-amber-100 border-amber-400/60 ring-2 ring-amber-400/40" },
+    success: { base: "text-emerald-300/70 border-emerald-500/20", active: "bg-emerald-500/20 text-emerald-100 border-emerald-400/60 ring-2 ring-emerald-400/40" },
+    info: { base: "text-sky-300/70 border-sky-500/20", active: "bg-sky-500/20 text-sky-100 border-sky-400/60 ring-2 ring-sky-400/40" },
+  }[tone];
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`flex-1 h-14 flex items-center justify-center gap-2 rounded-xl border border-dashed text-[12px] font-semibold uppercase tracking-wider transition-all ${
+        isOver ? toneMap.active + " scale-[1.02]" : toneMap.base + " bg-white/[0.02]"
+      }`}
+    >
+      {icon}
+      {label}
+    </div>
+  );
+}
+
 export function KanbanBoard({ stages, deals }: { stages: CrmStage[]; deals: CrmDeal[] }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
   const move = useMoveDealStage();
+  const qc = useQueryClient();
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [moveToDealId, setMoveToDealId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const dealsByStage = useMemo(() => {
@@ -152,19 +190,58 @@ export function KanbanBoard({ stages, deals }: { stages: CrmStage[]; deals: CrmD
 
   const activeDeal = activeId ? deals.find(d => d.id === activeId) : null;
 
+  const handleAction = async (action: ActionId, dealId: string) => {
+    try {
+      if (action === "__delete__") {
+        if (!confirm("Excluir este deal permanentemente?")) return;
+        const { error } = await supabase.from("crm_deals").delete().eq("id", dealId);
+        if (error) throw error;
+        toast({ title: "Deal excluído" });
+      } else if (action === "__lost__") {
+        const { error } = await supabase
+          .from("crm_deals")
+          .update({ status: "lost", data_fechamento: new Date().toISOString() })
+          .eq("id", dealId);
+        if (error) throw error;
+        toast({ title: "Marcado como Perdido" });
+      } else if (action === "__won__") {
+        const { error } = await supabase
+          .from("crm_deals")
+          .update({ status: "won", data_fechamento: new Date().toISOString() })
+          .eq("id", dealId);
+        if (error) throw error;
+        toast({ title: "Marcado como Ganho 🎉" });
+      } else if (action === "__moveto__") {
+        setMoveToDealId(dealId);
+        return;
+      }
+      qc.invalidateQueries({ queryKey: ["crm"] });
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const isDragging = activeId !== null;
+
   return (
     <DndContext
       sensors={sensors}
       onDragStart={(e: DragStartEvent) => setActiveId(String(e.active.id))}
       onDragEnd={async (e: DragEndEvent) => {
-        setActiveId(null);
         const dealId = String(e.active.id);
-        const newStageId = e.over ? String(e.over.id) : null;
-        if (!newStageId) return;
+        setActiveId(null);
+        const overId = e.over ? String(e.over.id) : null;
+        if (!overId) return;
+
+        if ((ACTION_IDS as readonly string[]).includes(overId)) {
+          await handleAction(overId as ActionId, dealId);
+          return;
+        }
+
         const deal = deals.find(d => d.id === dealId);
-        if (!deal || deal.stage_id === newStageId) return;
+        if (!deal || deal.stage_id === overId) return;
         try {
-          await move.mutateAsync({ dealId, stageId: newStageId });
+          await move.mutateAsync({ dealId, stageId: overId });
         } catch (err: any) {
           toast({ title: "Erro ao mover deal", description: err.message, variant: "destructive" });
         }
@@ -180,9 +257,59 @@ export function KanbanBoard({ stages, deals }: { stages: CrmStage[]; deals: CrmD
           />
         ))}
       </div>
+
+      {/* Bottom action drop bar — only during drag */}
+      <div
+        className={`fixed left-0 right-0 bottom-0 z-40 px-4 pb-4 pointer-events-none transition-all duration-200 ${
+          isDragging ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+        }`}
+      >
+        <div
+          className={`mx-auto max-w-5xl glass-card rounded-2xl p-2 flex gap-2 border border-white/10 backdrop-blur-2xl bg-background/80 ${
+            isDragging ? "pointer-events-auto" : ""
+          }`}
+        >
+          <ActionZone id="__delete__" icon={<Trash2 className="w-4 h-4" />} label="Delete" tone="danger" />
+          <ActionZone id="__lost__" icon={<XCircle className="w-4 h-4" />} label="Lost" tone="warning" />
+          <ActionZone id="__won__" icon={<Trophy className="w-4 h-4" />} label="Won" tone="success" />
+          <ActionZone id="__moveto__" icon={<ArrowRightLeft className="w-4 h-4" />} label="Move to" tone="info" />
+        </div>
+      </div>
+
       <DragOverlay>
         {activeDeal ? <DealCard deal={activeDeal} isDragging /> : null}
       </DragOverlay>
+
+      {/* Move to: stage picker */}
+      <Dialog open={!!moveToDealId} onOpenChange={(o) => !o && setMoveToDealId(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Mover deal para…</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-1 gap-1.5 mt-2">
+            {stages.map(s => (
+              <button
+                key={s.id}
+                onClick={async () => {
+                  if (!moveToDealId) return;
+                  try {
+                    await move.mutateAsync({ dealId: moveToDealId, stageId: s.id });
+                    toast({ title: `Movido para ${s.nome}` });
+                  } catch (err: any) {
+                    toast({ title: "Erro", description: err.message, variant: "destructive" });
+                  } finally {
+                    setMoveToDealId(null);
+                  }
+                }}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors text-left text-sm"
+              >
+                <span className="w-2.5 h-2.5 rounded-full" style={{ background: s.cor || "#3b82f6" }} />
+                <span className="text-foreground">{s.nome}</span>
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </DndContext>
   );
 }
