@@ -1,58 +1,78 @@
-## Refactor: Gerenciamento de Pipelines (estilo Pipedrive)
+## Objetivo
+Reformular `src/pages/CrmDealDetail.tsx` para que ao abrir qualquer lead seja possível editar tudo inline, mudar etapa clicando na barra, criar atividades/notas direto na página, e ver dados estruturados conforme as imagens de referência.
 
-Substituir o atual modal "Gerenciar Pipelines" + modal de edição por uma UX em duas camadas, igual ao Pipedrive das imagens enviadas.
+## Mudanças no banco (migration)
 
-### 1. Seletor de Pipeline (substitui as pills atuais)
+Para suportar todos os campos pedidos faltam colunas e uma tabela de etiquetas:
 
-Trocar a fileira de pills no header por um **dropdown único** ao lado do título:
+**`crm_deals`** – adicionar:
+- `probabilidade` int (0–100)
+- `label_ids` uuid[] (array de etiquetas)
 
-```text
-[ Pipeline de Deals ▾ ]   [ ✎ Editar ]   ...resto do header
-       VENDAS
-```
+**`crm_persons`** – adicionar:
+- `first_name`, `last_name`, `linkedin` text
 
-Conteúdo do dropdown (mesmo padrão da imagem 1):
-- Header "Pipeline" com ícone de lápis (abre editor do pipeline ativo)
-- Lista de pipelines ativos, com ✓ marcando o atual
-- Separador
-- "➕ Novo pipeline" (abre o editor vazio)
-- "🗑 Desativar pipeline atual" (com confirmação)
+**`crm_organizations`** – adicionar:
+- `endereco`, `num_colaboradores` (int), `porte`, `faturamento` (numeric), `instagram`, `linkedin`, `whatsapp` text
 
-O botão "Gerenciar Pipelines" e o `PipelineManagerModal` antigo são **removidos** — toda a gestão acontece no dropdown + tela de edição.
+**Nova tabela `crm_labels`** (etiquetas personalizáveis por todos):
+- `id`, `nome`, `cor` (hex), `created_at`
+- RLS: SELECT para todos autenticados; INSERT/UPDATE/DELETE para autenticados
+- Seed com as etiquetas da imagem 2 (FALHOU A LIGAÇÃO, CONTINUAR O FLUXO NORMALMENTE, LIGAR DEPOIS, WHATSAPP, NÚMERO PASSADO PARA O DECISOR, NÃO PODE ATENDER, PRÉ LANÇAMENTO, THIAGO, CONTATO POR EMAIL SOMENTE, ALINE)
 
-### 2. Tela de Edição (substitui o modal estreito)
+## Nova UI – `CrmDealDetail.tsx`
 
-Em vez de `Dialog` apertado, abrir uma **rota/overlay full-screen** estilo Pipedrive (imagem 2):
+### 1. Cabeçalho (topo)
+- Título editável inline (clique → input).
+- Valor editável inline (clique → input numérico R$).
+- Barra de etapas do funil **clicável**: cada bolinha/segmento dispara `useMoveDealStage` para mudar a stage instantaneamente, com highlight da atual.
+- Botões "Marcar como Ganho/Perdido/Editar" mantidos.
 
-- Header fixo com:
-  - "Editar Pipeline" + input inline `Pipeline name`
-  - Select de tipo de fluxo + select de responsável
-  - Botões `Cancelar` / `Salvar alterações`
-- Área principal: **colunas horizontais com scroll**, uma por etapa, igual o board real
-  - Cada coluna tem: nome editável, cor, toggles Ganho/Perda, botão "Excluir Etapa" no rodapé
-  - Drag & drop horizontal para reordenar (substitui as setas ▲▼)
-  - Botão `+ Adicionar Etapa` como coluna fantasma no final
+### 2. Coluna principal (tabs)
+Tabs: **Atividades | Notas** (remover "Timeline" e "Histórico" como abas).
 
-Implementação: novo componente `PipelineEditorScreen.tsx` montado como overlay (`fixed inset-0 z-50`) dentro do `Crm.tsx`, controlado por estado `editorPipelineId | "new" | null`. Reaproveita todos os hooks atuais (`useCreatePipeline`, `useUpdatePipeline`, `useReplaceStages`, `useCollaborators`).
+- **Aba Atividades**:
+  - Botão "+ Nova Atividade" abre um **formulário inline embaixo do botão** (não modal), inspirado na imagem 1: input título, tipo (ícones Call/Email/Tarefa/Reunião…), data, hora início/fim, descrição, responsável, "Mark as done", botões Salvar/Cancelar.
+  - Lista de atividades existentes abaixo, com checkbox para concluir.
 
-### 3. Arquivos
+- **Aba Notas**:
+  - Textarea + botão "Adicionar nota".
+  - Lista cronológica de notas salvas (autor + data + conteúdo).
 
-**Novos**
-- `src/components/crm/PipelineSwitcher.tsx` — dropdown do seletor
-- `src/components/crm/PipelineEditorScreen.tsx` — tela full-screen com colunas
+- **Histórico** (sempre visível, abaixo das tabs, não é uma aba): linha do tempo com mudanças de stage, criação, atividades concluídas, notas adicionadas — lendo de `crm_deal_history` + `crm_notes` + `crm_activities`.
 
-**Editados**
-- `src/pages/Crm.tsx` — remove pills + botão "Gerenciar"; adiciona switcher e overlay
-- (opcional) usar `@dnd-kit/core` já presente no projeto para drag horizontal das etapas
+### 3. Sidebar direita (cards, nesta ordem)
 
-**Removidos**
-- `src/components/crm/PipelineManagerModal.tsx`
-- `src/components/crm/PipelineEditorModal.tsx` (substituído pela Screen)
+**Sumário**
+- Valor (editável)
+- Empresa (autocomplete em `crm_organizations`)
+- Contato/Decisor (autocomplete em `crm_persons`)
+- Etiquetas (multi-select com chips coloridos; popover lista as labels de `crm_labels` + botão "+ Add label" que cria uma nova com cor escolhida)
+- Deal probability (slider 0–100%)
+- Expected close date (datepicker)
 
-### 4. O que NÃO muda
+**Dados do Lead** (do `crm_persons` ligado; mostra "–" se vazio)
+- Telefone, Email, First name, Last name, Cargo, LinkedIn
 
-- Schema do banco (`crm_pipelines`, `crm_stages`) permanece igual
-- Hooks em `useCrm.ts` permanecem iguais
-- KanbanBoard, busca, importações CSV/Sheets/Pipedrive não são tocados
+**Dados da Empresa** (do `crm_organizations` ligado; mostra "–" se vazio)
+- Nome, Endereço, Website, Nº Colaboradores, Porte, Faturamento, Instagram, LinkedIn, WhatsApp
 
-Confirma que posso seguir?
+**Responsável**
+- Select com colaboradores aprovados (hook existente `useCollaborators`) → grava `owner_user_id` + `owner_label`.
+
+**Datas**
+- Criado em, Entrou no estágio atual, Fechamento esperado (mantido).
+
+Todos os campos editáveis usam pattern "click-to-edit" com auto-save (debounce ~500ms) via mutations novas em `useCrm.ts`:
+- `useUpdateDeal`, `useUpdatePerson`, `useUpdateOrganization`, `useCreateNote`, `useCreateActivity`, `useToggleActivity`, `useCrmLabels`, `useCreateLabel`, `useSetDealLabels`.
+
+## Arquivos
+
+- **Migration**: cria colunas + tabela `crm_labels` + seed.
+- **`src/hooks/useCrm.ts`**: adiciona os novos hooks e tipos.
+- **`src/pages/CrmDealDetail.tsx`**: reescrito conforme acima.
+- Pequenos componentes auxiliares dentro do mesmo arquivo (InlineField, LabelPicker, ActivityInlineForm, StageBar).
+
+## Fora do escopo
+- Não alterar Kanban, listas, ou outras rotas.
+- Não trazer abas Email/Files/Documents/Invoice da imagem 1 (só o formulário "Activity" inline).
