@@ -143,7 +143,7 @@ export function PipelineEditorScreen({ mode, pipelineId, onClose, onSaved }: Pro
   const pending = create.isPending || update.isPending || replace.isPending;
 
   return (
-    <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-xl flex flex-col animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[200] bg-background/98 backdrop-blur-2xl flex flex-col animate-in fade-in duration-200">
       {/* Header */}
       <div className="border-b border-white/10 px-6 py-4 flex flex-wrap items-center gap-4 bg-background/80">
         <button
