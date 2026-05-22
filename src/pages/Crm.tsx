@@ -90,7 +90,7 @@ export default function Crm() {
             Nenhum pipeline ainda. Crie seu primeiro pipeline ou importe dados.
           </p>
           <div className="flex justify-center gap-2">
-            <Button onClick={() => setCreatePipelineOpen(true)}>
+            <Button onClick={() => setEditor({ mode: "new" })}>
               <Plus className="w-4 h-4 mr-2" /> Criar Pipeline
             </Button>
             {isFundador && (
@@ -101,7 +101,14 @@ export default function Crm() {
             )}
           </div>
         </div>
-        <PipelineEditorModal open={createPipelineOpen} onOpenChange={setCreatePipelineOpen} pipeline={null} />
+        {editor && (
+          <PipelineEditorScreen
+            mode={editor.mode}
+            pipelineId={editor.pipelineId}
+            onClose={() => setEditor(null)}
+            onSaved={(id) => setPipelineId(id)}
+          />
+        )}
       </>
     );
   }
