@@ -117,19 +117,24 @@ export default function Crm() {
     <div className="p-4 lg:p-6 space-y-5">
       {/* Header */}
       <div className="flex flex-wrap items-start gap-4 justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground tracking-tight">Pipeline de Deals</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {currentPipeline
-              ? `${FLOW_TYPE_LABELS[currentPipeline.flow_type]}${currentPipeline.owner_label ? ` · ${currentPipeline.owner_label}` : ""}`
-              : "Gestão integrada de deals e relacionamentos"}
-          </p>
+        <div className="flex items-center gap-3">
+          <PipelineSwitcher
+            pipelines={pipelines}
+            currentId={pipelineId}
+            onSelect={setPipelineId}
+            onEdit={(id) => setEditor({ mode: "edit", pipelineId: id })}
+            onCreate={() => setEditor({ mode: "new" })}
+          />
+          <div>
+            <h1 className="text-xl font-semibold text-foreground tracking-tight leading-none">Deals</h1>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              {currentPipeline
+                ? `${FLOW_TYPE_LABELS[currentPipeline.flow_type]}${currentPipeline.owner_label ? ` · ${currentPipeline.owner_label}` : ""}`
+                : "Gestão integrada de deals e relacionamentos"}
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => setManagerOpen(true)} className="text-xs">
-            <Settings2 className="w-3.5 h-3.5 mr-1.5" /> Gerenciar Pipelines
-          </Button>
-
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="text-xs">
@@ -156,10 +161,6 @@ export default function Crm() {
           </Button>
         </div>
       </div>
-
-      {/* Search + Pipeline pill tabs */}
-      <div className="flex flex-col md:flex-row gap-3 md:items-center">
-        <div className="relative flex-1 max-w-md">
           <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
           <Input
             value={search}
