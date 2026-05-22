@@ -473,3 +473,174 @@ export function useImportCrmCsv() {
   });
 }
 
+// ============ Deal detail hooks ============
+
+export interface CrmLabel {
+  id: string;
+  nome: string;
+  cor: string;
+}
+
+export function useCrmLabels() {
+  return useQuery({
+    queryKey: ["crm", "labels"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("crm_labels").select("*").order("nome");
+      if (error) throw error;
+      return (data || []) as CrmLabel[];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useCreateLabel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { nome: string; cor: string }) => {
+      const { data, error } = await supabase.from("crm_labels").insert(payload).select("*").single();
+      if (error) throw error;
+      return data as CrmLabel;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["crm", "labels"] }),
+  });
+}
+
+export function useUpdateDeal() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: Record<string, any> }) => {
+      const { error } = await supabase.from("crm_deals").update(patch as any).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["crm", "deal", vars.id] });
+      qc.invalidateQueries({ queryKey: ["crm", "deals"] });
+    },
+  });
+}
+
+export function useUpdatePerson() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: Record<string, any> }) => {
+      const { error } = await supabase.from("crm_persons").update(patch as any).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["crm"] });
+    },
+  });
+}
+
+export function useUpdateOrganization() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: Record<string, any> }) => {
+      const { error } = await supabase.from("crm_organizations").update(patch as any).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["crm"] });
+    },
+  });
+}
+
+export function useDealNotes(dealId?: string) {
+  return useQuery({
+    queryKey: ["crm", "notes", dealId],
+    queryFn: async () => {
+      if (!dealId) return [];
+      const { data, error } = await supabase
+        .from("crm_notes")
+        .select("*")
+        .eq("deal_id", dealId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!dealId,
+  });
+}
+
+export function useCreateNote() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { deal_id: string; conteudo: string; author_label?: string | null }) => {
+      const { data: u } = await supabase.auth.getUser();
+      const { error } = await supabase.from("crm_notes").insert({
+        deal_id: payload.deal_id,
+        conteudo: payload.conteudo,
+        author_user_id: u?.user?.id || null,
+        author_label: payload.author_label || u?.user?.email || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => qc.invalidateQueries({ queryKey: ["crm", "notes", vars.deal_id] }),
+  });
+}
+
+export function useCreateActivity() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      deal_id: string;
+      tipo: string;
+      titulo: string;
+      descricao?: string | null;
+      scheduled_at?: string | null;
+      duracao_min?: number | null;
+      owner_label?: string | null;
+      concluida?: boolean;
+    }) => {
+      const { data: u } = await supabase.auth.getUser();
+      const { error } = await supabase.from("crm_activities").insert({
+        deal_id: payload.deal_id,
+        tipo: payload.tipo as any,
+        titulo: payload.titulo,
+        descricao: payload.descricao || null,
+        scheduled_at: payload.scheduled_at || null,
+        duracao_min: payload.duracao_min || null,
+        owner_user_id: u?.user?.id || null,
+        owner_label: payload.owner_label || null,
+        concluida: !!payload.concluida,
+        concluida_em: payload.concluida ? new Date().toISOString() : null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => qc.invalidateQueries({ queryKey: ["crm", "activities", vars.deal_id] }),
+  });
+}
+
+export function useToggleActivity() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, concluida }: { id: string; concluida: boolean; deal_id: string }) => {
+      const { error } = await supabase.from("crm_activities").update({
+        concluida,
+        concluida_em: concluida ? new Date().toISOString() : null,
+      }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => qc.invalidateQueries({ queryKey: ["crm", "activities", vars.deal_id] }),
+  });
+}
+
+export function useDealHistory(dealId?: string) {
+  return useQuery({
+    queryKey: ["crm", "history", dealId],
+    queryFn: async () => {
+      if (!dealId) return [];
+      const { data, error } = await supabase
+        .from("crm_deal_history")
+        .select("*")
+        .eq("deal_id", dealId)
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!dealId,
+  });
+}
+
+

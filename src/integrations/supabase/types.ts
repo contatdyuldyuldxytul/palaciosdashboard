@@ -599,6 +599,7 @@ export type Database = {
           data_fechamento: string | null
           expected_close_date: string | null
           id: string
+          label_ids: string[]
           motivo_perda: string | null
           notas: string | null
           organization_id: string | null
@@ -608,6 +609,7 @@ export type Database = {
           person_id: string | null
           pipedrive_id: number | null
           pipeline_id: string
+          probabilidade: number | null
           stage_entered_at: string
           stage_id: string
           status: Database["public"]["Enums"]["crm_deal_status"]
@@ -620,6 +622,7 @@ export type Database = {
           data_fechamento?: string | null
           expected_close_date?: string | null
           id?: string
+          label_ids?: string[]
           motivo_perda?: string | null
           notas?: string | null
           organization_id?: string | null
@@ -629,6 +632,7 @@ export type Database = {
           person_id?: string | null
           pipedrive_id?: number | null
           pipeline_id: string
+          probabilidade?: number | null
           stage_entered_at?: string
           stage_id: string
           status?: Database["public"]["Enums"]["crm_deal_status"]
@@ -641,6 +645,7 @@ export type Database = {
           data_fechamento?: string | null
           expected_close_date?: string | null
           id?: string
+          label_ids?: string[]
           motivo_perda?: string | null
           notas?: string | null
           organization_id?: string | null
@@ -650,6 +655,7 @@ export type Database = {
           person_id?: string | null
           pipedrive_id?: number | null
           pipeline_id?: string
+          probabilidade?: number | null
           stage_entered_at?: string
           stage_id?: string
           status?: Database["public"]["Enums"]["crm_deal_status"]
@@ -687,6 +693,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      crm_labels: {
+        Row: {
+          cor: string
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          cor?: string
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          cor?: string
+          created_at?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
       }
       crm_notes: {
         Row: {
@@ -726,33 +753,54 @@ export type Database = {
       crm_organizations: {
         Row: {
           created_at: string
+          endereco: string | null
+          faturamento: number | null
           id: string
+          instagram: string | null
+          linkedin: string | null
           nome: string
           notas: string | null
+          num_colaboradores: number | null
           pipedrive_org_id: number | null
+          porte: string | null
           segmento: string | null
           site: string | null
           updated_at: string
+          whatsapp: string | null
         }
         Insert: {
           created_at?: string
+          endereco?: string | null
+          faturamento?: number | null
           id?: string
+          instagram?: string | null
+          linkedin?: string | null
           nome: string
           notas?: string | null
+          num_colaboradores?: number | null
           pipedrive_org_id?: number | null
+          porte?: string | null
           segmento?: string | null
           site?: string | null
           updated_at?: string
+          whatsapp?: string | null
         }
         Update: {
           created_at?: string
+          endereco?: string | null
+          faturamento?: number | null
           id?: string
+          instagram?: string | null
+          linkedin?: string | null
           nome?: string
           notas?: string | null
+          num_colaboradores?: number | null
           pipedrive_org_id?: number | null
+          porte?: string | null
           segmento?: string | null
           site?: string | null
           updated_at?: string
+          whatsapp?: string | null
         }
         Relationships: []
       }
@@ -761,7 +809,10 @@ export type Database = {
           cargo: string | null
           created_at: string
           email: string | null
+          first_name: string | null
           id: string
+          last_name: string | null
+          linkedin: string | null
           nome: string
           organization_id: string | null
           pipedrive_person_id: number | null
@@ -772,7 +823,10 @@ export type Database = {
           cargo?: string | null
           created_at?: string
           email?: string | null
+          first_name?: string | null
           id?: string
+          last_name?: string | null
+          linkedin?: string | null
           nome: string
           organization_id?: string | null
           pipedrive_person_id?: number | null
@@ -783,7 +837,10 @@ export type Database = {
           cargo?: string | null
           created_at?: string
           email?: string | null
+          first_name?: string | null
           id?: string
+          last_name?: string | null
+          linkedin?: string | null
           nome?: string
           organization_id?: string | null
           pipedrive_person_id?: number | null
