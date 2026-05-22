@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { LayoutGrid, List, Plus, Download, TrendingUp, Target, CheckCircle2, Search, Settings2, Upload, FileSpreadsheet, ChevronDown } from "lucide-react";
+import { LayoutGrid, List, Plus, Download, TrendingUp, Target, CheckCircle2, Search, Upload, FileSpreadsheet, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -7,8 +7,8 @@ import { useCrmPipelines, useCrmStages, useCrmDeals, useImportPipedrive, FLOW_TY
 import { KanbanBoard } from "@/components/crm/KanbanBoard";
 import { DealListView } from "@/components/crm/DealListView";
 import { NewDealModal } from "@/components/crm/NewDealModal";
-import { PipelineManagerModal } from "@/components/crm/PipelineManagerModal";
-import { PipelineEditorModal } from "@/components/crm/PipelineEditorModal";
+import { PipelineSwitcher } from "@/components/crm/PipelineSwitcher";
+import { PipelineEditorScreen } from "@/components/crm/PipelineEditorScreen";
 import { ImportCsvModal } from "@/components/crm/ImportCsvModal";
 import { ImportSheetsModal } from "@/components/crm/ImportSheetsModal";
 import { useAuth } from "@/contexts/AuthContext";
