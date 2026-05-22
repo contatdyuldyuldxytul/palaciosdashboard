@@ -99,7 +99,7 @@ function StageColumn({ stage, deals, onOpen }: { stage: CrmStage; deals: CrmDeal
 
   return (
     <div
-      className={`flex flex-col w-[280px] flex-shrink-0 rounded-2xl border backdrop-blur-xl transition-all overflow-hidden ${
+      className={`flex flex-col flex-1 min-w-0 rounded-2xl border backdrop-blur-xl transition-all overflow-hidden ${
         isOver ? "border-primary/60 ring-2 ring-primary/30" : "border-white/10"
       }`}
       style={{
@@ -170,7 +170,7 @@ export function KanbanBoard({ stages, deals }: { stages: CrmStage[]; deals: CrmD
         }
       }}
     >
-      <div className="flex gap-3 overflow-x-auto pb-6 -mx-1 px-1">
+      <div className="flex gap-3 pb-6 -mx-1 px-1 w-full">
         {stages.map(s => (
           <StageColumn
             key={s.id}
