@@ -509,7 +509,7 @@ export function useUpdateDeal() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Record<string, any> }) => {
-      const { error } = await supabase.from("crm_deals").update(patch).eq("id", id);
+      const { error } = await supabase.from("crm_deals").update(patch as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: (_d, vars) => {
@@ -523,7 +523,7 @@ export function useUpdatePerson() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Record<string, any> }) => {
-      const { error } = await supabase.from("crm_persons").update(patch).eq("id", id);
+      const { error } = await supabase.from("crm_persons").update(patch as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -536,7 +536,7 @@ export function useUpdateOrganization() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Record<string, any> }) => {
-      const { error } = await supabase.from("crm_organizations").update(patch).eq("id", id);
+      const { error } = await supabase.from("crm_organizations").update(patch as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
