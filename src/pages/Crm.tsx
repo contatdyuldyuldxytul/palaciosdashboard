@@ -212,8 +212,14 @@ export default function Crm() {
       )}
 
       <NewDealModal open={newOpen} onOpenChange={setNewOpen} pipelineId={pipelineId} stages={stages} />
-      <PipelineManagerModal open={managerOpen} onOpenChange={setManagerOpen} />
-      <PipelineEditorModal open={createPipelineOpen} onOpenChange={setCreatePipelineOpen} pipeline={null} />
+      {editor && (
+        <PipelineEditorScreen
+          mode={editor.mode}
+          pipelineId={editor.pipelineId}
+          onClose={() => setEditor(null)}
+          onSaved={(id) => setPipelineId(id)}
+        />
+      )}
       <ImportCsvModal open={csvOpen} onOpenChange={setCsvOpen} pipelineId={pipelineId} stages={stages} />
       <ImportSheetsModal
         open={sheetsOpen}
