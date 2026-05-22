@@ -6,7 +6,7 @@ import {
 } from "@dnd-kit/core";
 import { useDroppable, useDraggable } from "@dnd-kit/core";
 import { Calendar, Building2, Trash2, XCircle, Trophy, ArrowRightLeft } from "lucide-react";
-import { CrmDeal, CrmStage, useMoveDealStage } from "@/hooks/useCrm";
+import { CrmDeal, CrmStage, useMoveDealStage, useCrmPipelines, useCrmStages } from "@/hooks/useCrm";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
