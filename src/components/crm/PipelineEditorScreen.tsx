@@ -329,4 +329,6 @@ export function PipelineEditorScreen({ mode, pipelineId, onClose, onSaved }: Pro
       </div>
     </div>
   );
+
+  return createPortal(editor, document.body);
 }
