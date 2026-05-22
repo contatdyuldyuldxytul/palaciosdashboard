@@ -23,8 +23,7 @@ export default function Crm() {
   const [pipelineId, setPipelineId] = useState<string>("");
   const [view, setView] = useState<"kanban" | "list">("kanban");
   const [newOpen, setNewOpen] = useState(false);
-  const [managerOpen, setManagerOpen] = useState(false);
-  const [createPipelineOpen, setCreatePipelineOpen] = useState(false);
+  const [editor, setEditor] = useState<{ mode: "new" | "edit"; pipelineId?: string } | null>(null);
   const [csvOpen, setCsvOpen] = useState(false);
   const [sheetsOpen, setSheetsOpen] = useState(false);
   const [search, setSearch] = useState("");
