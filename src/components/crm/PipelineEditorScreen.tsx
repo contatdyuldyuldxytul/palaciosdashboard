@@ -142,6 +142,7 @@ export function PipelineEditorScreen({ mode, pipelineId, onClose, onSaved }: Pro
   };
 
   const pending = create.isPending || update.isPending || replace.isPending;
+  const [sidebarOffset, setSidebarOffset] = useState(0);
 
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
@@ -151,8 +152,30 @@ export function PipelineEditorScreen({ mode, pipelineId, onClose, onSaved }: Pro
     };
   }, []);
 
+  useEffect(() => {
+    const sidebar = document.querySelector("aside.glass-sidebar");
+    const updateOffset = () => {
+      const rect = sidebar?.getBoundingClientRect();
+      setSidebarOffset(rect ? Math.max(0, Math.round(rect.right)) : 0);
+    };
+
+    updateOffset();
+    window.addEventListener("resize", updateOffset);
+
+    const resizeObserver = sidebar ? new ResizeObserver(updateOffset) : null;
+    if (sidebar) resizeObserver?.observe(sidebar);
+
+    return () => {
+      window.removeEventListener("resize", updateOffset);
+      resizeObserver?.disconnect();
+    };
+  }, []);
+
   const editor = (
-    <div className="fixed inset-0 z-[9999] h-dvh max-h-dvh min-h-0 bg-background/98 backdrop-blur-2xl grid grid-rows-[auto_minmax(0,1fr)] animate-in fade-in duration-200">
+    <div
+      className="fixed bottom-0 right-0 top-0 z-[9999] h-dvh max-h-dvh min-h-0 bg-background/98 backdrop-blur-2xl grid grid-rows-[auto_minmax(0,1fr)] animate-in fade-in duration-200"
+      style={{ left: sidebarOffset }}
+    >
       {/* Header */}
       <div className="shrink-0 border-b border-white/10 bg-background/95 px-4 py-3 shadow-2xl shadow-background/40 lg:px-6">
         <div className="flex min-w-0 flex-wrap items-end gap-3 lg:gap-4">
