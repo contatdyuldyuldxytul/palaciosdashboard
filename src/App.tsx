@@ -46,6 +46,7 @@ import CrmDealDetail from "@/pages/CrmDealDetail";
 import InstagramLeads from "@/pages/crm/InstagramLeads";
 import Projects from "@/pages/crm/Projects";
 import Atividades from "@/pages/crm/Atividades";
+import Email from "@/pages/crm/Email";
 import { NucleoOperacional } from "@/components/crm/atividades/NucleoOperacional";
 import { InteligenciaComercial } from "@/components/crm/atividades/InteligenciaComercial";
 import { VisaoGestor } from "@/components/crm/atividades/VisaoGestor";
@@ -137,7 +138,7 @@ const App = () => (
                 <Route path="inteligencia" element={<InteligenciaComercialRoute />} />
                 <Route path="gestor" element={<VisaoGestorRoute />} />
               </Route>
-              <Route path="/crm/email" element={<Placeholder title="Integração de E-mail" />} />
+              <Route path="/crm/email" element={<Email />} />
               <Route path="/crm/instagram" element={<InstagramLeads />} />
               <Route path="/crm/contatos" element={<Placeholder title="Contatos" />} />
               <Route path="/crm/insights" element={<Placeholder title="Insights & Forecast" />} />
