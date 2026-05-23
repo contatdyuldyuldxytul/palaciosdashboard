@@ -170,7 +170,7 @@ export function InboxView() {
                     </div>
                     {m.body_html ? (
                       <div
-                        className="prose prose-invert prose-sm max-w-none text-foreground/80"
+                        className="prose dark:prose-invert prose-sm max-w-none text-foreground/80"
                         dangerouslySetInnerHTML={{ __html: m.body_html }}
                       />
                     ) : (
