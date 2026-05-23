@@ -365,6 +365,12 @@ export function PipelineEditorScreen({ mode, pipelineId, onClose, onSaved }: Pro
           </button>
         </div>
       </div>
+
+      {editingFlowId && (
+        <div className="fixed inset-0 z-[10000] bg-background/95 backdrop-blur-2xl">
+          <FlowEditor flowId={editingFlowId} scope="deals" onClose={() => setEditingFlowId(null)} />
+        </div>
+      )}
     </div>
   );
 
