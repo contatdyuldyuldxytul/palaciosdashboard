@@ -103,10 +103,10 @@ export function MobileDrawer({ open, onOpenChange }: Props) {
           </div>
         </div>
 
-        <div className="border-t border-white/10 p-2 space-y-1">
+        <div className="border-t border-border p-2 space-y-1">
           <button
             onClick={() => { toggle(); }}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-muted-foreground hover:bg-accent/60 hover:text-foreground transition-colors"
           >
             {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             {theme === "dark" ? "Modo claro" : "Modo escuro"}
