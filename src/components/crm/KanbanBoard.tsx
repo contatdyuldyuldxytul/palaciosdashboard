@@ -284,6 +284,29 @@ export function KanbanBoard({ stages, deals }: { stages: CrmStage[]; deals: CrmD
         dealId={moveToDealId}
         onClose={() => setMoveToDealId(null)}
       />
+
+      {/* Motivo de perda obrigatório */}
+      <MotivoPerdaModal
+        open={!!lostDealId}
+        dealTitulo={lostDealId ? deals.find(d => d.id === lostDealId)?.titulo : null}
+        onCancel={() => setLostDealId(null)}
+        onConfirm={async (motivo) => {
+          if (!lostDealId) return;
+          try {
+            const { error } = await supabase
+              .from("crm_deals")
+              .update({ status: "lost", motivo_perda: motivo, data_fechamento: new Date().toISOString() })
+              .eq("id", lostDealId);
+            if (error) throw error;
+            toast({ title: "Marcado como Perdido", description: motivo });
+            qc.invalidateQueries({ queryKey: ["crm"] });
+          } catch (err: any) {
+            toast({ title: "Erro", description: err.message, variant: "destructive" });
+          } finally {
+            setLostDealId(null);
+          }
+        }}
+      />
     </DndContext>
   );
 }
