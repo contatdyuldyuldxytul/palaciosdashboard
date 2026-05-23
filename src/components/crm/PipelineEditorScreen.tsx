@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { ArrowLeft, ArrowRight, Plus, Trash2, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Plus, Trash2, X, Workflow, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,7 +9,6 @@ import {
   CrmPipeline,
   PipelineFlowType,
   StageInput,
-  FLOW_TYPE_LABELS,
   FLOW_TYPE_STAGE_TEMPLATES,
   useCollaborators,
   useCreatePipeline,
@@ -18,6 +17,8 @@ import {
   useCrmStages,
   useCrmPipelines,
 } from "@/hooks/useCrm";
+import { useFlows } from "@/hooks/useFlows";
+import { FlowEditor } from "@/components/crm/projects/FlowEditor";
 import { toast } from "@/hooks/use-toast";
 
 interface Props {
@@ -27,7 +28,6 @@ interface Props {
   onSaved?: (pipelineId: string) => void;
 }
 
-const FLOW_TYPES: PipelineFlowType[] = ["cadencia_10_dias", "nutricao", "vendas", "personalizado"];
 const STAGE_COLORS = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#ef4444", "#64748b", "#06b6d4"];
 
 export function PipelineEditorScreen({ mode, pipelineId, onClose, onSaved }: Props) {
@@ -38,11 +38,13 @@ export function PipelineEditorScreen({ mode, pipelineId, onClose, onSaved }: Pro
     : undefined;
 
   const [nome, setNome] = useState("");
-  const [flowType, setFlowType] = useState<PipelineFlowType>("personalizado");
+  const [flowId, setFlowId] = useState<string>("__none__");
   const [ownerId, setOwnerId] = useState<string>("__none__");
   const [stages, setStages] = useState<StageInput[]>([]);
+  const [editingFlowId, setEditingFlowId] = useState<string | null>(null);
 
   const collabsQ = useCollaborators();
+  const flowsQ = useFlows("deals");
   const create = useCreatePipeline();
   const update = useUpdatePipeline();
   const replace = useReplaceStages();
@@ -51,11 +53,11 @@ export function PipelineEditorScreen({ mode, pipelineId, onClose, onSaved }: Pro
   useEffect(() => {
     if (pipeline) {
       setNome(pipeline.nome);
-      setFlowType(pipeline.flow_type);
+      setFlowId(pipeline.flow_id || "__none__");
       setOwnerId(pipeline.owner_user_id || "__none__");
     } else if (!isEdit) {
       setNome("");
-      setFlowType("personalizado");
+      setFlowId("__none__");
       setOwnerId("__none__");
       setStages(FLOW_TYPE_STAGE_TEMPLATES.personalizado.map((s) => ({ ...s })));
     }
@@ -76,10 +78,6 @@ export function PipelineEditorScreen({ mode, pipelineId, onClose, onSaved }: Pro
     }
   }, [isEdit, stagesQ.data]);
 
-  const handleFlowTypeChange = (v: PipelineFlowType) => {
-    setFlowType(v);
-    if (!isEdit) setStages(FLOW_TYPE_STAGE_TEMPLATES[v].map((s) => ({ ...s })));
-  };
 
   const addStage = () =>
     setStages((arr) => [
