@@ -201,7 +201,7 @@ function FlowEditorInner({ flowId, onClose, scope }: { flowId: string; onClose: 
         {/* Inspector */}
         {selected && (
           <div className="w-72 border-l border-white/5 bg-background/40 p-3 overflow-y-auto">
-            <NodeInspector node={selected} onChange={updateSelected} onDelete={deleteSelected} />
+            <NodeInspector node={selected} scope={scope} onChange={updateSelected} onDelete={deleteSelected} />
           </div>
         )}
       </div>
