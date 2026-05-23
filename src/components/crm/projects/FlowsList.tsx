@@ -32,7 +32,7 @@ export function FlowsList({ scope = "projects", title, description }: { scope?: 
   };
 
   if (editingId) {
-    return <FlowEditor flowId={editingId} onClose={() => setEditingId(null)} />;
+    return <FlowEditor flowId={editingId} scope={scope} onClose={() => setEditingId(null)} />;
   }
 
   return (
