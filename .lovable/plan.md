@@ -1,78 +1,85 @@
-## Objetivo
-Reformular `src/pages/CrmDealDetail.tsx` para que ao abrir qualquer lead seja possível editar tudo inline, mudar etapa clicando na barra, criar atividades/notas direto na página, e ver dados estruturados conforme as imagens de referência.
+## CRM › Subaba "Projects"
 
-## Mudanças no banco (migration)
+Adiciona 3 sub-abas dentro de `/crm/projects`: **Kanban**, **Fluxos**, **Admin**.
 
-Para suportar todos os campos pedidos faltam colunas e uma tabela de etiquetas:
+---
 
-**`crm_deals`** – adicionar:
-- `probabilidade` int (0–100)
-- `label_ids` uuid[] (array de etiquetas)
+### 1. Kanban de Projects (clientes)
 
-**`crm_persons`** – adicionar:
-- `first_name`, `last_name`, `linkedin` text
+- Tela igual ao Kanban de deals (drag & drop, drop-bar inferior), mas operando sobre **clientes/projetos**.
+- **Pipelines customizáveis** com estágios próprios (ex.: Onboarding → Briefing → Produção → Revisão → Entregue → Pós-venda) — edição como o `PipelineEditorScreen` atual.
+- **Fonte dupla de clientes**:
+  - Importa clientes existentes de `clientes_ativos` (botão "Adicionar de clientes existentes").
+  - Auto-cria projeto quando um `crm_deals` muda para `status = 'won'` (trigger SQL): copia organização/pessoa/valor e coloca no primeiro stage do pipeline default.
+- Card mostra: cliente, projeto, valor, progresso (%), dias no stage, responsável.
+- Clique no card → modal de detalhes do projeto (reaproveita layout do `CrmDealDetail`, com aba Checklist 16-passos já existente).
 
-**`crm_organizations`** – adicionar:
-- `endereco`, `num_colaboradores` (int), `porte`, `faturamento` (numeric), `instagram`, `linkedin`, `whatsapp` text
+### 2. Fluxos do Processo (Node Editor)
 
-**Nova tabela `crm_labels`** (etiquetas personalizáveis por todos):
-- `id`, `nome`, `cor` (hex), `created_at`
-- RLS: SELECT para todos autenticados; INSERT/UPDATE/DELETE para autenticados
-- Seed com as etiquetas da imagem 2 (FALHOU A LIGAÇÃO, CONTINUAR O FLUXO NORMALMENTE, LIGAR DEPOIS, WHATSAPP, NÚMERO PASSADO PARA O DECISOR, NÃO PODE ATENDER, PRÉ LANÇAMENTO, THIAGO, CONTATO POR EMAIL SOMENTE, ALINE)
+- Editor visual estilo n8n/Zapier usando **React Flow** (`@xyflow/react`).
+- Tipos de nodes:
+  - **Trigger**: "Cliente entra no stage X", "Projeto criado", "Manual"
+  - **Ação Email** (via Resend connector)
+  - **Ação WhatsApp** (via Twilio connector — WhatsApp Business)
+  - **Delay** (esperar N horas/dias)
+  - **Condição** (if/else baseado em campo do projeto)
+  - **Atualizar projeto** (mover stage, marcar checklist)
+- Lista de fluxos + botão "Novo fluxo" → canvas com paleta lateral, drag de nodes, conexão por arestas, painel de configuração à direita.
+- Cada fluxo persiste como JSON (`nodes`, `edges`, `config`) e pode estar `ativo`/`pausado`.
+- **Execução real**: edge function `flow-executor` consome triggers (via trigger Postgres no `project_deals`) e processa nodes sequencialmente, registrando cada step em `flow_runs` / `flow_run_steps`.
+- Email: connector Resend já disponível no padrão Lovable. WhatsApp: precisa conectar **Twilio** (vou pedir confirmação para conectar quando chegarmos nessa etapa).
 
-## Nova UI – `CrmDealDetail.tsx`
+### 3. Painel Admin
 
-### 1. Cabeçalho (topo)
-- Título editável inline (clique → input).
-- Valor editável inline (clique → input numérico R$).
-- Barra de etapas do funil **clicável**: cada bolinha/segmento dispara `useMoveDealStage` para mudar a stage instantaneamente, com highlight da atual.
-- Botões "Marcar como Ganho/Perdido/Editar" mantidos.
+- Placeholder **"Em breve"** com card centralizado (sem funcionalidade agora).
 
-### 2. Coluna principal (tabs)
-Tabs: **Atividades | Notas** (remover "Timeline" e "Histórico" como abas).
+---
 
-- **Aba Atividades**:
-  - Botão "+ Nova Atividade" abre um **formulário inline embaixo do botão** (não modal), inspirado na imagem 1: input título, tipo (ícones Call/Email/Tarefa/Reunião…), data, hora início/fim, descrição, responsável, "Mark as done", botões Salvar/Cancelar.
-  - Lista de atividades existentes abaixo, com checkbox para concluir.
+## Detalhes técnicos
 
-- **Aba Notas**:
-  - Textarea + botão "Adicionar nota".
-  - Lista cronológica de notas salvas (autor + data + conteúdo).
+**Migrations (novas tabelas):**
+```text
+project_pipelines (id, nome, ordem, ativo, is_default)
+project_stages    (id, pipeline_id, nome, ordem, cor, is_final)
+project_deals     (id, pipeline_id, stage_id, cliente_ativo_id, crm_deal_id,
+                   titulo, valor, progresso, responsavel_user_id,
+                   stage_entered_at, status, created_at, updated_at)
+flows             (id, nome, descricao, ativo, trigger_config jsonb,
+                   nodes jsonb, edges jsonb, created_at, updated_at)
+flow_runs         (id, flow_id, project_deal_id, status, started_at, finished_at, error)
+flow_run_steps    (id, run_id, node_id, status, output jsonb, executed_at)
+```
+RLS: leitura para `authenticated`, escrita/gestão para `fundador` (mesmo padrão do CRM atual).
 
-- **Histórico** (sempre visível, abaixo das tabs, não é uma aba): linha do tempo com mudanças de stage, criação, atividades concluídas, notas adicionadas — lendo de `crm_deal_history` + `crm_notes` + `crm_activities`.
+Trigger SQL: ao `UPDATE crm_deals SET status='won'`, insere em `project_deals` no pipeline default.
 
-### 3. Sidebar direita (cards, nesta ordem)
+**Frontend:**
+- `src/pages/crm/Projects.tsx` com sub-tabs (`SectionTabs`).
+- `src/components/crm/projects/ProjectsKanban.tsx` (reusa lógica de `KanbanBoard`).
+- `src/components/crm/projects/FlowsList.tsx` + `FlowEditor.tsx` (React Flow).
+- `src/components/crm/projects/AdminPlaceholder.tsx`.
+- Hooks: `src/hooks/useProjects.ts`, `src/hooks/useFlows.ts`.
 
-**Sumário**
-- Valor (editável)
-- Empresa (autocomplete em `crm_organizations`)
-- Contato/Decisor (autocomplete em `crm_persons`)
-- Etiquetas (multi-select com chips coloridos; popover lista as labels de `crm_labels` + botão "+ Add label" que cria uma nova com cor escolhida)
-- Deal probability (slider 0–100%)
-- Expected close date (datepicker)
+**Edge functions:**
+- `supabase/functions/flow-executor/index.ts` — recebe `{ project_deal_id, trigger }`, carrega flows ativos com trigger correspondente, executa nodes (Email via Resend, WhatsApp via Twilio gateway, delays via re-agendamento).
+- Cron job (`pg_cron`) a cada minuto para retomar runs com delay pendente.
 
-**Dados do Lead** (do `crm_persons` ligado; mostra "–" se vazio)
-- Telefone, Email, First name, Last name, Cargo, LinkedIn
+**Dependências novas:** `@xyflow/react` (React Flow v12).
 
-**Dados da Empresa** (do `crm_organizations` ligado; mostra "–" se vazio)
-- Nome, Endereço, Website, Nº Colaboradores, Porte, Faturamento, Instagram, LinkedIn, WhatsApp
+**Connectors a habilitar:**
+- Resend (email) — ao chegar na etapa de Fluxos.
+- Twilio (WhatsApp) — ao chegar na etapa de Fluxos, vou perguntar antes de conectar.
 
-**Responsável**
-- Select com colaboradores aprovados (hook existente `useCollaborators`) → grava `owner_user_id` + `owner_label`.
+**Navegação:** adiciono `/crm/projects` no `Crm.tsx` (sub-aba) com 3 sub-rotas internas via state ou path nested.
 
-**Datas**
-- Criado em, Entrou no estágio atual, Fechamento esperado (mantido).
+---
 
-Todos os campos editáveis usam pattern "click-to-edit" com auto-save (debounce ~500ms) via mutations novas em `useCrm.ts`:
-- `useUpdateDeal`, `useUpdatePerson`, `useUpdateOrganization`, `useCreateNote`, `useCreateActivity`, `useToggleActivity`, `useCrmLabels`, `useCreateLabel`, `useSetDealLabels`.
+## Ordem de implementação
 
-## Arquivos
-
-- **Migration**: cria colunas + tabela `crm_labels` + seed.
-- **`src/hooks/useCrm.ts`**: adiciona os novos hooks e tipos.
-- **`src/pages/CrmDealDetail.tsx`**: reescrito conforme acima.
-- Pequenos componentes auxiliares dentro do mesmo arquivo (InlineField, LabelPicker, ActivityInlineForm, StageBar).
-
-## Fora do escopo
-- Não alterar Kanban, listas, ou outras rotas.
-- Não trazer abas Email/Files/Documents/Invoice da imagem 1 (só o formulário "Activity" inline).
+1. Migrations (tabelas + trigger won→project) — pedir aprovação.
+2. Página `Projects` com sub-tabs e Kanban funcional (drag & drop, CRUD pipelines/stages/deals).
+3. Auto-import: botão "puxar de clientes ativos" + trigger automático.
+4. Lista de fluxos + editor React Flow (salva JSON, sem execução ainda).
+5. Conectar Resend, implementar `flow-executor` com Email + Delay + Update.
+6. Conectar Twilio, adicionar node WhatsApp.
+7. Placeholder Admin "Em breve".
