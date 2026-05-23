@@ -67,15 +67,15 @@ const nodeTypes = { flow: FlowNode };
 // Editor
 // =========================================
 
-export function FlowEditor({ flowId, onClose }: { flowId: string; onClose: () => void }) {
+export function FlowEditor({ flowId, onClose, scope = "projects" }: { flowId: string; onClose: () => void; scope?: FlowScope }) {
   return (
     <ReactFlowProvider>
-      <FlowEditorInner flowId={flowId} onClose={onClose} />
+      <FlowEditorInner flowId={flowId} onClose={onClose} scope={scope} />
     </ReactFlowProvider>
   );
 }
 
-function FlowEditorInner({ flowId, onClose }: { flowId: string; onClose: () => void }) {
+function FlowEditorInner({ flowId, onClose, scope }: { flowId: string; onClose: () => void; scope: FlowScope }) {
   const { data: flow, isLoading } = useFlow(flowId);
   const update = useUpdateFlow();
   const [nodes, setNodes] = useState<Node[]>([]);
