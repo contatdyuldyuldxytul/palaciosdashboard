@@ -67,9 +67,14 @@
 
   body {
     @apply text-foreground font-sans antialiased;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Epilogue', system-ui, sans-serif;
     background: hsl(var(--background));
     min-height: 100vh;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Urbanist', sans-serif;
+    letter-spacing: -0.01em;
   }
 }
 
