@@ -8,7 +8,6 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { PasswordGate } from "@/components/PasswordGate";
 import { AppLayout } from "@/layouts/AppLayout";
-import { VendasLayout } from "@/layouts/VendasLayout";
 
 import { ClientesLayout } from "@/layouts/ClientesLayout";
 import { CeoLayout } from "@/layouts/CeoLayout";
