@@ -46,9 +46,9 @@ export function MobileDrawer({ open, onOpenChange }: Props) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="left" className="w-[80vw] max-w-[320px] p-0 bg-background/95 backdrop-blur-2xl border-white/10 flex flex-col">
+      <SheetContent side="left" className="w-[80vw] max-w-[320px] p-0 bg-background/95 backdrop-blur-2xl border-border flex flex-col">
         {/* Profile header */}
-        <div className="px-4 py-4 border-b border-white/10 flex items-center gap-3">
+        <div className="px-4 py-4 border-b border-border flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
             <UserIcon className="w-5 h-5 text-primary" />
           </div>
