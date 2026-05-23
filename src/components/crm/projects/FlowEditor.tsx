@@ -317,27 +317,65 @@ function NodeInspector({ node, onChange, onDelete, scope }: { node: Node; onChan
         <Input value={data.label || ""} onChange={e => onChange({ label: e.target.value })} className="bg-white/5 border-white/10 h-8 text-sm" />
       </div>
 
-      {["task", "email", "whatsapp", "custom", "milestone", "webhook"].includes(kind) && (
-        <div>
-          <Label className="text-xs flex items-center justify-between">
-            <span>Dia do fluxo</span>
-            <span className="text-[10px] text-muted-foreground font-normal">
-              dias após o deal entrar no pipeline
-            </span>
-          </Label>
-          <Input
-            type="number"
-            min={0}
-            value={config.dia_offset ?? ""}
-            placeholder="ex: 3"
-            onChange={e => setCfg({ dia_offset: e.target.value === "" ? null : Number(e.target.value) })}
-            className="bg-white/5 border-white/10 h-8 text-sm"
-          />
-          <p className="text-[10px] text-muted-foreground mt-1">
-            Preencha para que essa tarefa apareça na aba <strong>Atividades</strong> do responsável no dia certo.
-          </p>
-        </div>
-      )}
+      {["task", "email", "whatsapp", "custom", "milestone", "webhook"].includes(kind) && (() => {
+        const rawDays = config.dia_offset;
+        const hasValue = rawDays !== null && rawDays !== undefined && rawDays !== "";
+        const numDays = hasValue ? Number(rawDays) : null;
+        const isWeekUnit = numDays !== null && numDays >= 7 && numDays % 7 === 0;
+        const unit: "dias" | "semanas" = config.dia_unit === "semanas" || (config.dia_unit === undefined && isWeekUnit) ? "semanas" : "dias";
+        const displayValue = numDays === null ? "" : unit === "semanas" ? String(numDays / 7) : String(numDays);
+
+        const handleValueChange = (v: string) => {
+          if (v === "") return setCfg({ dia_offset: null });
+          const n = Number(v);
+          if (Number.isNaN(n) || n < 0) return;
+          setCfg({ dia_offset: unit === "semanas" ? n * 7 : n });
+        };
+        const handleUnitChange = (newUnit: "dias" | "semanas") => {
+          if (numDays === null) return setCfg({ dia_unit: newUnit });
+          // Re-express current value in new unit, preserving the displayed number
+          const currentDisplayed = unit === "semanas" ? numDays / 7 : numDays;
+          setCfg({
+            dia_unit: newUnit,
+            dia_offset: newUnit === "semanas" ? currentDisplayed * 7 : currentDisplayed,
+          });
+        };
+
+        return (
+          <div>
+            <Label className="text-xs flex items-center justify-between">
+              <span>Quando essa etapa acontece</span>
+              {numDays !== null && unit === "semanas" && (
+                <span className="text-[10px] text-muted-foreground font-normal">
+                  = dia {numDays} do fluxo
+                </span>
+              )}
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                min={0}
+                value={displayValue}
+                placeholder="ex: 3"
+                onChange={e => handleValueChange(e.target.value)}
+                className="bg-white/5 border-white/10 h-8 text-sm flex-1"
+              />
+              <Select value={unit} onValueChange={(v) => handleUnitChange(v as "dias" | "semanas")}>
+                <SelectTrigger className="bg-white/5 border-white/10 h-8 text-sm w-[110px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="dias">Dias</SelectItem>
+                  <SelectItem value="semanas">Semanas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Aparece na aba <strong>Atividades</strong> do responsável a partir da entrada do deal no pipeline.
+            </p>
+          </div>
+        );
+      })()}
 
       {kind === "custom" && (
         <>
