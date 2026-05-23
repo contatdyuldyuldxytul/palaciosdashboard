@@ -46,6 +46,10 @@ export interface CrmDeal {
   notas: string | null;
   created_at: string;
   updated_at: string;
+  temperatura?: "quente" | "morno" | "frio" | null;
+  score_fit?: number | null;
+  score_budget?: number | null;
+  score_urgencia?: number | null;
   organization?: { id: string; nome: string } | null;
   person?: { id: string; nome: string; email: string | null; telefone: string | null } | null;
 }
