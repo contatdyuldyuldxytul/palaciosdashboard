@@ -140,7 +140,7 @@ const App = () => (
               </Route>
               <Route path="/crm/email" element={<Email />} />
               <Route path="/crm/instagram" element={<InstagramLeads />} />
-              <Route path="/crm/contatos" element={<Placeholder title="Contatos" />} />
+              <Route path="/crm/contatos" element={<Contatos />} />
               <Route path="/crm/insights" element={<Placeholder title="Insights & Forecast" />} />
               <Route path="/crm/automacoes" element={<Placeholder title="Automações de I.A" />} />
               <Route path="/crm/configuracoes" element={<Placeholder title="Configurações" />} />
