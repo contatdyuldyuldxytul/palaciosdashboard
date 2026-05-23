@@ -99,6 +99,23 @@ function Section({ title, items, tone }: { title: string; items: FlowActivity[];
 
 export function FlowTasksList({ ownerLabel }: { ownerLabel?: string | null }) {
   const { grouped, isLoading, data } = useFlowActivities({ owner_label: ownerLabel || null });
+  const [view, setView] = useState<"dia" | "semana">("dia");
+
+  const weekGroups = useMemo(() => {
+    const all = [
+      ...grouped.atrasadas,
+      ...grouped.hoje,
+      ...grouped.amanha,
+      ...grouped.proximos,
+    ];
+    const map = new Map<number, FlowActivity[]>();
+    for (const item of all) {
+      const week = Math.floor(item.dia_offset / 7) + 1;
+      if (!map.has(week)) map.set(week, []);
+      map.get(week)!.push(item);
+    }
+    return Array.from(map.entries()).sort(([a], [b]) => a - b);
+  }, [grouped]);
 
   if (isLoading) {
     return <div className="h-32 glass-card rounded-xl animate-pulse" />;
@@ -108,8 +125,8 @@ export function FlowTasksList({ ownerLabel }: { ownerLabel?: string | null }) {
 
   return (
     <div className="glass-card rounded-2xl p-4 space-y-4 border border-white/10">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Workflow className="w-4 h-4 text-primary" />
             Tarefas do Fluxo
@@ -118,9 +135,29 @@ export function FlowTasksList({ ownerLabel }: { ownerLabel?: string | null }) {
             Distribuídas automaticamente pelos fluxos aplicados em cada pipeline.
           </p>
         </div>
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground bg-white/5 px-2 py-1 rounded-full">
-          {total} pendente{total === 1 ? "" : "s"}
-        </span>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center rounded-full bg-white/5 border border-white/10 p-0.5">
+            <button
+              onClick={() => setView("dia")}
+              className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-full transition ${
+                view === "dia" ? "bg-primary/30 text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Dia
+            </button>
+            <button
+              onClick={() => setView("semana")}
+              className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-full transition ${
+                view === "semana" ? "bg-primary/30 text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Semana
+            </button>
+          </div>
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground bg-white/5 px-2 py-1 rounded-full">
+            {total} pendente{total === 1 ? "" : "s"}
+          </span>
+        </div>
       </div>
 
       {total === 0 ? (
@@ -129,12 +166,23 @@ export function FlowTasksList({ ownerLabel }: { ownerLabel?: string | null }) {
             ? "Nenhum fluxo com tarefas vinculadas a este colaborador ainda."
             : "Tudo em dia 🎉"}
         </div>
-      ) : (
+      ) : view === "dia" ? (
         <>
           <Section title="Atrasadas" items={grouped.atrasadas} tone="danger" />
           <Section title="Hoje" items={grouped.hoje} tone="primary" />
           <Section title="Amanhã" items={grouped.amanha} tone="info" />
           <Section title="Próximos dias" items={grouped.proximos} tone="muted" />
+        </>
+      ) : (
+        <>
+          {weekGroups.map(([week, items]) => (
+            <Section
+              key={week}
+              title={`Semana ${week} (D${(week - 1) * 7 + 1}–D${week * 7})`}
+              items={items}
+              tone={week === 1 ? "primary" : "muted"}
+            />
+          ))}
         </>
       )}
     </div>
