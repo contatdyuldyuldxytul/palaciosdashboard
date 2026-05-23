@@ -11,8 +11,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useFlow, useUpdateFlow } from "@/hooks/useFlows";
+import { useFlow, useUpdateFlow, type FlowScope } from "@/hooks/useFlows";
 import { useProjectPipelines, useProjectStages } from "@/hooks/useProjects";
+import { useCrmPipelines, useCrmStages } from "@/hooks/useCrm";
 import { toast } from "@/hooks/use-toast";
 
 // =========================================
@@ -66,15 +67,15 @@ const nodeTypes = { flow: FlowNode };
 // Editor
 // =========================================
 
-export function FlowEditor({ flowId, onClose }: { flowId: string; onClose: () => void }) {
+export function FlowEditor({ flowId, onClose, scope = "projects" }: { flowId: string; onClose: () => void; scope?: FlowScope }) {
   return (
     <ReactFlowProvider>
-      <FlowEditorInner flowId={flowId} onClose={onClose} />
+      <FlowEditorInner flowId={flowId} onClose={onClose} scope={scope} />
     </ReactFlowProvider>
   );
 }
 
-function FlowEditorInner({ flowId, onClose }: { flowId: string; onClose: () => void }) {
+function FlowEditorInner({ flowId, onClose, scope }: { flowId: string; onClose: () => void; scope: FlowScope }) {
   const { data: flow, isLoading } = useFlow(flowId);
   const update = useUpdateFlow();
   const [nodes, setNodes] = useState<Node[]>([]);
@@ -200,7 +201,7 @@ function FlowEditorInner({ flowId, onClose }: { flowId: string; onClose: () => v
         {/* Inspector */}
         {selected && (
           <div className="w-72 border-l border-white/5 bg-background/40 p-3 overflow-y-auto">
-            <NodeInspector node={selected} onChange={updateSelected} onDelete={deleteSelected} />
+            <NodeInspector node={selected} scope={scope} onChange={updateSelected} onDelete={deleteSelected} />
           </div>
         )}
       </div>
@@ -208,12 +209,14 @@ function FlowEditorInner({ flowId, onClose }: { flowId: string; onClose: () => v
   );
 }
 
-function NodeInspector({ node, onChange, onDelete }: { node: Node; onChange: (p: any) => void; onDelete: () => void }) {
+function NodeInspector({ node, onChange, onDelete, scope }: { node: Node; onChange: (p: any) => void; onDelete: () => void; scope: FlowScope }) {
   const data: any = node.data;
   const kind = data.kind as keyof typeof NODE_META;
   const config = data.config || {};
-  const { data: pipelines = [] } = useProjectPipelines();
-  const { data: stages = [] } = useProjectStages(config.pipeline_id);
+  const projHooks = { pipelines: useProjectPipelines(), stages: useProjectStages(config.pipeline_id) };
+  const crmHooks = { pipelines: useCrmPipelines(), stages: useCrmStages(config.pipeline_id) };
+  const pipelines = (scope === "deals" ? crmHooks.pipelines.data : projHooks.pipelines.data) || [];
+  const stages = (scope === "deals" ? crmHooks.stages.data : projHooks.stages.data) || [];
 
   const setCfg = (patch: any) => onChange({ config: { ...config, ...patch } });
 
@@ -237,8 +240,10 @@ function NodeInspector({ node, onChange, onDelete }: { node: Node; onChange: (p:
             <Select value={config.event || "stage_enter"} onValueChange={v => setCfg({ event: v })}>
               <SelectTrigger className="bg-white/5 border-white/10 h-8"><SelectValue /></SelectTrigger>
               <SelectContent className="bg-background border-white/10">
-                <SelectItem value="project_created">Projeto criado</SelectItem>
+                <SelectItem value="project_created">{scope === "deals" ? "Deal criado" : "Projeto criado"}</SelectItem>
                 <SelectItem value="stage_enter">Entrar em uma etapa</SelectItem>
+                {scope === "deals" && <SelectItem value="status_won">Deal ganho</SelectItem>}
+                {scope === "deals" && <SelectItem value="status_lost">Deal perdido</SelectItem>}
                 <SelectItem value="manual">Manual</SelectItem>
               </SelectContent>
             </Select>

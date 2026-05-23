@@ -1,32 +1,37 @@
-## Problema
+## Objetivo
+Adicionar um sistema de fluxos visuais (estilo nodes/React Flow) na página de **Deals** do CRM, igual ao que já existe na aba Projects, permitindo automatizar etapas do pipeline de vendas.
 
-No modo claro, o header mobile, a bottom nav e alguns elementos ficam com fundo cinza/escuro porque usam cores hardcoded (`rgba(8,10,22,0.7)`, `border-white/10`, `text-white`) em vez dos tokens semânticos do design system. Resultado: texto cinza ilegível sobre fundo cinza, perdendo a regra "modo claro = texto escuro, modo escuro = texto claro".
+## O que será feito
 
-## Mudanças
+### 1. Reorganizar a página `src/pages/Crm.tsx` com sub-abas
+Hoje a página tem só toggle Kanban/Lista. Vou adicionar uma faixa de sub-abas (mesmo estilo da página Projects):
+- **Deals** (Kanban + Lista — o conteúdo atual)
+- **Fluxos** (novo — editor visual de automações)
 
-### 1. `src/components/mobile/MobileHeader.tsx`
-- Remover `style={{ background: "rgba(8, 10, 22, 0.7)" }}`.
-- Usar `bg-background/80 border-border` (tokens), que automaticamente vira claro no light e escuro no dark.
+### 2. Reaproveitar a infra de fluxos existente
+A tabela `flows` (em `useFlows.ts`) e os componentes `FlowsList` + `FlowEditor` (React Flow + nodes customizados: Trigger, Email, WhatsApp, Delay, Condição, Atualizar) serão reutilizados.
 
-### 2. `src/components/mobile/MobileBottomNav.tsx`
-- Remover `style={{ background: "rgba(8, 10, 22, 0.85)" }}`.
-- Trocar `border-white/10` por `border-border`.
-- Usar `bg-background/90` para herdar o tema.
+Para separar fluxos de Deals dos fluxos de Projects, adiciono uma coluna `scope` ('deals' | 'projects') na tabela `flows`, com default 'projects' para não quebrar registros existentes.
 
-### 3. `src/components/mobile/MobileDrawer.tsx` e `MobileCrmSubnav.tsx`
-- Auditar e substituir `text-white`, `bg-white/X`, `border-white/X` hardcoded por tokens (`text-foreground`, `bg-card`, `border-border`, `text-muted-foreground`).
+### 3. Novos componentes (escopo: deals)
+- `src/components/crm/deals/DealsFlowsList.tsx` — clone enxuto de `FlowsList`, filtrando por `scope='deals'`.
+- `src/components/crm/deals/DealFlowEditor.tsx` — clone de `FlowEditor` mas com triggers e ações específicas de Deal:
+  - **Triggers**: "Deal criado", "Deal mudou de estágio" (com seletor de estágio), "Deal parado X dias", "Deal ganho/perdido".
+  - **Ações novas**: "Mover deal para estágio", "Atribuir responsável", "Criar atividade", além das já existentes (Email, WhatsApp, Delay, Condição).
 
-### 4. `src/index.css` — reforço light mode
-- Adicionar override garantindo que `text-white`, `text-white/70`, `text-white/80` virem `hsl(var(--foreground))` no light mode (já existe parcial para amber/emerald — estender para white).
-- Garantir que `bg-white/5`, `bg-white/10` em superfícies fixas (nav, header) recebam fundo claro adequado.
+### 4. Hook
+Estender `useFlows.ts` aceitando `scope` opcional no `useFlows(scope?)` para listar só os fluxos do escopo desejado.
 
-### 5. Glass card no light mode
-- Verificar que `.glass-card` em modo claro use `var(--glass-bg)` (já está branco translúcido) — sem mudanças necessárias se o token estiver correto.
+### 5. Backend (execução)
+Por ora, o editor salva os fluxos no banco (igual Projects hoje). A execução real dos fluxos de deals fica como passo seguinte (edge function dedicada), fora do escopo desta tarefa de UI.
 
-## Resultado esperado
+## Detalhes técnicos
+- Migração: `ALTER TABLE public.flows ADD COLUMN scope text NOT NULL DEFAULT 'projects';` + index em `scope`.
+- RLS atual de `flows` é mantido.
+- React Flow já está instalado (`@xyflow/react`).
+- Sub-abas na página Crm seguem o mesmo padrão visual da Projects (`rounded-full` chips com `glass-card`).
 
-- **Light mode**: header/bottom-nav/drawer com fundo branco translúcido, texto escuro nítido, ícones legíveis.
-- **Dark mode**: visual inalterado.
-- Regra global aplicada: cores semânticas (`foreground`, `background`, `border`, `muted-foreground`) ao invés de hardcoded `white/dark`.
-
-Sem mudanças em lógica/dados — somente camada de apresentação.
+## Fora do escopo
+- Motor de execução dos fluxos de deals (worker / edge function).
+- Logs de execução por deal.
+- Templates pré-prontos (podem ser adicionados depois).

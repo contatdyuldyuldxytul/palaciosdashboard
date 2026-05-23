@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Plus, Trash2, Workflow, Pencil, Circle } from "lucide-react";
-import { useFlows, useCreateFlow, useDeleteFlow, useUpdateFlow, type Flow } from "@/hooks/useFlows";
+import { useFlows, useCreateFlow, useDeleteFlow, useUpdateFlow, type Flow, type FlowScope } from "@/hooks/useFlows";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -10,9 +10,9 @@ import { Switch } from "@/components/ui/switch";
 import { FlowEditor } from "./FlowEditor";
 import { toast } from "@/hooks/use-toast";
 
-export function FlowsList() {
-  const { data: flows = [], isLoading } = useFlows();
-  const create = useCreateFlow();
+export function FlowsList({ scope = "projects", title, description }: { scope?: FlowScope; title?: string; description?: string }) {
+  const { data: flows = [], isLoading } = useFlows(scope);
+  const create = useCreateFlow(scope);
   const del = useDeleteFlow();
   const update = useUpdateFlow();
   const [newOpen, setNewOpen] = useState(false);
@@ -32,15 +32,15 @@ export function FlowsList() {
   };
 
   if (editingId) {
-    return <FlowEditor flowId={editingId} onClose={() => setEditingId(null)} />;
+    return <FlowEditor flowId={editingId} scope={scope} onClose={() => setEditingId(null)} />;
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Fluxos do Processo</h2>
-          <p className="text-xs text-muted-foreground">Automatize emails, WhatsApp e atualizações por etapa do projeto.</p>
+          <h2 className="text-lg font-semibold text-foreground">{title || "Fluxos do Processo"}</h2>
+          <p className="text-xs text-muted-foreground">{description || "Automatize emails, WhatsApp e atualizações por etapa do projeto."}</p>
         </div>
         <Button size="sm" onClick={() => setNewOpen(true)}>
           <Plus className="w-3.5 h-3.5 mr-1.5" /> Novo Fluxo
