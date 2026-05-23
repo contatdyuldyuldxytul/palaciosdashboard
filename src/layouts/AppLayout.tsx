@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import { AppSidebar } from "@/components/AppSidebar";
 import { TickerBar } from "@/components/TickerBar";
+import { AuroraBackground } from "@/components/ui/aurora-background";
 
 export function AppLayout() {
   return (
