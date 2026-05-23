@@ -177,6 +177,7 @@ export function KanbanBoard({ stages, deals }: { stages: CrmStage[]; deals: CrmD
   const qc = useQueryClient();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [moveToDealId, setMoveToDealId] = useState<string | null>(null);
+  const [lostDealId, setLostDealId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const dealsByStage = useMemo(() => {
