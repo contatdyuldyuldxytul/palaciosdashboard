@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Plus, Trash2, Workflow, Pencil, Circle } from "lucide-react";
-import { useFlows, useCreateFlow, useDeleteFlow, useUpdateFlow, type Flow } from "@/hooks/useFlows";
+import { useFlows, useCreateFlow, useDeleteFlow, useUpdateFlow, type Flow, type FlowScope } from "@/hooks/useFlows";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -10,9 +10,9 @@ import { Switch } from "@/components/ui/switch";
 import { FlowEditor } from "./FlowEditor";
 import { toast } from "@/hooks/use-toast";
 
-export function FlowsList() {
-  const { data: flows = [], isLoading } = useFlows();
-  const create = useCreateFlow();
+export function FlowsList({ scope = "projects", title, description }: { scope?: FlowScope; title?: string; description?: string }) {
+  const { data: flows = [], isLoading } = useFlows(scope);
+  const create = useCreateFlow(scope);
   const del = useDeleteFlow();
   const update = useUpdateFlow();
   const [newOpen, setNewOpen] = useState(false);
