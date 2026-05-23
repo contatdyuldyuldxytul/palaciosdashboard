@@ -124,7 +124,11 @@ const App = () => (
               <Route path="/crm" element={<Crm />} />
               <Route path="/crm/deal/:id" element={<CrmDealDetail />} />
               <Route path="/crm/projects" element={<Projects />} />
-              <Route path="/crm/atividades" element={<Placeholder title="Atividades" />} />
+              <Route path="/crm/atividades" element={<Atividades />}>
+                <Route path="nucleo" element={<NucleoOperacionalRoute />} />
+                <Route path="inteligencia" element={<InteligenciaComercialRoute />} />
+                <Route path="gestor" element={<VisaoGestorRoute />} />
+              </Route>
               <Route path="/crm/email" element={<Placeholder title="Integração de E-mail" />} />
               <Route path="/crm/instagram" element={<InstagramLeads />} />
               <Route path="/crm/contatos" element={<Placeholder title="Contatos" />} />
