@@ -75,8 +75,15 @@ export function useUpdateFlow() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Partial<Flow> }) => {
-      const { error } = await supabase.from("flows" as any).update(patch as any).eq("id", id);
+      const { data, error } = await supabase
+        .from("flows" as any)
+        .update(patch as any)
+        .eq("id", id)
+        .select("id");
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error("Sem permissão para salvar este fluxo ou o registro não foi encontrado.");
+      }
     },
     onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: ["flows"] });
@@ -89,8 +96,11 @@ export function useDeleteFlow() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("flows" as any).delete().eq("id", id);
+      const { data, error } = await supabase.from("flows" as any).delete().eq("id", id).select("id");
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error("Sem permissão para excluir este fluxo.");
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["flows"] }),
   });
