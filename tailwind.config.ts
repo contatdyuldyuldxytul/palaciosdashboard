@@ -87,6 +87,10 @@ export default {
           from: { opacity: "0", filter: "blur(4px)" },
           to: { opacity: "1", filter: "blur(0)" },
         },
+        aurora: {
+          from: { backgroundPosition: "50% 50%, 50% 50%" },
+          to: { backgroundPosition: "350% 50%, 350% 50%" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -94,8 +98,19 @@ export default {
         "pulse-gentle": "pulse-gentle 2s ease-in-out infinite",
         "slide-up": "slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1)",
         "fade-in": "fade-in 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
+        aurora: "aurora 60s linear infinite",
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    function ({ addBase, theme }: any) {
+      const flatten = require("tailwindcss/lib/util/flattenColorPalette").default;
+      const allColors = flatten(theme("colors"));
+      const newVars = Object.fromEntries(
+        Object.entries(allColors).map(([key, val]) => [`--${key}`, val as string]),
+      );
+      addBase({ ":root": newVars });
+    },
+  ],
 } satisfies Config;
