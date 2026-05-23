@@ -22,7 +22,7 @@ export function MobileCrmSubnav() {
     exact ? pathname === url : pathname === url || pathname.startsWith(url + "/");
 
   return (
-    <div className="md:hidden sticky top-12 z-20 backdrop-blur-xl border-b border-white/10" style={{ background: "rgba(8,10,22,0.6)" }}>
+    <div className="md:hidden sticky top-12 z-20 backdrop-blur-xl border-b border-border bg-background/70">
       <div className="flex gap-1.5 overflow-x-auto px-3 py-2 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: "none" }}>
         {items.map((it) => {
           const active = isActive(it.url, it.exact);
