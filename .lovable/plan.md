@@ -1,53 +1,121 @@
-## Reestruturar aba "Atividades" do CRM
 
-Substituir o `Placeholder` em `/crm/atividades` por uma página completa com 3 sub-abas. A aba "Vendas" da sidebar (e suas sub-rotas `/vendas/*`) será removida; tudo migra para dentro de Atividades.
+## Visão geral
 
-### Estrutura
+Na rota `/crm/email` vou montar duas seções principais em abas:
 
-```text
-/crm/atividades
-├── /nucleo            Núcleo Operacional   (default)
-├── /inteligencia      Inteligência Comercial
-└── /gestor            Visão do Gestor      (🔒 cadeado p/ não-CEO)
-```
+1. **Caixa de entrada (Gmail)** — cada colaborador conecta o próprio Gmail via OAuth. A plataforma lê, exibe, casa automaticamente os e-mails com leads do CRM (pelo endereço do contato em `crm_persons.email`) e permite enviar/responder.
+2. **Sequências de follow-up** — construtor visual onde o usuário define etapas (Dia 0, Dia 3, Dia 7…), cada uma com assunto e corpo com variáveis dinâmicas. No dia agendado, o sistema cria um **rascunho no Gmail do dono** para revisão antes do envio. Se o lead responder, a sequência é cancelada automaticamente.
 
-### 1. Núcleo Operacional
-- Reaproveita o conteúdo atual de `/vendas/funil` (Funil de Vendas) como visão principal.
-- Substitui a navegação "abas por colaborador" (Aline, Milena, Thiago, Felipe na sidebar) por um **seletor de colaborador** (dropdown/segmented control) no topo da aba.
-  - Opções: Todos · Aline · Milena · Thiago · Felipe
-  - Ao selecionar, renderiza in-place o dashboard do colaborador (`TeamMemberDashboard` / `LdrMemberDashboard` / `ThiagoDashboard`) sem mudar de rota.
-- Sub-tabs internas mantidas: Funil, Meus Leads, Scripts, Ligações, Assistente — reaproveitando as páginas existentes (`Funil`, `Leads`, `Scripts`, `AssistenteVendas`).
+---
 
-### 2. Inteligência Comercial
-Camada nova sobre `crm_deals`:
-- **Temperatura**: Quente / Morno / Frio — badge colorido em cada deal (vermelho/amarelo/azul).
-- **Score de qualificação (0–100)**: média ponderada de Fit, Budget, Urgência (cada um 0–10, editável no modal do deal).
-- **Motivo de perda obrigatório**: ao mover deal para stage `is_lost`, abre modal exigindo escolher: Preço · Timing · Concorrente · Sem resposta · Outro (com texto livre). Grava em `crm_deals.motivo_perda` (já existe).
-- **Painel de padrões**: gráfico de barras "Motivos de perda nos últimos 90 dias" + breakdown de temperatura por stage + score médio por responsável.
+## Seção 1 — Caixa de entrada Gmail
 
-### 3. Visão do Gestor (CEO only)
-Painel de saúde do pipeline:
-- **Volume de atividades por etapa** (count de `crm_deals` por `stage_id` no pipeline atual).
-- **Tarefas em atraso por responsável** (`crm_activities` com `scheduled_at < now()` e `concluida=false`, agrupado por `owner_label`).
-- **Rastreador de cadência**: tabela de deals com colunas `Último toque` (max `crm_activities.concluida_em` ou `stage_entered_at`), `Próxima ação` (próxima `crm_activities` agendada), `Dias parado`. Ordenado por mais parados primeiro.
-- Para não-fundador: tela com `<Lock>` icon + mensagem "Acesso restrito ao CEO" (padrão já usado em outras gates).
+### Conexão
+- Botão "Conectar Gmail" usa o **Lovable Connector do Gmail** (`google_mail`), modo por usuário: cada colaborador inicia o fluxo e a conexão fica vinculada ao `user_id` na nova tabela `email_accounts`.
+- Estado vazio elegante quando o usuário ainda não conectou, com benefícios e CTA.
+- Status da conexão (verde "Sincronizando" / amarelo "Pendente" / vermelho "Expirou — reconectar").
 
-### Mudanças técnicas
+### Sincronização e exibição
+- Edge Function `gmail-sync`: lista mensagens via gateway Gmail (`users/me/messages?q=...`), busca detalhes (`format=metadata` para a lista, `full` ao abrir), grava em `email_messages` com `thread_id`, `subject`, `from`, `to`, `snippet`, `body_html`, `received_at`, `direction` (in/out), `is_read`, `gmail_message_id`, `gmail_thread_id`.
+- Casa automaticamente com `crm_deals`: ao salvar, procura o `crm_persons` cujo `email` bate com o remetente/destinatário externo e preenche `deal_id` e `person_id`.
+- Botão "Sincronizar agora" + sync automática a cada 5 min (cron) por conta conectada.
 
-**Banco** (migration):
-- `crm_deals`: adicionar `temperatura text` ('quente'|'morno'|'frio'), `score_fit smallint`, `score_budget smallint`, `score_urgencia smallint`, `score_total smallint generated`.
-- Sem mudanças em RLS (políticas existentes cobrem).
+### UI da caixa
+Layout 3 colunas no estilo Superhuman/Gmail:
+- **Esquerda**: pastas (Recebidos, Enviados, Não lidos, Vinculados a deal, Não vinculados) + busca.
+- **Centro**: lista de threads (remetente, assunto, snippet, data, badge do deal se vinculado).
+- **Direita**: visualização da thread aberta + cartão lateral do deal vinculado (atalho para ficha).
 
-**Arquivos**:
-- Novo: `src/pages/crm/Atividades.tsx` (container com `SectionTabs` para as 3 sub-abas).
-- Novo: `src/components/crm/atividades/NucleoOperacional.tsx` (seletor de colaborador + render condicional).
-- Novo: `src/components/crm/atividades/InteligenciaComercial.tsx` + `MotivoPerdaModal.tsx` + `TemperaturaBadge.tsx` + `QualificacaoEditor.tsx`.
-- Novo: `src/components/crm/atividades/VisaoGestor.tsx` (com gate por `isFundador`).
-- Editar `src/App.tsx`: substituir `Placeholder` em `/crm/atividades` por `Atividades` com sub-rotas; **remover** rota `/vendas` e o `VendasLayout`; manter redirects `/vendas/*` → `/crm/atividades/nucleo/*` para retrocompatibilidade.
-- Editar `src/components/AppSidebar.tsx`: remover item "Vendas" e os 4 sub-itens de colaboradores; garantir que "Atividades" fique destacada como entrada principal do fluxo comercial.
-- Hook do gancho de perda: editar `KanbanBoard.tsx` para interceptar drop em stage `is_lost` e abrir `MotivoPerdaModal`.
+### Envio
+- Botão "Novo e-mail" abre composer (Para / Assunto / Corpo rich-text).
+- Botão "Responder" / "Responder todos" preserva `In-Reply-To` e `References`.
+- Envio via Gmail API (`users/me/messages/send`) — codifica RFC 2822 em base64url.
+- Grava cópia em `email_messages` como `direction=out`.
 
-### Pontos a confirmar antes de implementar
-1. **Remover sidebar "Vendas" completamente?** Confirmado pelo enunciado ("eliminemos o painel de Vendas") — mas os dashboards `/equipe/aline`, `/equipe/milena` etc. ainda devem existir como rotas standalone (você está em uma agora) ou só dentro do seletor de Atividades?
-2. **Score de qualificação**: ok com 3 campos (Fit, Budget, Urgência) editáveis manualmente, ou prefere alguma sugestão automática via IA?
-3. **Temperatura**: definida manualmente pelo vendedor, ou calculada automaticamente do score (>70 quente, 40-70 morno, <40 frio)?
+---
+
+## Seção 2 — Construtor de sequências de follow-up
+
+### Modelo de dados
+- `email_sequences`: id, nome, descricao, ativo, trigger_type (manual | stage_enter), trigger_stage_id, owner_user_id, created_at.
+- `email_sequence_steps`: id, sequence_id, ordem, dia_offset (int, dias após enrollment), subject_template, body_template.
+- `email_sequence_enrollments`: id, sequence_id, deal_id, person_id, owner_user_id, started_at, current_step, status (active | completed | cancelled_replied | cancelled_manual), cancelled_reason.
+- `email_sequence_drafts`: id, enrollment_id, step_id, scheduled_for, gmail_draft_id, status (pending | draft_created | sent | skipped), created_at.
+
+### Construtor visual
+- Lista de sequências (cards) + botão "Nova sequência".
+- Editor com timeline vertical estilo flow:
+  - Cabeçalho: nome, descrição, gatilho (Manual ou "Quando lead entra em [etapa]" — select com stages do funil).
+  - Steps em cards arrastáveis: "Dia 0", "Dia 3", "Dia 7"… com botão "+ Adicionar passo".
+  - Cada step: input dia_offset, input assunto, editor de corpo com **chips de variáveis** clicáveis: `{{lead_nome}}`, `{{lead_empresa}}`, `{{responsavel_nome}}`, `{{deal_titulo}}`.
+  - Preview ao lado com variáveis substituídas por valores de exemplo.
+- Toggle "Ativa" + botão Salvar.
+
+### Atribuição manual
+- Na ficha do deal (CrmDealDetail) adicionar dropdown "Inscrever em sequência" → cria `enrollment`.
+- Página da sequência mostra lista de leads inscritos com status.
+
+### Disparo por etapa do funil
+- Trigger SQL em `crm_deals`: quando `stage_id` muda, se houver sequência ativa com `trigger_type=stage_enter` e `trigger_stage_id=NEW.stage_id` e o deal ainda não está inscrito, cria enrollment.
+
+### Execução (cria rascunhos para aprovação)
+- Edge Function `process-email-sequences` (cron diário 8h America/Sao_Paulo):
+  1. Lê enrollments ativos.
+  2. Para cada step cujo `started_at + dia_offset <= hoje` e ainda não processado:
+     - Renderiza subject/body substituindo variáveis com dados do deal/person/owner.
+     - Chama Gmail API `users/me/drafts` na conta do `owner_user_id` para criar rascunho com destinatário do `person.email`.
+     - Salva `gmail_draft_id` em `email_sequence_drafts` com status `draft_created`.
+     - Avança `current_step`.
+  3. Notificação no painel "X rascunhos prontos para revisão" com link para Gmail.
+
+### Cancelamento por resposta
+- Durante `gmail-sync`, se chegar e-mail `direction=in` cujo `from` corresponde a `person.email` de um enrollment ativo, marca enrollment como `cancelled_replied` e ignora steps futuros.
+
+---
+
+## Arquivos a criar/editar
+
+### Frontend
+- `src/pages/crm/Email.tsx` — abas "Caixa de entrada" e "Sequências".
+- `src/components/crm/email/InboxView.tsx` — layout 3 colunas.
+- `src/components/crm/email/ThreadList.tsx`, `ThreadView.tsx`, `Composer.tsx`.
+- `src/components/crm/email/GmailConnectCard.tsx` — estado conectar/conectado.
+- `src/components/crm/email/SequencesList.tsx` — grid de sequências.
+- `src/components/crm/email/SequenceEditor.tsx` — timeline + steps.
+- `src/components/crm/email/StepCard.tsx` — editor de um passo com chips de variáveis.
+- `src/components/crm/email/EnrollLeadButton.tsx` — botão na ficha do deal.
+- `src/hooks/useEmail.ts` — hooks React Query (accounts, messages, send).
+- `src/hooks/useEmailSequences.ts` — hooks CRUD de sequências e enrollments.
+- `src/App.tsx` — rota `/crm/email` se ainda não existir, e/ou ajustar.
+
+### Backend
+- Migration criando tabelas + RLS (acesso só ao próprio `user_id` ou fundador).
+- Trigger `crm_deals_stage_change_sequence_enroll`.
+- Edge Functions: `gmail-sync`, `gmail-send`, `gmail-create-draft`, `process-email-sequences`.
+- Cron pg_cron: chamada de `gmail-sync` a cada 5 min e `process-email-sequences` diário 11:00 UTC.
+
+### Conector
+- Linkar conector `google_mail` (Gmail) via `standard_connectors--connect` antes da implementação dos Edge Functions.
+
+---
+
+## Detalhes técnicos
+
+- **Variáveis dinâmicas**: renderizadas server-side dentro do Edge Function antes de criar o draft, com `String.prototype.replaceAll` simples sobre o template. Sanitização: variáveis só lêem campos do deal/person/profile (whitelist).
+- **Idempotência da sequência**: chave única `(enrollment_id, step_id)` em `email_sequence_drafts` evita rascunho duplicado se o cron rodar duas vezes.
+- **RLS**: 
+  - `email_accounts`, `email_messages`, `email_sequence_enrollments`, `email_sequence_drafts`: visíveis ao próprio `owner_user_id` + `has_role(uid,'fundador')`.
+  - `email_sequences`, `email_sequence_steps`: leitura para todos autenticados, escrita só fundador (ou criador).
+- **Token Gmail**: gerenciado pelo gateway do Lovable — não armazenamos refresh_token nós mesmos.
+- **Escopos Gmail requeridos**: `gmail.readonly` (sync), `gmail.send` (envio direto na Inbox), `gmail.compose` (criar rascunhos).
+- **Estética**: dark glassmorphism existente, emerald #00C896 para badges positivas, lista de threads com hover sutil; chips de variáveis com cor accent.
+
+---
+
+## Fora de escopo desta entrega
+
+- Anexos no envio direto (apenas link possível) — Gmail API suporta, mas adiciona complexidade; podemos adicionar depois se quiser.
+- Tracking de abertura/cliques (pixels) — fora do escopo inicial.
+- Templates de e-mail reutilizáveis fora de sequências.
+
+Posso ajustar qualquer ponto antes de implementar.
