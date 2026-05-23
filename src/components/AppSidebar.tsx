@@ -14,7 +14,6 @@ import logoPalaciosIcon from "@/assets/logo-palacios-icon.png";
 
 const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Vendas", url: "/vendas/funil", icon: TrendingUp, hasChildren: true },
   { title: "CRM", url: "/crm", icon: Kanban, hasChildren: true, alwaysExpanded: true },
   { title: "Hunter de Negócios", url: "/hunter", icon: Target },
   { title: "CEO", url: "/ceo", icon: Crown, requireRole: "fundador" as const, isCeo: true },
@@ -33,10 +32,6 @@ type SubItem = {
 };
 
 const subItems: SubItem[] = [
-  { title: "Thiago", url: "/equipe/thiago", parentUrl: "/vendas", initials: "TH", color: "#0a3a5c" },
-  { title: "Aline", url: "/equipe/aline", parentUrl: "/vendas", initials: "AL" },
-  { title: "Milena", url: "/equipe/milena", parentUrl: "/vendas", initials: "MI", color: "hsl(45,80%,45%)" },
-  { title: "Felipe", url: "/equipe/felipe", parentUrl: "/vendas", initials: "FE", color: "#f97316" },
   // CRM sub-tabs
   { title: "Deals", url: "/crm", parentUrl: "/crm", icon: DollarSign, exact: true },
   { title: "Projects", url: "/crm/projects", parentUrl: "/crm", icon: ClipboardList },
@@ -56,7 +51,6 @@ export function AppSidebar() {
 
   const isActive = (url: string) => {
     if (url === "/") return location.pathname === "/";
-    if (url === "/vendas/funil") return location.pathname.startsWith("/vendas") || location.pathname.startsWith("/equipe/");
     return location.pathname.startsWith(url);
   };
 
@@ -86,13 +80,8 @@ export function AppSidebar() {
         <ul className="space-y-1">
           {visibleItems.map((item) => {
             const active = isActive(item.url);
-            const allChildren = item.hasChildren ? subItems.filter((s) => s.parentUrl === (item.url.startsWith("/crm") ? "/crm" : "/vendas")) : [];
-            const children = allChildren.filter((s) => {
-              if (s.url === "/equipe/thiago") {
-                return hasRole("fundador") || profile?.colaborador_slug === "thiago";
-              }
-              return true;
-            });
+            const allChildren = item.hasChildren ? subItems.filter((s) => s.parentUrl === "/crm") : [];
+            const children = allChildren;
             const showChildren = !collapsed && (item as any).hasChildren && ((item as any).alwaysExpanded || active) && children.length > 0;
             return (
               <li key={item.url} className="space-y-0.5">

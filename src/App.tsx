@@ -8,7 +8,6 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { PasswordGate } from "@/components/PasswordGate";
 import { AppLayout } from "@/layouts/AppLayout";
-import { VendasLayout } from "@/layouts/VendasLayout";
 
 import { ClientesLayout } from "@/layouts/ClientesLayout";
 import { CeoLayout } from "@/layouts/CeoLayout";
@@ -46,6 +45,14 @@ import Crm from "@/pages/Crm";
 import CrmDealDetail from "@/pages/CrmDealDetail";
 import InstagramLeads from "@/pages/crm/InstagramLeads";
 import Projects from "@/pages/crm/Projects";
+import Atividades from "@/pages/crm/Atividades";
+import { NucleoOperacional } from "@/components/crm/atividades/NucleoOperacional";
+import { InteligenciaComercial } from "@/components/crm/atividades/InteligenciaComercial";
+import { VisaoGestor } from "@/components/crm/atividades/VisaoGestor";
+
+const NucleoOperacionalRoute = () => <NucleoOperacional />;
+const InteligenciaComercialRoute = () => <InteligenciaComercial />;
+const VisaoGestorRoute = () => <VisaoGestor />;
 import { useAuth } from "@/contexts/AuthContext";
 
 function HunterGate() {
@@ -80,15 +87,12 @@ const App = () => (
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route path="/" element={<Dashboard />} />
 
-              {/* Vendas */}
-              <Route path="/vendas" element={<VendasLayout />}>
-                <Route index element={<Leads />} />
-                <Route path="funil" element={<Funil />} />
-                
-                <Route path="scripts" element={<Scripts />} />
-                <Route path="ligacoes" element={<Placeholder title="Ligações" />} />
-                <Route path="assistente" element={<AssistenteVendas />} />
-              </Route>
+              {/* Vendas — redirects para CRM > Atividades */}
+              <Route path="/vendas" element={<Navigate to="/crm/atividades/nucleo" replace />} />
+              <Route path="/vendas/funil" element={<Navigate to="/crm/atividades/nucleo" replace />} />
+              <Route path="/vendas/scripts" element={<Navigate to="/crm/atividades/nucleo" replace />} />
+              <Route path="/vendas/ligacoes" element={<Navigate to="/crm/atividades/nucleo" replace />} />
+              <Route path="/vendas/assistente" element={<Navigate to="/crm/atividades/nucleo" replace />} />
 
               {/* Team member dashboards */}
               <Route path="/equipe/aline" element={<TeamMemberDashboard memberName="Aline" initials="AL" />} />
@@ -128,7 +132,11 @@ const App = () => (
               <Route path="/crm" element={<Crm />} />
               <Route path="/crm/deal/:id" element={<CrmDealDetail />} />
               <Route path="/crm/projects" element={<Projects />} />
-              <Route path="/crm/atividades" element={<Placeholder title="Atividades" />} />
+              <Route path="/crm/atividades" element={<Atividades />}>
+                <Route path="nucleo" element={<NucleoOperacionalRoute />} />
+                <Route path="inteligencia" element={<InteligenciaComercialRoute />} />
+                <Route path="gestor" element={<VisaoGestorRoute />} />
+              </Route>
               <Route path="/crm/email" element={<Placeholder title="Integração de E-mail" />} />
               <Route path="/crm/instagram" element={<InstagramLeads />} />
               <Route path="/crm/contatos" element={<Placeholder title="Contatos" />} />

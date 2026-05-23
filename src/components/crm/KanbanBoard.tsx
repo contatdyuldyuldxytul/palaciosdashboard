@@ -13,6 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import { MotivoPerdaModal } from "@/components/crm/atividades/MotivoPerdaModal";
 
 const fmt = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
@@ -176,6 +177,7 @@ export function KanbanBoard({ stages, deals }: { stages: CrmStage[]; deals: CrmD
   const qc = useQueryClient();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [moveToDealId, setMoveToDealId] = useState<string | null>(null);
+  const [lostDealId, setLostDealId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const dealsByStage = useMemo(() => {
@@ -199,12 +201,8 @@ export function KanbanBoard({ stages, deals }: { stages: CrmStage[]; deals: CrmD
         if (error) throw error;
         toast({ title: "Deal excluído" });
       } else if (action === "__lost__") {
-        const { error } = await supabase
-          .from("crm_deals")
-          .update({ status: "lost", data_fechamento: new Date().toISOString() })
-          .eq("id", dealId);
-        if (error) throw error;
-        toast({ title: "Marcado como Perdido" });
+        setLostDealId(dealId);
+        return;
       } else if (action === "__won__") {
         const { error } = await supabase
           .from("crm_deals")
@@ -285,6 +283,29 @@ export function KanbanBoard({ stages, deals }: { stages: CrmStage[]; deals: CrmD
       <MoveToPipelineDialog
         dealId={moveToDealId}
         onClose={() => setMoveToDealId(null)}
+      />
+
+      {/* Motivo de perda obrigatório */}
+      <MotivoPerdaModal
+        open={!!lostDealId}
+        dealTitulo={lostDealId ? deals.find(d => d.id === lostDealId)?.titulo : null}
+        onCancel={() => setLostDealId(null)}
+        onConfirm={async (motivo) => {
+          if (!lostDealId) return;
+          try {
+            const { error } = await supabase
+              .from("crm_deals")
+              .update({ status: "lost", motivo_perda: motivo, data_fechamento: new Date().toISOString() })
+              .eq("id", lostDealId);
+            if (error) throw error;
+            toast({ title: "Marcado como Perdido", description: motivo });
+            qc.invalidateQueries({ queryKey: ["crm"] });
+          } catch (err: any) {
+            toast({ title: "Erro", description: err.message, variant: "destructive" });
+          } finally {
+            setLostDealId(null);
+          }
+        }}
       />
     </DndContext>
   );
