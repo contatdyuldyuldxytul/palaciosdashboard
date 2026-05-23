@@ -16,22 +16,22 @@ export default function Projects() {
   const [tab, setTab] = useState<Tab>("kanban");
 
   return (
-    <div className="p-4 lg:p-6 space-y-5">
+    <div className="p-3 md:p-6 space-y-4 md:space-y-5">
       <div>
-        <h1 className="text-xl font-semibold text-foreground tracking-tight">Projects</h1>
+        <h1 className="text-lg md:text-xl font-semibold text-foreground tracking-tight">Projects</h1>
         <p className="text-[11px] text-muted-foreground mt-1">
           Acompanhamento de projetos, fluxos automatizados e painel administrativo.
         </p>
       </div>
 
-      <div className="flex rounded-full border border-white/10 overflow-hidden glass-card p-0.5 w-fit">
+      <div className="flex rounded-full border border-white/10 overflow-x-auto glass-card p-0.5 w-fit max-w-full [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: "none" }}>
         {TABS.map(t => {
           const Icon = t.icon;
           return (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`px-3.5 py-1.5 rounded-full text-xs flex items-center gap-1.5 transition-colors ${
+              className={`px-3.5 py-1.5 rounded-full text-xs flex items-center gap-1.5 transition-colors whitespace-nowrap flex-shrink-0 ${
                 tab === t.id ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
               }`}
             >

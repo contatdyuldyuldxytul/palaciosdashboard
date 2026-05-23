@@ -49,7 +49,15 @@ export function InboxView() {
   };
 
   return (
-    <div className="grid grid-cols-[220px_1fr_1.3fr] gap-4 h-[calc(100vh-220px)] min-h-[600px]">
+    <div className="grid grid-cols-1 md:grid-cols-[220px_1fr_1.3fr] gap-3 md:gap-4 md:h-[calc(100vh-220px)] md:min-h-[600px]">
+      {activeThread && (
+        <button
+          onClick={() => setActiveThread(null)}
+          className="md:hidden text-xs text-muted-foreground hover:text-foreground self-start px-2 py-1 rounded-md bg-white/5"
+        >
+          ← Voltar para a lista
+        </button>
+      )}
       {/* Sidebar */}
       <Card className="p-3 bg-white/5 border-white/10 backdrop-blur-xl flex flex-col gap-2">
         <Button onClick={() => setComposing({ mode: "new" })} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white">
