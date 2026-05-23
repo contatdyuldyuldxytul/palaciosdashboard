@@ -47,6 +47,7 @@ import InstagramLeads from "@/pages/crm/InstagramLeads";
 import Projects from "@/pages/crm/Projects";
 import Atividades from "@/pages/crm/Atividades";
 import Email from "@/pages/crm/Email";
+import Contatos from "@/pages/crm/Contatos";
 import { NucleoOperacional } from "@/components/crm/atividades/NucleoOperacional";
 import { InteligenciaComercial } from "@/components/crm/atividades/InteligenciaComercial";
 import { VisaoGestor } from "@/components/crm/atividades/VisaoGestor";
@@ -140,7 +141,7 @@ const App = () => (
               </Route>
               <Route path="/crm/email" element={<Email />} />
               <Route path="/crm/instagram" element={<InstagramLeads />} />
-              <Route path="/crm/contatos" element={<Placeholder title="Contatos" />} />
+              <Route path="/crm/contatos" element={<Contatos />} />
               <Route path="/crm/insights" element={<Placeholder title="Insights & Forecast" />} />
               <Route path="/crm/automacoes" element={<Placeholder title="Automações de I.A" />} />
               <Route path="/crm/configuracoes" element={<Placeholder title="Configurações" />} />

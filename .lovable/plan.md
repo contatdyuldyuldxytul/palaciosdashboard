@@ -1,70 +1,61 @@
-## Problema 1 — Fluxos não salvam
+## Aba Contatos — lista unificada com filtros e painel lateral
 
-O `useUpdateFlow` faz `update().eq()` **sem `.select()`**. Quando o RLS bloqueia (ou nenhuma linha bate), o Supabase retorna sucesso silencioso (0 linhas afetadas, sem erro). Resultado: o toast "Fluxo salvo" aparece mas nada persiste.
+Substituir o placeholder de `/crm/contatos` por uma página real que unifica todos os contatos da base e permite navegar pelos detalhes sem trocar de rota.
 
-A política atual de `flows` é:
-- `flows_view` → qualquer autenticado pode ler
-- `flows_manage` → **somente `fundador`** pode inserir/atualizar/deletar
+### Fontes de dados
+- `crm_persons` (nome, empresa via `crm_organizations`, cargo, telefone, email)
+- `clientes_ativos` (para marcar quem é cliente ativo / ex-cliente; casamento por email, depois por nome)
+- `crm_deals` (para detectar leads quentes e ex-clientes via deals ganhos/abertos/perdidos)
+- `crm_activities` (atividades recentes no painel lateral)
 
-Quem está logado provavelmente não tem o papel `fundador` para o contexto de Deals (ou a sessão precisa ser revalidada), então o update é descartado em silêncio.
+### Derivação do badge de status
+Cada contato ganha 1 de 4 status, calculado no client com cores distintas:
 
-### Correção
+```text
+Cliente Ativo   → emerald   (clientes_ativos.status = 'ativo')
+Ex-Cliente      → sky       (clientes_ativos.status != 'ativo' OU já teve deal 'won' sem projeto ativo)
+Lead            → amber     (algum crm_deals com status = 'open')
+Prospect Frio   → muted     (nenhum deal aberto, nenhum vínculo de cliente)
+```
 
-1. **`src/hooks/useFlows.ts`** — em `useUpdateFlow`, trocar para:
-   ```ts
-   .update(patch).eq("id", id).select("id")
-   ```
-   e lançar erro explícito se `data.length === 0` ("Sem permissão para salvar este fluxo ou linha não encontrada"). Mesma proteção em `useDeleteFlow`.
+### Layout
 
-2. **Nova migration** — relaxar `flows_manage` para qualquer usuário autenticado (consistente com `flows_view`, já que toda a área de Projects/Deals já é interna):
-   ```sql
-   DROP POLICY "flows_manage" ON public.flows;
-   CREATE POLICY "flows_manage" ON public.flows
-     FOR ALL TO authenticated USING (true) WITH CHECK (true);
-   ```
-   Mesmo tratamento para `flow_runs` se estiver com restrição parecida.
+```text
+┌─ Header: título + busca global ──────────────────────────────┐
+│  [🔍 buscar por nome, empresa, email, telefone, cargo...]   │
+├─ Filtros (chips) ────────────────────────────────────────────┤
+│  Status ▾   Empresa ▾   Cargo ▾   (combináveis, live)        │
+├─ Tabela ─────────────────────────────────────────────────────┤
+│  Nome | Empresa | Cargo | Telefone | E-mail | [Badge status] │
+│  ... (linhas clicáveis, hover destaca)                       │
+└──────────────────────────────────────────────────────────────┘
 
-3. **`FlowEditor.tsx`** — após `update.mutateAsync`, dar `await` em uma re-leitura via `queryClient.invalidateQueries` (já existe no hook) e mostrar toast de erro real vindo do throw acima.
+Sheet lateral (Radix Sheet, abre da direita, ~480px):
+  • Header: avatar inicial + nome + badge status
+  • Bloco "Contato": empresa, cargo, telefone, email, links sociais
+  • Bloco "Negociações": lista de crm_deals vinculados (titulo, stage, valor, status)
+  • Bloco "Últimas atividades": crm_activities ordenadas desc (tipo, título, data)
+  • Botão "Abrir no CRM" leva ao deal mais recente
+```
 
-## Problema 2 — Faltam tipos de node, especialmente um node "livre"
+### Componentes / arquivos
 
-Hoje só temos: trigger, email, whatsapp, delay, condition, update. Vou adicionar nodes **não-automatizados** (visuais/organizacionais), úteis para desenhar o processo mesmo sem rodar nada:
+- **`src/pages/crm/Contatos.tsx`** (novo) — página principal, monta hook, filtros, tabela e sheet
+- **`src/components/crm/contatos/ContactRow.tsx`** (novo) — linha da tabela
+- **`src/components/crm/contatos/ContactDetailSheet.tsx`** (novo) — painel lateral usando `Sheet` do shadcn
+- **`src/components/crm/contatos/ContactStatusBadge.tsx`** (novo) — badge com cores por status
+- **`src/hooks/useContatos.ts`** (novo) — query React Query que junta `crm_persons` + `crm_organizations` + agrega `crm_deals` + `clientes_ativos` e devolve `Contato[]` enriquecido com status derivado
+- **`src/App.tsx`** — trocar `Placeholder` por `Contatos` na rota `/crm/contatos`
 
-### Novos nodes
+### Detalhes técnicos
 
-| Node | Função | Config no inspetor |
-|---|---|---|
-| **Custom** (em branco) | Node livre totalmente personalizável | Ícone (picker com ~30 ícones lucide), cor (color picker), título, descrição/markdown curto |
-| **Note** (sticky) | Bloco de anotação amarelo, sem handles obrigatórios | Texto multilinha |
-| **Milestone** | Marco visual (bandeira) | Título, data opcional |
-| **Decision** | Pergunta/decisão humana com 2 saídas (Sim/Não) | Pergunta, label saída A, label saída B |
-| **Task** | Tarefa manual atribuída a alguém | Título, responsável (texto livre por enquanto), prazo opcional |
-| **Webhook** | Chamada HTTP genérica (já fica preparado, sem executar agora) | URL, método, payload JSON |
+- Tudo client-side (3-4 selects do Supabase em paralelo, união em memória). Volume atual da base é pequeno.
+- Filtros e busca usam `useMemo` sobre a lista carregada; sem round-trips extras.
+- Selects de filtro (Status/Empresa/Cargo) são alimentados a partir dos valores únicos da própria lista.
+- Estilo segue o padrão glassmorphism premium do projeto (cards `glass-card`, `border-white/10`, semantic tokens), pt-BR para labels.
+- Sheet lateral fecha com ESC / clique fora; navegação dentro da aba sem mudar de rota.
 
-### Implementação em `FlowEditor.tsx`
-
-1. **Expandir `NODE_META`** com as 6 entradas acima (ícone padrão + cor padrão).
-2. **`FlowNode`** — quando `data.kind === "custom"`, renderizar usando `data.icon` (string lucide) e `data.color` (hex) salvos em `data`, com fallback. Para `note`, esconder handles ou deixá-los discretos.
-3. **`NodeInspector`** — novos blocos:
-   - `custom`: 
-     - **Icon picker**: grade 6×N com ~30 ícones (Star, Heart, Flag, Target, Lightbulb, Rocket, Bell, Bookmark, Camera, FileText, Folder, Image, Layers, Link, Map, MessageSquare, Music, Package, Phone, Settings, Shield, ShoppingCart, Tag, Timer, Tool/Wrench, User, Users, Video, Zap, CheckCircle). Salva em `data.icon`.
-     - **Color picker**: 8 swatches (emerald, blue, violet, pink, amber, red, cyan, slate) + input hex livre. Salva em `data.color`.
-     - **Descrição**: textarea livre. Salva em `data.config.description`.
-   - `note`: textarea ampla.
-   - `milestone`: título + input date.
-   - `decision`: pergunta + 2 labels (atualizar handles `yes`/`no` no node).
-   - `task`: título + responsável + due date.
-   - `webhook`: url + select método + textarea payload.
-4. **Palette lateral** — adicionar os 6 novos botões em uma seção "Personalizado" separada da seção "Automação" (cabeçalho `text-[10px] uppercase`).
-5. **Mapa de ícones dinâmico** para o custom node — importar os 30 ícones e expor via `CUSTOM_ICONS: Record<string, LucideIcon>`.
-
-## Arquivos a editar/criar
-
-- `src/hooks/useFlows.ts` — `.select()` + erro explícito em update/delete.
-- `supabase/migrations/<nova>.sql` — relaxar policy `flows_manage`.
-- `src/components/crm/projects/FlowEditor.tsx` — novos nodes, novo renderer condicional, inspetores, palette agrupada, mapa de ícones.
-
-## Fora de escopo
-
-- Execução real dos novos nodes (webhook, task, decision) — ficam só visuais/configuráveis por enquanto. A lógica de runtime continua só nos nodes de automação existentes.
-- Mudar quem pode ver/editar fluxos por escopo (deals vs projects) — segue compartilhado entre autenticados.
+### Fora do escopo
+- Criar/editar contatos (somente leitura nesta primeira versão)
+- Merge/dedup automático entre `crm_persons` e `clientes_ativos` (apenas matching por email/nome para o badge)
+- Exportação CSV
