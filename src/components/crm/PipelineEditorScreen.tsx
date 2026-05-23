@@ -111,11 +111,12 @@ export function PipelineEditorScreen({ mode, pipelineId, onClose, onSaved }: Pro
     }
     const ownerSel = ownerId !== "__none__" ? collabsQ.data?.find((c) => c.id === ownerId) : null;
     try {
+      const flowSel = flowId !== "__none__" ? flowId : null;
       if (isEdit && pipeline) {
         await update.mutateAsync({
           id: pipeline.id,
           nome: nome.trim(),
-          flow_type: flowType,
+          flow_id: flowSel,
           owner_user_id: ownerSel?.id ?? null,
           owner_label: ownerSel?.full_name || null,
         });
@@ -125,7 +126,8 @@ export function PipelineEditorScreen({ mode, pipelineId, onClose, onSaved }: Pro
       } else {
         const created = await create.mutateAsync({
           nome: nome.trim(),
-          flow_type: flowType,
+          flow_type: "personalizado",
+          flow_id: flowSel,
           owner_user_id: ownerSel?.id ?? null,
           owner_label: ownerSel?.full_name || null,
           stages,
@@ -199,19 +201,34 @@ export function PipelineEditorScreen({ mode, pipelineId, onClose, onSaved }: Pro
 
         <div className="flex min-w-0 flex-wrap items-end gap-2">
           <div>
-            <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Tipo</Label>
-            <Select value={flowType} onValueChange={(v) => handleFlowTypeChange(v as PipelineFlowType)}>
-              <SelectTrigger className="h-9 w-52 mt-1 bg-white/5 border-white/10">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {FLOW_TYPES.map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {FLOW_TYPE_LABELS[t]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+              <Workflow className="w-3 h-3" /> Fluxo aplicado
+            </Label>
+            <div className="flex items-center gap-1.5 mt-1">
+              <Select value={flowId} onValueChange={setFlowId}>
+                <SelectTrigger className="h-9 w-56 bg-white/5 border-white/10">
+                  <SelectValue placeholder="Sem fluxo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Sem fluxo</SelectItem>
+                  {(flowsQ.data || []).map((f) => (
+                    <SelectItem key={f.id} value={f.id}>
+                      {f.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {flowId !== "__none__" && (
+                <button
+                  type="button"
+                  onClick={() => setEditingFlowId(flowId)}
+                  className="h-9 px-2 rounded-md border border-white/10 bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+                  title="Editar fluxo"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
           </div>
           <div>
             <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Responsável</Label>
