@@ -53,21 +53,21 @@ export function InboxView() {
       {activeThread && (
         <button
           onClick={() => setActiveThread(null)}
-          className="md:hidden text-xs text-muted-foreground hover:text-foreground self-start px-2 py-1 rounded-md bg-white/5"
+          className="md:hidden text-xs text-muted-foreground hover:text-foreground self-start px-2 py-1 rounded-md bg-card/50"
         >
           ← Voltar para a lista
         </button>
       )}
       {/* Sidebar */}
-      <Card className={`p-3 bg-white/5 border-white/10 backdrop-blur-xl flex flex-col gap-2 ${activeThread ? "hidden md:flex" : ""}`}>
-        <Button onClick={() => setComposing({ mode: "new" })} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white">
+      <Card className={`p-3 bg-card/50 border-border backdrop-blur-xl flex flex-col gap-2 ${activeThread ? "hidden md:flex" : ""}`}>
+        <Button onClick={() => setComposing({ mode: "new" })} className="w-full bg-emerald-500 hover:bg-emerald-600 text-foreground">
           <Mail className="w-4 h-4 mr-2" /> Novo e-mail
         </Button>
         <Button variant="ghost" size="sm" onClick={handleSync} disabled={sync.isPending} className="w-full justify-start text-xs">
           <RefreshCw className={`w-3.5 h-3.5 mr-2 ${sync.isPending ? "animate-spin" : ""}`} />
           {sync.isPending ? "Sincronizando..." : "Sincronizar agora"}
         </Button>
-        <div className="h-px bg-white/10 my-1" />
+        <div className="h-px bg-accent my-1" />
         {FOLDERS.map((f) => {
           const Icon = f.icon;
           const active = filter === f.key;
@@ -76,7 +76,7 @@ export function InboxView() {
               key={f.key}
               onClick={() => { setFilter(f.key); setActiveThread(null); }}
               className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm transition ${
-                active ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white"
+                active ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-card/50 hover:text-foreground"
               }`}
             >
               <Icon className="w-4 h-4" /> {f.label}
@@ -86,23 +86,23 @@ export function InboxView() {
       </Card>
 
       {/* List */}
-      <Card className={`bg-white/5 border-white/10 backdrop-blur-xl overflow-hidden flex flex-col min-h-[60vh] md:min-h-0 ${activeThread ? "hidden md:flex" : ""}`}>
-        <div className="p-3 border-b border-white/10">
+      <Card className={`bg-card/50 border-border backdrop-blur-xl overflow-hidden flex flex-col min-h-[60vh] md:min-h-0 ${activeThread ? "hidden md:flex" : ""}`}>
+        <div className="p-3 border-b border-border">
           <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-white/40" />
+            <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-muted-foreground/70" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar e-mails..."
-              className="pl-8 bg-white/5 border-white/10 h-9"
+              className="pl-8 bg-card/50 border-border h-9"
             />
           </div>
         </div>
         <ScrollArea className="flex-1">
           {isLoading ? (
-            <div className="p-6 text-center text-white/40 text-sm">Carregando…</div>
+            <div className="p-6 text-center text-muted-foreground/70 text-sm">Carregando…</div>
           ) : threads.length === 0 ? (
-            <div className="p-6 text-center text-white/40 text-sm">
+            <div className="p-6 text-center text-muted-foreground/70 text-sm">
               Nenhum e-mail. Clique em "Sincronizar agora".
             </div>
           ) : (
@@ -112,20 +112,20 @@ export function InboxView() {
                 <button
                   key={m.id}
                   onClick={() => setActiveThread(m.gmail_thread_id)}
-                  className={`w-full text-left px-3 py-3 border-b border-white/5 transition ${
-                    active ? "bg-white/10" : "hover:bg-white/5"
+                  className={`w-full text-left px-3 py-3 border-b border-border/50 transition ${
+                    active ? "bg-accent" : "hover:bg-card/50"
                   } ${!m.is_read && m.direction === "in" ? "border-l-2 border-l-emerald-400" : ""}`}
                 >
                   <div className="flex items-center justify-between gap-2 mb-0.5">
-                    <span className="text-sm font-medium text-white truncate">
+                    <span className="text-sm font-medium text-foreground truncate">
                       {m.direction === "out" ? `Para: ${m.to_emails?.[0] || ""}` : m.from_name || m.from_email}
                     </span>
-                    <span className="text-[10px] text-white/40 shrink-0">
+                    <span className="text-[10px] text-muted-foreground/70 shrink-0">
                       {format(new Date(m.received_at), "dd/MM HH:mm", { locale: ptBR })}
                     </span>
                   </div>
-                  <div className="text-sm text-white/80 truncate">{m.subject || "(sem assunto)"}</div>
-                  <div className="text-xs text-white/40 truncate">{m.snippet}</div>
+                  <div className="text-sm text-foreground/80 truncate">{m.subject || "(sem assunto)"}</div>
+                  <div className="text-xs text-muted-foreground/70 truncate">{m.snippet}</div>
                   {m.deal_id && (
                     <Badge className="mt-1 bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-[10px]">
                       Lead vinculado
@@ -139,17 +139,17 @@ export function InboxView() {
       </Card>
 
       {/* Thread view */}
-      <Card className={`bg-white/5 border-white/10 backdrop-blur-xl overflow-hidden flex flex-col min-h-[60vh] md:min-h-0 ${!activeThread ? "hidden md:flex" : ""}`}>
+      <Card className={`bg-card/50 border-border backdrop-blur-xl overflow-hidden flex flex-col min-h-[60vh] md:min-h-0 ${!activeThread ? "hidden md:flex" : ""}`}>
         {!activeThread ? (
-          <div className="flex-1 flex items-center justify-center text-white/40 text-sm">
+          <div className="flex-1 flex items-center justify-center text-muted-foreground/70 text-sm">
             Selecione uma conversa
           </div>
         ) : (
           <>
-            <div className="p-4 border-b border-white/10 flex items-center justify-between">
+            <div className="p-4 border-b border-border flex items-center justify-between">
               <div>
-                <div className="text-lg font-semibold text-white">{thread[0]?.subject || "(sem assunto)"}</div>
-                <div className="text-xs text-white/40 mt-0.5">{thread.length} mensagem(ns)</div>
+                <div className="text-lg font-semibold text-foreground">{thread[0]?.subject || "(sem assunto)"}</div>
+                <div className="text-xs text-muted-foreground/70 mt-0.5">{thread.length} mensagem(ns)</div>
               </div>
               <Button size="sm" variant="outline" onClick={() => setComposing({ mode: "reply", thread })}>
                 Responder
@@ -158,23 +158,23 @@ export function InboxView() {
             <ScrollArea className="flex-1 p-4">
               <div className="space-y-4">
                 {thread.map((m) => (
-                  <div key={m.id} className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
+                  <div key={m.id} className="rounded-lg border border-border bg-card/40 p-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="text-sm">
-                        <span className="font-medium text-white">{m.from_name || m.from_email}</span>
-                        <span className="text-white/40 ml-2 text-xs">para {m.to_emails?.join(", ")}</span>
+                        <span className="font-medium text-foreground">{m.from_name || m.from_email}</span>
+                        <span className="text-muted-foreground/70 ml-2 text-xs">para {m.to_emails?.join(", ")}</span>
                       </div>
-                      <span className="text-[11px] text-white/40">
+                      <span className="text-[11px] text-muted-foreground/70">
                         {format(new Date(m.received_at), "dd 'de' MMM, HH:mm", { locale: ptBR })}
                       </span>
                     </div>
                     {m.body_html ? (
                       <div
-                        className="prose prose-invert prose-sm max-w-none text-white/80"
+                        className="prose prose-invert prose-sm max-w-none text-foreground/80"
                         dangerouslySetInnerHTML={{ __html: m.body_html }}
                       />
                     ) : (
-                      <pre className="text-sm text-white/80 whitespace-pre-wrap font-sans">{m.body_text}</pre>
+                      <pre className="text-sm text-foreground/80 whitespace-pre-wrap font-sans">{m.body_text}</pre>
                     )}
                   </div>
                 ))}

@@ -31,7 +31,7 @@ export function Composer({ open, onClose, replyTo }: { open: boolean; onClose: (
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-2xl bg-zinc-950 border-white/10">
+      <DialogContent className="max-w-2xl bg-zinc-950 border-border">
         <DialogHeader>
           <DialogTitle>{isReply ? "Responder" : "Novo e-mail"}</DialogTitle>
         </DialogHeader>

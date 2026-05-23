@@ -50,8 +50,8 @@ export function SequencesView() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-white">Sequências de follow-up</h2>
-          <p className="text-sm text-white/50 mt-1">
+          <h2 className="text-xl font-semibold text-foreground">Sequências de follow-up</h2>
+          <p className="text-sm text-muted-foreground mt-1">
             Crie sequências de e-mails automáticos. Rascunhos são gerados no Gmail para você revisar antes de enviar.
           </p>
         </div>
@@ -67,9 +67,9 @@ export function SequencesView() {
       </div>
 
       {sequences.length === 0 ? (
-        <Card className="p-12 text-center bg-white/5 border-white/10 backdrop-blur-xl">
-          <Mail className="w-12 h-12 text-white/20 mx-auto mb-3" />
-          <p className="text-white/60">Nenhuma sequência criada ainda.</p>
+        <Card className="p-12 text-center bg-card/50 border-border backdrop-blur-xl">
+          <Mail className="w-12 h-12 text-foreground/20 mx-auto mb-3" />
+          <p className="text-muted-foreground">Nenhuma sequência criada ainda.</p>
         </Card>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -77,16 +77,16 @@ export function SequencesView() {
             <Card
               key={s.id}
               onClick={() => setEditing(s.id)}
-              className="p-4 bg-white/5 border-white/10 backdrop-blur-xl hover:bg-white/10 cursor-pointer transition"
+              className="p-4 bg-card/50 border-border backdrop-blur-xl hover:bg-accent cursor-pointer transition"
             >
               <div className="flex items-start justify-between mb-2">
-                <h3 className="font-semibold text-white">{s.nome}</h3>
+                <h3 className="font-semibold text-foreground">{s.nome}</h3>
                 <Badge variant={s.ativo ? "default" : "secondary"} className={s.ativo ? "bg-emerald-500/20 text-emerald-300" : ""}>
                   {s.ativo ? "Ativa" : "Pausada"}
                 </Badge>
               </div>
-              {s.descricao && <p className="text-xs text-white/50 mb-2">{s.descricao}</p>}
-              <div className="flex items-center gap-1 text-[11px] text-white/40">
+              {s.descricao && <p className="text-xs text-muted-foreground mb-2">{s.descricao}</p>}
+              <div className="flex items-center gap-1 text-[11px] text-muted-foreground/70">
                 <Clock className="w-3 h-3" />
                 {s.trigger_type === "manual" ? "Atribuição manual" : "Gatilho por etapa"}
               </div>
@@ -169,26 +169,26 @@ function SequenceEditor({ id, onBack }: { id: string; onBack: () => void }) {
         </div>
       </div>
 
-      <Card className="p-5 bg-white/5 border-white/10 backdrop-blur-xl space-y-4">
+      <Card className="p-5 bg-card/50 border-border backdrop-blur-xl space-y-4">
         <div className="grid md:grid-cols-2 gap-4">
           <div>
-            <Label className="text-xs text-white/60">Nome</Label>
-            <Input value={nome} onChange={(e) => setNome(e.target.value)} className="bg-white/5 border-white/10" />
+            <Label className="text-xs text-muted-foreground">Nome</Label>
+            <Input value={nome} onChange={(e) => setNome(e.target.value)} className="bg-card/50 border-border" />
           </div>
           <div className="flex items-center gap-3 pt-5">
             <Switch checked={ativo} onCheckedChange={setAtivo} />
-            <Label className="text-sm text-white/80">Sequência ativa</Label>
+            <Label className="text-sm text-foreground/80">Sequência ativa</Label>
           </div>
         </div>
         <div>
-          <Label className="text-xs text-white/60">Descrição</Label>
-          <Input value={descricao} onChange={(e) => setDescricao(e.target.value)} className="bg-white/5 border-white/10" />
+          <Label className="text-xs text-muted-foreground">Descrição</Label>
+          <Input value={descricao} onChange={(e) => setDescricao(e.target.value)} className="bg-card/50 border-border" />
         </div>
         <div className="grid md:grid-cols-2 gap-4">
           <div>
-            <Label className="text-xs text-white/60">Gatilho</Label>
+            <Label className="text-xs text-muted-foreground">Gatilho</Label>
             <Select value={triggerType} onValueChange={(v) => setTriggerType(v as any)}>
-              <SelectTrigger className="bg-white/5 border-white/10"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="bg-card/50 border-border"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="manual">Atribuição manual</SelectItem>
                 <SelectItem value="stage_enter">Quando lead entra em etapa</SelectItem>
@@ -197,9 +197,9 @@ function SequenceEditor({ id, onBack }: { id: string; onBack: () => void }) {
           </div>
           {triggerType === "stage_enter" && (
             <div>
-              <Label className="text-xs text-white/60">Etapa do funil</Label>
+              <Label className="text-xs text-muted-foreground">Etapa do funil</Label>
               <Select value={stageId || ""} onValueChange={(v) => setStageId(v)}>
-                <SelectTrigger className="bg-white/5 border-white/10"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectTrigger className="bg-card/50 border-border"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent>
                   {stages.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}
                 </SelectContent>
@@ -211,13 +211,13 @@ function SequenceEditor({ id, onBack }: { id: string; onBack: () => void }) {
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-white">Passos da sequência</h3>
+          <h3 className="text-sm font-semibold text-foreground">Passos da sequência</h3>
           <Button size="sm" variant="outline" onClick={addStep}>
             <Plus className="w-3.5 h-3.5 mr-1" /> Adicionar passo
           </Button>
         </div>
         {steps.map((s, i) => (
-          <Card key={i} className="p-4 bg-white/5 border-white/10 backdrop-blur-xl">
+          <Card key={i} className="p-4 bg-card/50 border-border backdrop-blur-xl">
             <div className="flex items-start gap-3">
               <div className="flex flex-col items-center">
                 <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-300 text-xs font-bold">
@@ -227,20 +227,20 @@ function SequenceEditor({ id, onBack }: { id: string; onBack: () => void }) {
               <div className="flex-1 space-y-2">
                 <div className="grid grid-cols-[100px_1fr_auto] gap-2 items-end">
                   <div>
-                    <Label className="text-[11px] text-white/50">Dia</Label>
+                    <Label className="text-[11px] text-muted-foreground">Dia</Label>
                     <Input
                       type="number" min={0}
                       value={s.dia_offset ?? 0}
                       onChange={(e) => updateStep(i, { dia_offset: parseInt(e.target.value || "0") })}
-                      className="bg-white/5 border-white/10 h-9"
+                      className="bg-card/50 border-border h-9"
                     />
                   </div>
                   <div>
-                    <Label className="text-[11px] text-white/50">Assunto</Label>
+                    <Label className="text-[11px] text-muted-foreground">Assunto</Label>
                     <Input
                       value={s.subject_template || ""}
                       onChange={(e) => updateStep(i, { subject_template: e.target.value })}
-                      className="bg-white/5 border-white/10 h-9"
+                      className="bg-card/50 border-border h-9"
                     />
                   </div>
                   <Button size="icon" variant="ghost" onClick={() => removeStep(i)} className="text-red-400">
@@ -249,7 +249,7 @@ function SequenceEditor({ id, onBack }: { id: string; onBack: () => void }) {
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <Label className="text-[11px] text-white/50">Corpo</Label>
+                    <Label className="text-[11px] text-muted-foreground">Corpo</Label>
                     <div className="flex flex-wrap gap-1">
                       {VARS.map((v) => (
                         <button
@@ -266,7 +266,7 @@ function SequenceEditor({ id, onBack }: { id: string; onBack: () => void }) {
                     rows={6}
                     value={s.body_template || ""}
                     onChange={(e) => updateStep(i, { body_template: e.target.value })}
-                    className="bg-white/5 border-white/10 font-mono text-xs"
+                    className="bg-card/50 border-border font-mono text-xs"
                   />
                 </div>
               </div>
