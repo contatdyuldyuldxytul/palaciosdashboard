@@ -138,7 +138,7 @@ const App = () => (
                 <Route path="inteligencia" element={<InteligenciaComercialRoute />} />
                 <Route path="gestor" element={<VisaoGestorRoute />} />
               </Route>
-              <Route path="/crm/email" element={<Placeholder title="Integração de E-mail" />} />
+              <Route path="/crm/email" element={<Email />} />
               <Route path="/crm/instagram" element={<InstagramLeads />} />
               <Route path="/crm/contatos" element={<Placeholder title="Contatos" />} />
               <Route path="/crm/insights" element={<Placeholder title="Insights & Forecast" />} />
