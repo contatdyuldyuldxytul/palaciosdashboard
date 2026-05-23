@@ -22,6 +22,7 @@ export default function Crm() {
   const { isFundador } = useAuth();
   const { data: pipelines = [], isLoading: pLoading } = useCrmPipelines();
   const [pipelineId, setPipelineId] = useState<string>("");
+  const [tab, setTab] = useState<"deals" | "fluxos">("deals");
   const [view, setView] = useState<"kanban" | "list">("kanban");
   const [newOpen, setNewOpen] = useState(false);
   const [editor, setEditor] = useState<{ mode: "new" | "edit"; pipelineId?: string } | null>(null);
