@@ -59,7 +59,7 @@ export function InboxView() {
         </button>
       )}
       {/* Sidebar */}
-      <Card className="p-3 bg-white/5 border-white/10 backdrop-blur-xl flex flex-col gap-2">
+      <Card className={`p-3 bg-white/5 border-white/10 backdrop-blur-xl flex flex-col gap-2 ${activeThread ? "hidden md:flex" : ""}`}>
         <Button onClick={() => setComposing({ mode: "new" })} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white">
           <Mail className="w-4 h-4 mr-2" /> Novo e-mail
         </Button>
@@ -86,7 +86,7 @@ export function InboxView() {
       </Card>
 
       {/* List */}
-      <Card className="bg-white/5 border-white/10 backdrop-blur-xl overflow-hidden flex flex-col">
+      <Card className={`bg-white/5 border-white/10 backdrop-blur-xl overflow-hidden flex flex-col min-h-[60vh] md:min-h-0 ${activeThread ? "hidden md:flex" : ""}`}>
         <div className="p-3 border-b border-white/10">
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-white/40" />
