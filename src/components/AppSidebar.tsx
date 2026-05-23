@@ -14,7 +14,6 @@ import logoPalaciosIcon from "@/assets/logo-palacios-icon.png";
 
 const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Vendas", url: "/vendas/funil", icon: TrendingUp, hasChildren: true },
   { title: "CRM", url: "/crm", icon: Kanban, hasChildren: true, alwaysExpanded: true },
   { title: "Hunter de Negócios", url: "/hunter", icon: Target },
   { title: "CEO", url: "/ceo", icon: Crown, requireRole: "fundador" as const, isCeo: true },
@@ -33,10 +32,6 @@ type SubItem = {
 };
 
 const subItems: SubItem[] = [
-  { title: "Thiago", url: "/equipe/thiago", parentUrl: "/vendas", initials: "TH", color: "#0a3a5c" },
-  { title: "Aline", url: "/equipe/aline", parentUrl: "/vendas", initials: "AL" },
-  { title: "Milena", url: "/equipe/milena", parentUrl: "/vendas", initials: "MI", color: "hsl(45,80%,45%)" },
-  { title: "Felipe", url: "/equipe/felipe", parentUrl: "/vendas", initials: "FE", color: "#f97316" },
   // CRM sub-tabs
   { title: "Deals", url: "/crm", parentUrl: "/crm", icon: DollarSign, exact: true },
   { title: "Projects", url: "/crm/projects", parentUrl: "/crm", icon: ClipboardList },
