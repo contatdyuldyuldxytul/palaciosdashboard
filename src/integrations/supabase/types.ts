@@ -1134,6 +1134,287 @@ export type Database = {
           },
         ]
       }
+      email_messages: {
+        Row: {
+          body_html: string | null
+          body_text: string | null
+          cc_emails: string[] | null
+          created_at: string
+          deal_id: string | null
+          direction: string
+          from_email: string | null
+          from_name: string | null
+          gmail_message_id: string
+          gmail_thread_id: string
+          id: string
+          is_read: boolean | null
+          labels: string[] | null
+          person_id: string | null
+          raw_payload: Json | null
+          received_at: string
+          snippet: string | null
+          subject: string | null
+          to_emails: string[] | null
+        }
+        Insert: {
+          body_html?: string | null
+          body_text?: string | null
+          cc_emails?: string[] | null
+          created_at?: string
+          deal_id?: string | null
+          direction: string
+          from_email?: string | null
+          from_name?: string | null
+          gmail_message_id: string
+          gmail_thread_id: string
+          id?: string
+          is_read?: boolean | null
+          labels?: string[] | null
+          person_id?: string | null
+          raw_payload?: Json | null
+          received_at: string
+          snippet?: string | null
+          subject?: string | null
+          to_emails?: string[] | null
+        }
+        Update: {
+          body_html?: string | null
+          body_text?: string | null
+          cc_emails?: string[] | null
+          created_at?: string
+          deal_id?: string | null
+          direction?: string
+          from_email?: string | null
+          from_name?: string | null
+          gmail_message_id?: string
+          gmail_thread_id?: string
+          id?: string
+          is_read?: boolean | null
+          labels?: string[] | null
+          person_id?: string | null
+          raw_payload?: Json | null
+          received_at?: string
+          snippet?: string | null
+          subject?: string | null
+          to_emails?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_messages_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_messages_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "crm_persons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_sequence_drafts: {
+        Row: {
+          created_at: string
+          enrollment_id: string
+          error_message: string | null
+          gmail_draft_id: string | null
+          id: string
+          recipient_email: string | null
+          rendered_body: string | null
+          rendered_subject: string | null
+          scheduled_for: string
+          status: string
+          step_id: string
+        }
+        Insert: {
+          created_at?: string
+          enrollment_id: string
+          error_message?: string | null
+          gmail_draft_id?: string | null
+          id?: string
+          recipient_email?: string | null
+          rendered_body?: string | null
+          rendered_subject?: string | null
+          scheduled_for: string
+          status?: string
+          step_id: string
+        }
+        Update: {
+          created_at?: string
+          enrollment_id?: string
+          error_message?: string | null
+          gmail_draft_id?: string | null
+          id?: string
+          recipient_email?: string | null
+          rendered_body?: string | null
+          rendered_subject?: string | null
+          scheduled_for?: string
+          status?: string
+          step_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_sequence_drafts_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "email_sequence_enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_sequence_drafts_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "email_sequence_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_sequence_enrollments: {
+        Row: {
+          cancelled_reason: string | null
+          current_step: number
+          deal_id: string | null
+          id: string
+          owner_user_id: string | null
+          person_id: string | null
+          sequence_id: string
+          started_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          cancelled_reason?: string | null
+          current_step?: number
+          deal_id?: string | null
+          id?: string
+          owner_user_id?: string | null
+          person_id?: string | null
+          sequence_id: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          cancelled_reason?: string | null
+          current_step?: number
+          deal_id?: string | null
+          id?: string
+          owner_user_id?: string | null
+          person_id?: string | null
+          sequence_id?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_sequence_enrollments_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_sequence_enrollments_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "crm_persons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_sequence_enrollments_sequence_id_fkey"
+            columns: ["sequence_id"]
+            isOneToOne: false
+            referencedRelation: "email_sequences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_sequence_steps: {
+        Row: {
+          body_template: string
+          created_at: string
+          dia_offset: number
+          id: string
+          ordem: number
+          sequence_id: string
+          subject_template: string
+        }
+        Insert: {
+          body_template: string
+          created_at?: string
+          dia_offset?: number
+          id?: string
+          ordem: number
+          sequence_id: string
+          subject_template: string
+        }
+        Update: {
+          body_template?: string
+          created_at?: string
+          dia_offset?: number
+          id?: string
+          ordem?: number
+          sequence_id?: string
+          subject_template?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_sequence_steps_sequence_id_fkey"
+            columns: ["sequence_id"]
+            isOneToOne: false
+            referencedRelation: "email_sequences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_sequences: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          owner_user_id: string | null
+          trigger_stage_id: string | null
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          owner_user_id?: string | null
+          trigger_stage_id?: string | null
+          trigger_type?: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          owner_user_id?: string | null
+          trigger_stage_id?: string | null
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_sequences_trigger_stage_id_fkey"
+            columns: ["trigger_stage_id"]
+            isOneToOne: false
+            referencedRelation: "crm_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financeiro_clientes: {
         Row: {
           cliente_id: string
