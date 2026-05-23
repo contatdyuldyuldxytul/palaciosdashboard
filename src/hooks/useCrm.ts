@@ -10,6 +10,7 @@ export interface CrmPipeline {
   ordem: number;
   ativo: boolean;
   flow_type: PipelineFlowType;
+  flow_id: string | null;
   owner_user_id: string | null;
   owner_label: string | null;
   sheet_id: string | null;
@@ -303,6 +304,7 @@ export function useCreatePipeline() {
     mutationFn: async (payload: {
       nome: string;
       flow_type: PipelineFlowType;
+      flow_id?: string | null;
       owner_user_id?: string | null;
       owner_label?: string | null;
       stages: StageInput[];
@@ -322,6 +324,7 @@ export function useCreatePipeline() {
           ordem,
           ativo: true,
           flow_type: payload.flow_type,
+          flow_id: payload.flow_id ?? null,
           owner_user_id: payload.owner_user_id ?? null,
           owner_label: payload.owner_label ?? null,
         } as any)
@@ -355,6 +358,7 @@ export function useUpdatePipeline() {
       id: string;
       nome?: string;
       flow_type?: PipelineFlowType;
+      flow_id?: string | null;
       owner_user_id?: string | null;
       owner_label?: string | null;
       ativo?: boolean;

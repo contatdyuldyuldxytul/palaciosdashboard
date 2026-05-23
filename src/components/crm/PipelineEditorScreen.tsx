@@ -1,15 +1,13 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { ArrowLeft, ArrowRight, Plus, Trash2, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Plus, Trash2, X, Workflow, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   CrmPipeline,
-  PipelineFlowType,
   StageInput,
-  FLOW_TYPE_LABELS,
   FLOW_TYPE_STAGE_TEMPLATES,
   useCollaborators,
   useCreatePipeline,
@@ -18,6 +16,8 @@ import {
   useCrmStages,
   useCrmPipelines,
 } from "@/hooks/useCrm";
+import { useFlows } from "@/hooks/useFlows";
+import { FlowEditor } from "@/components/crm/projects/FlowEditor";
 import { toast } from "@/hooks/use-toast";
 
 interface Props {
@@ -27,7 +27,6 @@ interface Props {
   onSaved?: (pipelineId: string) => void;
 }
 
-const FLOW_TYPES: PipelineFlowType[] = ["cadencia_10_dias", "nutricao", "vendas", "personalizado"];
 const STAGE_COLORS = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#ef4444", "#64748b", "#06b6d4"];
 
 export function PipelineEditorScreen({ mode, pipelineId, onClose, onSaved }: Props) {
@@ -38,11 +37,13 @@ export function PipelineEditorScreen({ mode, pipelineId, onClose, onSaved }: Pro
     : undefined;
 
   const [nome, setNome] = useState("");
-  const [flowType, setFlowType] = useState<PipelineFlowType>("personalizado");
+  const [flowId, setFlowId] = useState<string>("__none__");
   const [ownerId, setOwnerId] = useState<string>("__none__");
   const [stages, setStages] = useState<StageInput[]>([]);
+  const [editingFlowId, setEditingFlowId] = useState<string | null>(null);
 
   const collabsQ = useCollaborators();
+  const flowsQ = useFlows("deals");
   const create = useCreatePipeline();
   const update = useUpdatePipeline();
   const replace = useReplaceStages();
@@ -51,11 +52,11 @@ export function PipelineEditorScreen({ mode, pipelineId, onClose, onSaved }: Pro
   useEffect(() => {
     if (pipeline) {
       setNome(pipeline.nome);
-      setFlowType(pipeline.flow_type);
+      setFlowId(pipeline.flow_id || "__none__");
       setOwnerId(pipeline.owner_user_id || "__none__");
     } else if (!isEdit) {
       setNome("");
-      setFlowType("personalizado");
+      setFlowId("__none__");
       setOwnerId("__none__");
       setStages(FLOW_TYPE_STAGE_TEMPLATES.personalizado.map((s) => ({ ...s })));
     }
@@ -76,10 +77,6 @@ export function PipelineEditorScreen({ mode, pipelineId, onClose, onSaved }: Pro
     }
   }, [isEdit, stagesQ.data]);
 
-  const handleFlowTypeChange = (v: PipelineFlowType) => {
-    setFlowType(v);
-    if (!isEdit) setStages(FLOW_TYPE_STAGE_TEMPLATES[v].map((s) => ({ ...s })));
-  };
 
   const addStage = () =>
     setStages((arr) => [
@@ -113,11 +110,12 @@ export function PipelineEditorScreen({ mode, pipelineId, onClose, onSaved }: Pro
     }
     const ownerSel = ownerId !== "__none__" ? collabsQ.data?.find((c) => c.id === ownerId) : null;
     try {
+      const flowSel = flowId !== "__none__" ? flowId : null;
       if (isEdit && pipeline) {
         await update.mutateAsync({
           id: pipeline.id,
           nome: nome.trim(),
-          flow_type: flowType,
+          flow_id: flowSel,
           owner_user_id: ownerSel?.id ?? null,
           owner_label: ownerSel?.full_name || null,
         });
@@ -127,7 +125,8 @@ export function PipelineEditorScreen({ mode, pipelineId, onClose, onSaved }: Pro
       } else {
         const created = await create.mutateAsync({
           nome: nome.trim(),
-          flow_type: flowType,
+          flow_type: "personalizado",
+          flow_id: flowSel,
           owner_user_id: ownerSel?.id ?? null,
           owner_label: ownerSel?.full_name || null,
           stages,
@@ -201,19 +200,34 @@ export function PipelineEditorScreen({ mode, pipelineId, onClose, onSaved }: Pro
 
         <div className="flex min-w-0 flex-wrap items-end gap-2">
           <div>
-            <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Tipo</Label>
-            <Select value={flowType} onValueChange={(v) => handleFlowTypeChange(v as PipelineFlowType)}>
-              <SelectTrigger className="h-9 w-52 mt-1 bg-white/5 border-white/10">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {FLOW_TYPES.map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {FLOW_TYPE_LABELS[t]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+              <Workflow className="w-3 h-3" /> Fluxo aplicado
+            </Label>
+            <div className="flex items-center gap-1.5 mt-1">
+              <Select value={flowId} onValueChange={setFlowId}>
+                <SelectTrigger className="h-9 w-56 bg-white/5 border-white/10">
+                  <SelectValue placeholder="Sem fluxo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Sem fluxo</SelectItem>
+                  {(flowsQ.data || []).map((f) => (
+                    <SelectItem key={f.id} value={f.id}>
+                      {f.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {flowId !== "__none__" && (
+                <button
+                  type="button"
+                  onClick={() => setEditingFlowId(flowId)}
+                  className="h-9 px-2 rounded-md border border-white/10 bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+                  title="Editar fluxo"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
           </div>
           <div>
             <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Responsável</Label>
@@ -350,6 +364,12 @@ export function PipelineEditorScreen({ mode, pipelineId, onClose, onSaved }: Pro
           </button>
         </div>
       </div>
+
+      {editingFlowId && (
+        <div className="fixed inset-0 z-[10000] bg-background/95 backdrop-blur-2xl">
+          <FlowEditor flowId={editingFlowId} scope="deals" onClose={() => setEditingFlowId(null)} />
+        </div>
+      )}
     </div>
   );
 
