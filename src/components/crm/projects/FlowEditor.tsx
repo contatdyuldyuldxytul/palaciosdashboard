@@ -209,12 +209,14 @@ function FlowEditorInner({ flowId, onClose, scope }: { flowId: string; onClose: 
   );
 }
 
-function NodeInspector({ node, onChange, onDelete }: { node: Node; onChange: (p: any) => void; onDelete: () => void }) {
+function NodeInspector({ node, onChange, onDelete, scope }: { node: Node; onChange: (p: any) => void; onDelete: () => void; scope: FlowScope }) {
   const data: any = node.data;
   const kind = data.kind as keyof typeof NODE_META;
   const config = data.config || {};
-  const { data: pipelines = [] } = useProjectPipelines();
-  const { data: stages = [] } = useProjectStages(config.pipeline_id);
+  const projHooks = { pipelines: useProjectPipelines(), stages: useProjectStages(config.pipeline_id) };
+  const crmHooks = { pipelines: useCrmPipelines(), stages: useCrmStages(config.pipeline_id) };
+  const pipelines = (scope === "deals" ? crmHooks.pipelines.data : projHooks.pipelines.data) || [];
+  const stages = (scope === "deals" ? crmHooks.stages.data : projHooks.stages.data) || [];
 
   const setCfg = (patch: any) => onChange({ config: { ...config, ...patch } });
 
