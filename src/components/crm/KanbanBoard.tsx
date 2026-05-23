@@ -14,6 +14,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { MotivoPerdaModal } from "@/components/crm/atividades/MotivoPerdaModal";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { SwipeableKanban } from "@/components/mobile/SwipeableKanban";
 
 const fmt = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
@@ -179,6 +181,8 @@ export function KanbanBoard({ stages, deals }: { stages: CrmStage[]; deals: CrmD
   const [moveToDealId, setMoveToDealId] = useState<string | null>(null);
   const [lostDealId, setLostDealId] = useState<string | null>(null);
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+
 
   const dealsByStage = useMemo(() => {
     const map = new Map<string, CrmDeal[]>();
@@ -246,16 +250,32 @@ export function KanbanBoard({ stages, deals }: { stages: CrmStage[]; deals: CrmD
         }
       }}
     >
-      <div className="flex gap-3 pb-6 -mx-1 px-1 w-full">
-        {stages.map(s => (
-          <StageColumn
-            key={s.id}
-            stage={s}
-            deals={dealsByStage.get(s.id) || []}
-            onOpen={(id) => navigate(`/crm/deal/${id}`)}
-          />
-        ))}
-      </div>
+      {isMobile && stages.length > 0 ? (
+        <SwipeableKanban
+          stages={stages.map(s => ({ id: s.id, nome: s.nome, cor: s.cor }))}
+          renderColumn={(sid) => {
+            const s = stages.find(x => x.id === sid)!;
+            return (
+              <StageColumn
+                stage={s}
+                deals={dealsByStage.get(s.id) || []}
+                onOpen={(id) => navigate(`/crm/deal/${id}`)}
+              />
+            );
+          }}
+        />
+      ) : (
+        <div className="flex gap-3 pb-6 -mx-1 px-1 w-full overflow-x-auto">
+          {stages.map(s => (
+            <StageColumn
+              key={s.id}
+              stage={s}
+              deals={dealsByStage.get(s.id) || []}
+              onOpen={(id) => navigate(`/crm/deal/${id}`)}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Bottom action drop bar — only during drag */}
       <div
