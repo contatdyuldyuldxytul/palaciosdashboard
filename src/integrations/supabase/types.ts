@@ -1200,6 +1200,137 @@ export type Database = {
         }
         Relationships: []
       }
+      flow_run_steps: {
+        Row: {
+          error: string | null
+          executed_at: string
+          id: string
+          node_id: string
+          node_type: string
+          output: Json | null
+          run_id: string
+          status: string
+        }
+        Insert: {
+          error?: string | null
+          executed_at?: string
+          id?: string
+          node_id: string
+          node_type: string
+          output?: Json | null
+          run_id: string
+          status: string
+        }
+        Update: {
+          error?: string | null
+          executed_at?: string
+          id?: string
+          node_id?: string
+          node_type?: string
+          output?: Json | null
+          run_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flow_run_steps_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "flow_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flow_runs: {
+        Row: {
+          context: Json | null
+          current_node_id: string | null
+          error: string | null
+          finished_at: string | null
+          flow_id: string
+          id: string
+          project_deal_id: string | null
+          resume_at: string | null
+          started_at: string
+          status: string
+        }
+        Insert: {
+          context?: Json | null
+          current_node_id?: string | null
+          error?: string | null
+          finished_at?: string | null
+          flow_id: string
+          id?: string
+          project_deal_id?: string | null
+          resume_at?: string | null
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          context?: Json | null
+          current_node_id?: string | null
+          error?: string | null
+          finished_at?: string | null
+          flow_id?: string
+          id?: string
+          project_deal_id?: string | null
+          resume_at?: string | null
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flow_runs_flow_id_fkey"
+            columns: ["flow_id"]
+            isOneToOne: false
+            referencedRelation: "flows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flow_runs_project_deal_id_fkey"
+            columns: ["project_deal_id"]
+            isOneToOne: false
+            referencedRelation: "project_deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flows: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          edges: Json
+          id: string
+          nodes: Json
+          nome: string
+          trigger_config: Json
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          edges?: Json
+          id?: string
+          nodes?: Json
+          nome: string
+          trigger_config?: Json
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          edges?: Json
+          id?: string
+          nodes?: Json
+          nome?: string
+          trigger_config?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       fluxo_caixa: {
         Row: {
           aporte_capital_proj: number | null
@@ -1873,6 +2004,157 @@ export type Database = {
             | null
         }
         Relationships: []
+      }
+      project_deals: {
+        Row: {
+          cliente_ativo_id: string | null
+          created_at: string
+          crm_deal_id: string | null
+          id: string
+          notas: string | null
+          pipeline_id: string
+          progresso: number | null
+          responsavel_label: string | null
+          responsavel_user_id: string | null
+          stage_entered_at: string
+          stage_id: string
+          status: string
+          titulo: string
+          updated_at: string
+          valor: number | null
+        }
+        Insert: {
+          cliente_ativo_id?: string | null
+          created_at?: string
+          crm_deal_id?: string | null
+          id?: string
+          notas?: string | null
+          pipeline_id: string
+          progresso?: number | null
+          responsavel_label?: string | null
+          responsavel_user_id?: string | null
+          stage_entered_at?: string
+          stage_id: string
+          status?: string
+          titulo: string
+          updated_at?: string
+          valor?: number | null
+        }
+        Update: {
+          cliente_ativo_id?: string | null
+          created_at?: string
+          crm_deal_id?: string | null
+          id?: string
+          notas?: string | null
+          pipeline_id?: string
+          progresso?: number | null
+          responsavel_label?: string | null
+          responsavel_user_id?: string | null
+          stage_entered_at?: string
+          stage_id?: string
+          status?: string
+          titulo?: string
+          updated_at?: string
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_deals_cliente_ativo_id_fkey"
+            columns: ["cliente_ativo_id"]
+            isOneToOne: false
+            referencedRelation: "clientes_ativos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_deals_crm_deal_id_fkey"
+            columns: ["crm_deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_deals_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "project_pipelines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_deals_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "project_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_pipelines: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          is_default: boolean
+          nome: string
+          ordem: number
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          nome: string
+          ordem?: number
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          nome?: string
+          ordem?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      project_stages: {
+        Row: {
+          cor: string | null
+          created_at: string
+          id: string
+          is_final: boolean
+          nome: string
+          ordem: number
+          pipeline_id: string
+        }
+        Insert: {
+          cor?: string | null
+          created_at?: string
+          id?: string
+          is_final?: boolean
+          nome: string
+          ordem?: number
+          pipeline_id: string
+        }
+        Update: {
+          cor?: string | null
+          created_at?: string
+          id?: string
+          is_final?: boolean
+          nome?: string
+          ordem?: number
+          pipeline_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_stages_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "project_pipelines"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       relatorios_meta: {
         Row: {
