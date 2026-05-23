@@ -317,6 +317,28 @@ function NodeInspector({ node, onChange, onDelete, scope }: { node: Node; onChan
         <Input value={data.label || ""} onChange={e => onChange({ label: e.target.value })} className="bg-white/5 border-white/10 h-8 text-sm" />
       </div>
 
+      {["task", "email", "whatsapp", "custom", "milestone", "webhook"].includes(kind) && (
+        <div>
+          <Label className="text-xs flex items-center justify-between">
+            <span>Dia do fluxo</span>
+            <span className="text-[10px] text-muted-foreground font-normal">
+              dias após o deal entrar no pipeline
+            </span>
+          </Label>
+          <Input
+            type="number"
+            min={0}
+            value={config.dia_offset ?? ""}
+            placeholder="ex: 3"
+            onChange={e => setCfg({ dia_offset: e.target.value === "" ? null : Number(e.target.value) })}
+            className="bg-white/5 border-white/10 h-8 text-sm"
+          />
+          <p className="text-[10px] text-muted-foreground mt-1">
+            Preencha para que essa tarefa apareça na aba <strong>Atividades</strong> do responsável no dia certo.
+          </p>
+        </div>
+      )}
+
       {kind === "custom" && (
         <>
           <div>
