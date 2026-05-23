@@ -49,9 +49,17 @@ export function InboxView() {
   };
 
   return (
-    <div className="grid grid-cols-[220px_1fr_1.3fr] gap-4 h-[calc(100vh-220px)] min-h-[600px]">
+    <div className="grid grid-cols-1 md:grid-cols-[220px_1fr_1.3fr] gap-3 md:gap-4 md:h-[calc(100vh-220px)] md:min-h-[600px]">
+      {activeThread && (
+        <button
+          onClick={() => setActiveThread(null)}
+          className="md:hidden text-xs text-muted-foreground hover:text-foreground self-start px-2 py-1 rounded-md bg-white/5"
+        >
+          ← Voltar para a lista
+        </button>
+      )}
       {/* Sidebar */}
-      <Card className="p-3 bg-white/5 border-white/10 backdrop-blur-xl flex flex-col gap-2">
+      <Card className={`p-3 bg-white/5 border-white/10 backdrop-blur-xl flex flex-col gap-2 ${activeThread ? "hidden md:flex" : ""}`}>
         <Button onClick={() => setComposing({ mode: "new" })} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white">
           <Mail className="w-4 h-4 mr-2" /> Novo e-mail
         </Button>
@@ -78,7 +86,7 @@ export function InboxView() {
       </Card>
 
       {/* List */}
-      <Card className="bg-white/5 border-white/10 backdrop-blur-xl overflow-hidden flex flex-col">
+      <Card className={`bg-white/5 border-white/10 backdrop-blur-xl overflow-hidden flex flex-col min-h-[60vh] md:min-h-0 ${activeThread ? "hidden md:flex" : ""}`}>
         <div className="p-3 border-b border-white/10">
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-white/40" />
@@ -131,7 +139,7 @@ export function InboxView() {
       </Card>
 
       {/* Thread view */}
-      <Card className="bg-white/5 border-white/10 backdrop-blur-xl overflow-hidden flex flex-col">
+      <Card className={`bg-white/5 border-white/10 backdrop-blur-xl overflow-hidden flex flex-col min-h-[60vh] md:min-h-0 ${!activeThread ? "hidden md:flex" : ""}`}>
         {!activeThread ? (
           <div className="flex-1 flex items-center justify-center text-white/40 text-sm">
             Selecione uma conversa

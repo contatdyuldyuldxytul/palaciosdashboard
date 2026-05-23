@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { SwipeableKanban } from "@/components/mobile/SwipeableKanban";
 
 const fmt = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
@@ -112,6 +114,7 @@ export function ProjectsKanban() {
   const move = useMoveProjectStage();
   const del = useDeleteProjectDeal();
   const qc = useQueryClient();
+  const isMobile = useIsMobile();
 
   const [addOpen, setAddOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -128,14 +131,14 @@ export function ProjectsKanban() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <Select value={pipelineId} onValueChange={setPipelineId}>
-          <SelectTrigger className="w-[260px] h-9 bg-white/5 border-white/10"><SelectValue placeholder="Pipeline" /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[260px] h-9 bg-white/5 border-white/10"><SelectValue placeholder="Pipeline" /></SelectTrigger>
           <SelectContent className="bg-background border-white/10">
             {pipelines.map(p => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Button size="sm" onClick={() => setAddOpen(true)} disabled={!pipelineId || stages.length === 0}>
+        <Button size="sm" onClick={() => setAddOpen(true)} disabled={!pipelineId || stages.length === 0} className="w-full sm:w-auto">
           <Plus className="w-3.5 h-3.5 mr-1.5" /> Adicionar projeto
         </Button>
       </div>
@@ -158,16 +161,26 @@ export function ProjectsKanban() {
           }
         }}
       >
-        <div className="flex gap-3 pb-6">
-          {stages.map(s => (
-            <StageColumn key={s.id} stage={s} deals={byStage.get(s.id) || []} onDelete={(id) => del.mutate(id)} />
-          ))}
-          {stages.length === 0 && (
-            <div className="flex-1 text-center py-12 text-sm text-muted-foreground">
-              Pipeline sem etapas. Crie etapas no editor de pipelines.
-            </div>
-          )}
-        </div>
+        {isMobile && stages.length > 0 ? (
+          <SwipeableKanban
+            stages={stages.map(s => ({ id: s.id, nome: s.nome, cor: s.cor }))}
+            renderColumn={(sid) => {
+              const s = stages.find(x => x.id === sid)!;
+              return <StageColumn stage={s} deals={byStage.get(s.id) || []} onDelete={(id) => del.mutate(id)} />;
+            }}
+          />
+        ) : (
+          <div className="flex gap-3 pb-6 overflow-x-auto">
+            {stages.map(s => (
+              <StageColumn key={s.id} stage={s} deals={byStage.get(s.id) || []} onDelete={(id) => del.mutate(id)} />
+            ))}
+            {stages.length === 0 && (
+              <div className="flex-1 text-center py-12 text-sm text-muted-foreground">
+                Pipeline sem etapas. Crie etapas no editor de pipelines.
+              </div>
+            )}
+          </div>
+        )}
         <DragOverlay>{activeDeal ? <ProjectCard deal={activeDeal} onDelete={() => {}} /> : null}</DragOverlay>
       </DndContext>
 

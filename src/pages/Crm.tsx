@@ -114,7 +114,7 @@ export default function Crm() {
   }
 
   return (
-    <div className="p-4 lg:p-6 space-y-5">
+    <div className="p-3 md:p-6 space-y-4 md:space-y-5">
       {/* Header */}
       <div className="flex flex-wrap items-start gap-4 justify-between">
         <div className="flex items-center gap-3">
