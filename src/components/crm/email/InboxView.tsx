@@ -139,7 +139,7 @@ export function InboxView() {
       </Card>
 
       {/* Thread view */}
-      <Card className="bg-white/5 border-white/10 backdrop-blur-xl overflow-hidden flex flex-col">
+      <Card className={`bg-white/5 border-white/10 backdrop-blur-xl overflow-hidden flex flex-col min-h-[60vh] md:min-h-0 ${!activeThread ? "hidden md:flex" : ""}`}>
         {!activeThread ? (
           <div className="flex-1 flex items-center justify-center text-white/40 text-sm">
             Selecione uma conversa
