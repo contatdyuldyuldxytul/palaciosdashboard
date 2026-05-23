@@ -11,8 +11,7 @@ export function MobileHeader({ onOpenDrawer }: Props) {
   const { theme } = useTheme();
   return (
     <header
-      className="md:hidden sticky top-0 z-30 h-12 flex items-center justify-between px-3 backdrop-blur-xl border-b border-white/10"
-      style={{ background: "rgba(8, 10, 22, 0.7)" }}
+      className="md:hidden sticky top-0 z-30 h-12 flex items-center justify-between px-3 backdrop-blur-xl border-b border-border bg-background/80"
     >
       <button
         onClick={onOpenDrawer}
