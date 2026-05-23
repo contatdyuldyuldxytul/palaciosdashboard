@@ -1,33 +1,18 @@
 import { useState } from "react";
 import { Users } from "lucide-react";
-import Funil from "@/pages/Funil";
-import Leads from "@/pages/Leads";
-import Scripts from "@/pages/Scripts";
-import AssistenteVendas from "@/pages/AssistenteVendas";
-import Placeholder from "@/pages/Placeholder";
 import TeamMemberDashboard from "@/pages/TeamMemberDashboard";
 import LdrMemberDashboard from "@/pages/LdrMemberDashboard";
 import ThiagoDashboard from "@/pages/ThiagoDashboard";
 import { useAuth } from "@/contexts/AuthContext";
 import { Lock } from "lucide-react";
 
-type Colaborador = "geral" | "aline" | "milena" | "thiago" | "felipe";
-type GeralTab = "funil" | "leads" | "scripts" | "ligacoes" | "assistente";
+type Colaborador = "aline" | "milena" | "thiago" | "felipe";
 
 const COLABS: { key: Colaborador; label: string; initials: string; color?: string }[] = [
-  { key: "geral", label: "Painel Geral", initials: "GE" },
   { key: "aline", label: "Aline", initials: "AL" },
   { key: "milena", label: "Milena", initials: "MI", color: "hsl(45,80%,45%)" },
   { key: "thiago", label: "Thiago", initials: "TH", color: "#0a3a5c" },
   { key: "felipe", label: "Felipe", initials: "FE", color: "#f97316" },
-];
-
-const GERAL_TABS: { key: GeralTab; label: string }[] = [
-  { key: "funil", label: "Funil de Vendas" },
-  { key: "leads", label: "Meus Leads" },
-  { key: "scripts", label: "Scripts" },
-  { key: "ligacoes", label: "Ligações" },
-  { key: "assistente", label: "Assistente de Vendas" },
 ];
 
 export function NucleoOperacional() {
