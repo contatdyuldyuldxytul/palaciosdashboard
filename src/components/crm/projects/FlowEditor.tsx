@@ -240,8 +240,10 @@ function NodeInspector({ node, onChange, onDelete, scope }: { node: Node; onChan
             <Select value={config.event || "stage_enter"} onValueChange={v => setCfg({ event: v })}>
               <SelectTrigger className="bg-white/5 border-white/10 h-8"><SelectValue /></SelectTrigger>
               <SelectContent className="bg-background border-white/10">
-                <SelectItem value="project_created">Projeto criado</SelectItem>
+                <SelectItem value="project_created">{scope === "deals" ? "Deal criado" : "Projeto criado"}</SelectItem>
                 <SelectItem value="stage_enter">Entrar em uma etapa</SelectItem>
+                {scope === "deals" && <SelectItem value="status_won">Deal ganho</SelectItem>}
+                {scope === "deals" && <SelectItem value="status_lost">Deal perdido</SelectItem>}
                 <SelectItem value="manual">Manual</SelectItem>
               </SelectContent>
             </Select>
