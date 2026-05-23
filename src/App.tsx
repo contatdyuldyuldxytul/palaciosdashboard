@@ -45,6 +45,7 @@ import CeoColaboradores from "@/pages/ceo/CeoColaboradores";
 import Crm from "@/pages/Crm";
 import CrmDealDetail from "@/pages/CrmDealDetail";
 import InstagramLeads from "@/pages/crm/InstagramLeads";
+import Projects from "@/pages/crm/Projects";
 import { useAuth } from "@/contexts/AuthContext";
 
 function HunterGate() {
@@ -126,7 +127,7 @@ const App = () => (
               {/* CRM Integrado */}
               <Route path="/crm" element={<Crm />} />
               <Route path="/crm/deal/:id" element={<CrmDealDetail />} />
-              <Route path="/crm/projects" element={<Placeholder title="Projects" />} />
+              <Route path="/crm/projects" element={<Projects />} />
               <Route path="/crm/atividades" element={<Placeholder title="Atividades" />} />
               <Route path="/crm/email" element={<Placeholder title="Integração de E-mail" />} />
               <Route path="/crm/instagram" element={<InstagramLeads />} />
