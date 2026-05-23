@@ -45,6 +45,14 @@ import Crm from "@/pages/Crm";
 import CrmDealDetail from "@/pages/CrmDealDetail";
 import InstagramLeads from "@/pages/crm/InstagramLeads";
 import Projects from "@/pages/crm/Projects";
+import Atividades from "@/pages/crm/Atividades";
+import { NucleoOperacional } from "@/components/crm/atividades/NucleoOperacional";
+import { InteligenciaComercial } from "@/components/crm/atividades/InteligenciaComercial";
+import { VisaoGestor } from "@/components/crm/atividades/VisaoGestor";
+
+const NucleoOperacionalRoute = () => <NucleoOperacional />;
+const InteligenciaComercialRoute = () => <InteligenciaComercial />;
+const VisaoGestorRoute = () => <VisaoGestor />;
 import { useAuth } from "@/contexts/AuthContext";
 
 function HunterGate() {
