@@ -80,13 +80,8 @@ export function AppSidebar() {
         <ul className="space-y-1">
           {visibleItems.map((item) => {
             const active = isActive(item.url);
-            const allChildren = item.hasChildren ? subItems.filter((s) => s.parentUrl === (item.url.startsWith("/crm") ? "/crm" : "/vendas")) : [];
-            const children = allChildren.filter((s) => {
-              if (s.url === "/equipe/thiago") {
-                return hasRole("fundador") || profile?.colaborador_slug === "thiago";
-              }
-              return true;
-            });
+            const allChildren = item.hasChildren ? subItems.filter((s) => s.parentUrl === "/crm") : [];
+            const children = allChildren;
             const showChildren = !collapsed && (item as any).hasChildren && ((item as any).alwaysExpanded || active) && children.length > 0;
             return (
               <li key={item.url} className="space-y-0.5">
