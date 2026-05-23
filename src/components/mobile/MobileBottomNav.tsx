@@ -17,9 +17,8 @@ export function MobileBottomNav({ onOpenMore }: Props) {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 backdrop-blur-2xl border-t border-white/10"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 backdrop-blur-2xl border-t border-border bg-background/90"
       style={{
-        background: "rgba(8, 10, 22, 0.85)",
         paddingBottom: "env(safe-area-inset-bottom)",
       }}
     >

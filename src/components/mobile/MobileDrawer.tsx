@@ -46,9 +46,9 @@ export function MobileDrawer({ open, onOpenChange }: Props) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="left" className="w-[80vw] max-w-[320px] p-0 bg-background/95 backdrop-blur-2xl border-white/10 flex flex-col">
+      <SheetContent side="left" className="w-[80vw] max-w-[320px] p-0 bg-background/95 backdrop-blur-2xl border-border flex flex-col">
         {/* Profile header */}
-        <div className="px-4 py-4 border-b border-white/10 flex items-center gap-3">
+        <div className="px-4 py-4 border-b border-border flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
             <UserIcon className="w-5 h-5 text-primary" />
           </div>
@@ -69,7 +69,7 @@ export function MobileDrawer({ open, onOpenChange }: Props) {
                     to={item.url}
                     onClick={close}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors ${
-                      active ? "bg-white/10 text-primary font-medium" : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                      active ? "bg-accent text-primary font-medium" : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
                     }`}
                   >
                     <Icon className="w-[18px] h-[18px]" /> {item.title}
@@ -91,7 +91,7 @@ export function MobileDrawer({ open, onOpenChange }: Props) {
                       to={s.url}
                       onClick={close}
                       className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-colors ${
-                        active ? "bg-white/10 text-primary font-medium" : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                        active ? "bg-accent text-primary font-medium" : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
                       }`}
                     >
                       <Icon className="w-3.5 h-3.5" /> {s.title}
@@ -103,10 +103,10 @@ export function MobileDrawer({ open, onOpenChange }: Props) {
           </div>
         </div>
 
-        <div className="border-t border-white/10 p-2 space-y-1">
+        <div className="border-t border-border p-2 space-y-1">
           <button
             onClick={() => { toggle(); }}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-muted-foreground hover:bg-accent/60 hover:text-foreground transition-colors"
           >
             {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             {theme === "dark" ? "Modo claro" : "Modo escuro"}

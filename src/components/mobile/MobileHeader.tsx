@@ -11,12 +11,11 @@ export function MobileHeader({ onOpenDrawer }: Props) {
   const { theme } = useTheme();
   return (
     <header
-      className="md:hidden sticky top-0 z-30 h-12 flex items-center justify-between px-3 backdrop-blur-xl border-b border-white/10"
-      style={{ background: "rgba(8, 10, 22, 0.7)" }}
+      className="md:hidden sticky top-0 z-30 h-12 flex items-center justify-between px-3 backdrop-blur-xl border-b border-border bg-background/80"
     >
       <button
         onClick={onOpenDrawer}
-        className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors"
+        className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
         aria-label="Abrir menu"
       >
         <Menu className="w-5 h-5" />
