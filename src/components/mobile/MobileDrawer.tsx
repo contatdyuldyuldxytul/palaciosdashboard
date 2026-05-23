@@ -91,7 +91,7 @@ export function MobileDrawer({ open, onOpenChange }: Props) {
                       to={s.url}
                       onClick={close}
                       className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-colors ${
-                        active ? "bg-white/10 text-primary font-medium" : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                        active ? "bg-accent text-primary font-medium" : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
                       }`}
                     >
                       <Icon className="w-3.5 h-3.5" /> {s.title}
