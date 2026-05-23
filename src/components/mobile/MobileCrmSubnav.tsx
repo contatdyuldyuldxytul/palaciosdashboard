@@ -34,7 +34,7 @@ export function MobileCrmSubnav() {
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] whitespace-nowrap border transition-colors ${
                 active
                   ? "bg-primary/20 text-primary border-primary/40 font-medium"
-                  : "border-white/10 text-muted-foreground hover:text-foreground"
+                  : "border-border bg-card/40 text-muted-foreground hover:text-foreground"
               }`}
             >
               <Icon className="w-3 h-3" /> {it.title}
