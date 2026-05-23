@@ -163,55 +163,87 @@ export default function Crm() {
           </Button>
         </div>
       </div>
-      {/* Search + view toggle */}
-      <div className="flex flex-col md:flex-row gap-3 md:items-center">
-        <div className="relative flex-1 max-w-md">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar deals por título, empresa, contato ou valor…"
-            className="h-9 pl-9 bg-white/5 border-white/10 text-sm"
-          />
-        </div>
 
-        <div className="flex rounded-full border border-white/10 overflow-hidden glass-card p-0.5 md:ml-auto">
-          <button
-            onClick={() => setView("kanban")}
-            className={`px-3 py-1 rounded-full text-[11px] flex items-center gap-1.5 transition-colors ${
-              view === "kanban" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <LayoutGrid className="w-3 h-3" /> Kanban
-          </button>
-          <button
-            onClick={() => setView("list")}
-            className={`px-3 py-1 rounded-full text-[11px] flex items-center gap-1.5 transition-colors ${
-              view === "list" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <List className="w-3 h-3" /> Lista
-          </button>
-        </div>
+      {/* Sub-tabs: Deals / Fluxos */}
+      <div className="flex rounded-full border border-white/10 overflow-hidden glass-card p-0.5 w-fit">
+        <button
+          onClick={() => setTab("deals")}
+          className={`px-3.5 py-1.5 rounded-full text-xs flex items-center gap-1.5 transition-colors ${
+            tab === "deals" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <LayoutGrid className="w-3 h-3" /> Deals
+        </button>
+        <button
+          onClick={() => setTab("fluxos")}
+          className={`px-3.5 py-1.5 rounded-full text-xs flex items-center gap-1.5 transition-colors ${
+            tab === "fluxos" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Workflow className="w-3 h-3" /> Fluxos
+        </button>
       </div>
 
-      {/* KPI strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KpiCard icon={<Target className="w-4 h-4" />} label="Deals Abertos" value={String(kpis.open)} accent="primary" />
-        <KpiCard icon={<TrendingUp className="w-4 h-4" />} label="Pipeline Total" value={fmt(kpis.openValue)} accent="primary" />
-        <KpiCard icon={<TrendingUp className="w-4 h-4" />} label="Ticket Médio" value={fmt(kpis.ticket)} accent="info" />
-        <KpiCard icon={<CheckCircle2 className="w-4 h-4" />} label="Ganhos (R$)" value={fmt(kpis.wonValue)} accent="success" />
-      </div>
+      {tab === "deals" ? (
+        <>
+          {/* Search + view toggle */}
+          <div className="flex flex-col md:flex-row gap-3 md:items-center">
+            <div className="relative flex-1 max-w-md">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar deals por título, empresa, contato ou valor…"
+                className="h-9 pl-9 bg-white/5 border-white/10 text-sm"
+              />
+            </div>
 
-      {dLoading ? (
-        <div className="flex gap-3 overflow-hidden">
-          {[1,2,3,4,5].map(i => <div key={i} className="w-[280px] h-96 glass-card rounded-xl animate-pulse flex-shrink-0" />)}
-        </div>
-      ) : view === "kanban" ? (
-        <KanbanBoard stages={stages} deals={filteredDeals} />
+            <div className="flex rounded-full border border-white/10 overflow-hidden glass-card p-0.5 md:ml-auto">
+              <button
+                onClick={() => setView("kanban")}
+                className={`px-3 py-1 rounded-full text-[11px] flex items-center gap-1.5 transition-colors ${
+                  view === "kanban" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <LayoutGrid className="w-3 h-3" /> Kanban
+              </button>
+              <button
+                onClick={() => setView("list")}
+                className={`px-3 py-1 rounded-full text-[11px] flex items-center gap-1.5 transition-colors ${
+                  view === "list" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <List className="w-3 h-3" /> Lista
+              </button>
+            </div>
+          </div>
+
+          {/* KPI strip */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <KpiCard icon={<Target className="w-4 h-4" />} label="Deals Abertos" value={String(kpis.open)} accent="primary" />
+            <KpiCard icon={<TrendingUp className="w-4 h-4" />} label="Pipeline Total" value={fmt(kpis.openValue)} accent="primary" />
+            <KpiCard icon={<TrendingUp className="w-4 h-4" />} label="Ticket Médio" value={fmt(kpis.ticket)} accent="info" />
+            <KpiCard icon={<CheckCircle2 className="w-4 h-4" />} label="Ganhos (R$)" value={fmt(kpis.wonValue)} accent="success" />
+          </div>
+
+          {dLoading ? (
+            <div className="flex gap-3 overflow-hidden">
+              {[1,2,3,4,5].map(i => <div key={i} className="w-[280px] h-96 glass-card rounded-xl animate-pulse flex-shrink-0" />)}
+            </div>
+          ) : view === "kanban" ? (
+            <KanbanBoard stages={stages} deals={filteredDeals} />
+          ) : (
+            <DealListView stages={stages} deals={filteredDeals} />
+          )}
+        </>
       ) : (
-        <DealListView stages={stages} deals={filteredDeals} />
+        <FlowsList
+          scope="deals"
+          title="Fluxos de Deals"
+          description="Automatize emails, WhatsApp e movimentações de deals por etapa do pipeline de vendas."
+        />
       )}
+
 
       <NewDealModal open={newOpen} onOpenChange={setNewOpen} pipelineId={pipelineId} stages={stages} />
       {editor && (
