@@ -79,15 +79,12 @@ const App = () => (
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route path="/" element={<Dashboard />} />
 
-              {/* Vendas */}
-              <Route path="/vendas" element={<VendasLayout />}>
-                <Route index element={<Leads />} />
-                <Route path="funil" element={<Funil />} />
-                
-                <Route path="scripts" element={<Scripts />} />
-                <Route path="ligacoes" element={<Placeholder title="Ligações" />} />
-                <Route path="assistente" element={<AssistenteVendas />} />
-              </Route>
+              {/* Vendas — redirects para CRM > Atividades */}
+              <Route path="/vendas" element={<Navigate to="/crm/atividades/nucleo" replace />} />
+              <Route path="/vendas/funil" element={<Navigate to="/crm/atividades/nucleo" replace />} />
+              <Route path="/vendas/scripts" element={<Navigate to="/crm/atividades/nucleo" replace />} />
+              <Route path="/vendas/ligacoes" element={<Navigate to="/crm/atividades/nucleo" replace />} />
+              <Route path="/vendas/assistente" element={<Navigate to="/crm/atividades/nucleo" replace />} />
 
               {/* Team member dashboards */}
               <Route path="/equipe/aline" element={<TeamMemberDashboard memberName="Aline" initials="AL" />} />
