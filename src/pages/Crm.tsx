@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { LayoutGrid, List, Plus, Download, TrendingUp, Target, CheckCircle2, Search, Upload, FileSpreadsheet, ChevronDown } from "lucide-react";
+import { LayoutGrid, List, Plus, Download, TrendingUp, Target, CheckCircle2, Search, Upload, FileSpreadsheet, ChevronDown, Workflow } from "lucide-react";
+import { FlowsList } from "@/components/crm/projects/FlowsList";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
