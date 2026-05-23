@@ -1,39 +1,23 @@
 import { useState } from "react";
 import { Users } from "lucide-react";
-import Funil from "@/pages/Funil";
-import Leads from "@/pages/Leads";
-import Scripts from "@/pages/Scripts";
-import AssistenteVendas from "@/pages/AssistenteVendas";
-import Placeholder from "@/pages/Placeholder";
 import TeamMemberDashboard from "@/pages/TeamMemberDashboard";
 import LdrMemberDashboard from "@/pages/LdrMemberDashboard";
 import ThiagoDashboard from "@/pages/ThiagoDashboard";
 import { useAuth } from "@/contexts/AuthContext";
 import { Lock } from "lucide-react";
 
-type Colaborador = "geral" | "aline" | "milena" | "thiago" | "felipe";
-type GeralTab = "funil" | "leads" | "scripts" | "ligacoes" | "assistente";
+type Colaborador = "aline" | "milena" | "thiago" | "felipe";
 
 const COLABS: { key: Colaborador; label: string; initials: string; color?: string }[] = [
-  { key: "geral", label: "Painel Geral", initials: "GE" },
   { key: "aline", label: "Aline", initials: "AL" },
   { key: "milena", label: "Milena", initials: "MI", color: "hsl(45,80%,45%)" },
   { key: "thiago", label: "Thiago", initials: "TH", color: "#0a3a5c" },
   { key: "felipe", label: "Felipe", initials: "FE", color: "#f97316" },
 ];
 
-const GERAL_TABS: { key: GeralTab; label: string }[] = [
-  { key: "funil", label: "Funil de Vendas" },
-  { key: "leads", label: "Meus Leads" },
-  { key: "scripts", label: "Scripts" },
-  { key: "ligacoes", label: "Ligações" },
-  { key: "assistente", label: "Assistente de Vendas" },
-];
-
 export function NucleoOperacional() {
   const { profile, hasRole } = useAuth();
-  const [colab, setColab] = useState<Colaborador>("geral");
-  const [geralTab, setGeralTab] = useState<GeralTab>("funil");
+  const [colab, setColab] = useState<Colaborador>("aline");
 
   const canSeeThiago = hasRole("fundador") || profile?.colaborador_slug === "thiago";
 
@@ -59,14 +43,12 @@ export function NucleoOperacional() {
                   : "border-white/10 text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"
               }`}
             >
-              {c.key !== "geral" && (
-                <span
-                  className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
-                  style={{ background: c.color || "hsl(160,60%,38%)" }}
-                >
-                  {c.initials}
-                </span>
-              )}
+              <span
+                className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
+                style={{ background: c.color || "hsl(160,60%,38%)" }}
+              >
+                {c.initials}
+              </span>
               {c.label}
             </button>
           );
@@ -75,35 +57,7 @@ export function NucleoOperacional() {
 
       {/* Inner content */}
       <div className="flex-1 overflow-y-auto">
-        {colab === "geral" ? (
-          <>
-            <div
-              className="flex items-center gap-1 px-6 overflow-x-auto backdrop-blur-xl"
-              style={{ background: "rgba(255,255,255,0.02)", borderBottom: "1px solid var(--glass-border)" }}
-            >
-              {GERAL_TABS.map((t) => (
-                <button
-                  key={t.key}
-                  onClick={() => setGeralTab(t.key)}
-                  className={`px-4 py-3 text-sm font-medium whitespace-nowrap transition-all border-b-2 ${
-                    geralTab === t.key
-                      ? "border-primary text-primary"
-                      : "border-transparent text-muted-foreground hover:text-foreground hover:border-white/10"
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-            <div>
-              {geralTab === "funil" && <Funil />}
-              {geralTab === "leads" && <Leads />}
-              {geralTab === "scripts" && <Scripts />}
-              {geralTab === "ligacoes" && <Placeholder title="Ligações" />}
-              {geralTab === "assistente" && <AssistenteVendas />}
-            </div>
-          </>
-        ) : colab === "aline" ? (
+        {colab === "aline" ? (
           <TeamMemberDashboard memberName="Aline" initials="AL" />
         ) : colab === "milena" ? (
           <LdrMemberDashboard memberName="Milena" initials="MI" avatarColor="hsl(45,80%,45%)" />
