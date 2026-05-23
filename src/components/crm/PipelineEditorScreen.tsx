@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   CrmPipeline,
-  PipelineFlowType,
   StageInput,
   FLOW_TYPE_STAGE_TEMPLATES,
   useCollaborators,
