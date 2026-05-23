@@ -610,9 +610,13 @@ export type Database = {
           pipedrive_id: number | null
           pipeline_id: string
           probabilidade: number | null
+          score_budget: number | null
+          score_fit: number | null
+          score_urgencia: number | null
           stage_entered_at: string
           stage_id: string
           status: Database["public"]["Enums"]["crm_deal_status"]
+          temperatura: string | null
           titulo: string
           updated_at: string
           valor: number
@@ -633,9 +637,13 @@ export type Database = {
           pipedrive_id?: number | null
           pipeline_id: string
           probabilidade?: number | null
+          score_budget?: number | null
+          score_fit?: number | null
+          score_urgencia?: number | null
           stage_entered_at?: string
           stage_id: string
           status?: Database["public"]["Enums"]["crm_deal_status"]
+          temperatura?: string | null
           titulo: string
           updated_at?: string
           valor?: number
@@ -656,9 +664,13 @@ export type Database = {
           pipedrive_id?: number | null
           pipeline_id?: string
           probabilidade?: number | null
+          score_budget?: number | null
+          score_fit?: number | null
+          score_urgencia?: number | null
           stage_entered_at?: string
           stage_id?: string
           status?: Database["public"]["Enums"]["crm_deal_status"]
+          temperatura?: string | null
           titulo?: string
           updated_at?: string
           valor?: number
