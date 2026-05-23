@@ -39,8 +39,8 @@ export function FlowsList({ scope = "projects", title, description }: { scope?: 
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Fluxos do Processo</h2>
-          <p className="text-xs text-muted-foreground">Automatize emails, WhatsApp e atualizações por etapa do projeto.</p>
+          <h2 className="text-lg font-semibold text-foreground">{title || "Fluxos do Processo"}</h2>
+          <p className="text-xs text-muted-foreground">{description || "Automatize emails, WhatsApp e atualizações por etapa do projeto."}</p>
         </div>
         <Button size="sm" onClick={() => setNewOpen(true)}>
           <Plus className="w-3.5 h-3.5 mr-1.5" /> Novo Fluxo
