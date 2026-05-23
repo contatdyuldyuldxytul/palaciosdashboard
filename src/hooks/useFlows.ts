@@ -47,7 +47,7 @@ export function useFlow(id?: string) {
   });
 }
 
-export function useCreateFlow() {
+export function useCreateFlow(scope: FlowScope = "projects") {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { nome: string; descricao?: string }) => {
@@ -60,13 +60,14 @@ export function useCreateFlow() {
           nodes: [],
           edges: [],
           trigger_config: {},
+          scope,
         })
         .select("*")
         .single();
       if (error) throw error;
       return data as unknown as Flow;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["flows"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["flows", scope] }),
   });
 }
 
