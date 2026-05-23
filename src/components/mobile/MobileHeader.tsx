@@ -15,7 +15,7 @@ export function MobileHeader({ onOpenDrawer }: Props) {
     >
       <button
         onClick={onOpenDrawer}
-        className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors"
+        className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
         aria-label="Abrir menu"
       >
         <Menu className="w-5 h-5" />
