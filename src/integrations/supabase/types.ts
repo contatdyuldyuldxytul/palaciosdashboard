@@ -598,6 +598,7 @@ export type Database = {
           created_at: string
           data_fechamento: string | null
           expected_close_date: string | null
+          flow_started_at: string
           id: string
           label_ids: string[]
           motivo_perda: string | null
@@ -625,6 +626,7 @@ export type Database = {
           created_at?: string
           data_fechamento?: string | null
           expected_close_date?: string | null
+          flow_started_at?: string
           id?: string
           label_ids?: string[]
           motivo_perda?: string | null
@@ -652,6 +654,7 @@ export type Database = {
           created_at?: string
           data_fechamento?: string | null
           expected_close_date?: string | null
+          flow_started_at?: string
           id?: string
           label_ids?: string[]
           motivo_perda?: string | null
@@ -873,6 +876,7 @@ export type Database = {
         Row: {
           ativo: boolean
           created_at: string
+          flow_id: string | null
           flow_type: Database["public"]["Enums"]["pipeline_flow_type"]
           id: string
           nome: string
@@ -886,6 +890,7 @@ export type Database = {
         Insert: {
           ativo?: boolean
           created_at?: string
+          flow_id?: string | null
           flow_type?: Database["public"]["Enums"]["pipeline_flow_type"]
           id?: string
           nome: string
@@ -899,6 +904,7 @@ export type Database = {
         Update: {
           ativo?: boolean
           created_at?: string
+          flow_id?: string | null
           flow_type?: Database["public"]["Enums"]["pipeline_flow_type"]
           id?: string
           nome?: string
@@ -1587,6 +1593,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      flow_task_completions: {
+        Row: {
+          completed_at: string
+          completed_by: string | null
+          deal_id: string
+          flow_id: string
+          id: string
+          node_id: string
+          nota: string | null
+        }
+        Insert: {
+          completed_at?: string
+          completed_by?: string | null
+          deal_id: string
+          flow_id: string
+          id?: string
+          node_id: string
+          nota?: string | null
+        }
+        Update: {
+          completed_at?: string
+          completed_by?: string | null
+          deal_id?: string
+          flow_id?: string
+          id?: string
+          node_id?: string
+          nota?: string | null
+        }
+        Relationships: []
       }
       flows: {
         Row: {
