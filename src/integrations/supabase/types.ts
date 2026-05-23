@@ -1597,6 +1597,7 @@ export type Database = {
           id: string
           nodes: Json
           nome: string
+          scope: string
           trigger_config: Json
           updated_at: string
         }
@@ -1608,6 +1609,7 @@ export type Database = {
           id?: string
           nodes?: Json
           nome: string
+          scope?: string
           trigger_config?: Json
           updated_at?: string
         }
@@ -1619,6 +1621,7 @@ export type Database = {
           id?: string
           nodes?: Json
           nome?: string
+          scope?: string
           trigger_config?: Json
           updated_at?: string
         }
