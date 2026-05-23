@@ -73,6 +73,15 @@
   }
 }
 
+/* Mobile utilities */
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+.safe-top { padding-top: env(safe-area-inset-top); }
+
+@media (max-width: 767px) {
+  /* Reduce heavy backdrop blur on mobile for perf */
+  .glass-card { backdrop-filter: blur(12px) !important; }
+}
+
 /* Animated background with blobs */
 .glass-bg-scene {
   position: fixed;
