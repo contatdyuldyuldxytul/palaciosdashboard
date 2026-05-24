@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, ExternalLink, Plus } from "lucide-react";
+import { CheckCircle2, ExternalLink, Plus, Workflow, AlertTriangle, Calendar, Mail, MessageCircle, CheckSquare, Sparkles, Flag, Webhook, Building2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -9,8 +9,10 @@ import {
   useToggleActivity,
   type DailyActivity,
 } from "@/hooks/useDailyActivities";
+import { useFlowActivities, useToggleFlowTask, type FlowActivity } from "@/hooks/useFlowActivities";
 import { useAuth } from "@/contexts/AuthContext";
 import { AddDailyActivityModal } from "@/components/AddDailyActivityModal";
+
 
 type Mode =
   | { kind: "pipedrive"; pipedriveUserId: number }
@@ -54,6 +56,15 @@ export function DailyTasksPanel({ mode, title = "Checklist", subtitle, assigneeL
     days: tab === "semana" ? 7 : 1,
   });
   const toggle = useToggleActivity();
+
+  // Flow tasks for this assignee
+  const { grouped: flowGrouped } = useFlowActivities({ owner_label: assigneeLabel || null });
+  const flowItems: FlowActivity[] =
+    tab === "hoje"
+      ? [...flowGrouped.atrasadas, ...flowGrouped.hoje]
+      : [...flowGrouped.atrasadas, ...flowGrouped.hoje, ...flowGrouped.amanha, ...flowGrouped.proximos.filter((i) => i.days_until <= 7)];
+  const toggleFlow = useToggleFlowTask();
+
 
   const today = new Date();
 
@@ -102,6 +113,23 @@ export function DailyTasksPanel({ mode, title = "Checklist", subtitle, assigneeL
           )}
         </div>
       </div>
+
+      {flowItems.length > 0 && (
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Workflow className="w-3.5 h-3.5 text-primary" />
+            <span className="text-[11px] uppercase tracking-wider font-semibold text-primary">Tarefas do Fluxo</span>
+            <span className="text-[10px] text-muted-foreground">{flowItems.length}</span>
+          </div>
+          <ul className="space-y-1.5">
+            {flowItems.map((it) => (
+              <FlowTaskItem key={it.key} item={it} onToggle={() => toggleFlow.mutate(it)} />
+            ))}
+          </ul>
+          <div className="mt-3 border-t border-white/5" />
+        </div>
+      )}
+
 
       {mode.kind === "disabled" ? (
         <EmptyState message={mode.emptyMessage} />
@@ -204,3 +232,55 @@ function EmptyState({ message, hint }: { message: string; hint?: string }) {
     </div>
   );
 }
+
+
+const FLOW_KIND_META: Record<string, { icon: any; color: string; label: string }> = {
+  task: { icon: CheckSquare, color: "#0ea5e9", label: "Tarefa" },
+  email: { icon: Mail, color: "#3b82f6", label: "Email" },
+  whatsapp: { icon: MessageCircle, color: "#10b981", label: "WhatsApp" },
+  custom: { icon: Sparkles, color: "#a855f7", label: "Personalizada" },
+  milestone: { icon: Flag, color: "#22c55e", label: "Marco" },
+  webhook: { icon: Webhook, color: "#64748b", label: "Webhook" },
+};
+
+function FlowTaskItem({ item, onToggle }: { item: FlowActivity; onToggle: () => void }) {
+  const meta = FLOW_KIND_META[item.node_kind] || FLOW_KIND_META.task;
+  const Icon = meta.icon;
+  const [y, m, d] = item.due_date.split("-");
+  return (
+    <li
+      className={`flex items-start gap-3 p-3 rounded-xl transition-all hover:bg-white/[0.03] ${item.concluido ? "opacity-50" : ""}`}
+      style={{ border: "1px solid var(--glass-border)" }}
+    >
+      <Checkbox checked={item.concluido} onCheckedChange={onToggle} className="mt-0.5 h-5 w-5" />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span
+            className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-full"
+            style={{ background: `${meta.color}22`, color: meta.color, border: `1px solid ${meta.color}44` }}
+          >
+            <Icon className="w-3 h-3" /> {meta.label}
+          </span>
+          <span className="text-[10px] text-muted-foreground tabular-nums flex items-center gap-1">
+            <Calendar className="w-3 h-3" /> {d}/{m}/{y.slice(2)}
+          </span>
+          {item.days_until < 0 && (
+            <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/30">
+              <AlertTriangle className="w-3 h-3" /> {Math.abs(item.days_until)}d atraso
+            </span>
+          )}
+        </div>
+        <p className={`text-sm text-foreground mt-1 ${item.concluido ? "line-through text-muted-foreground" : ""}`}>
+          {item.node_label}
+        </p>
+        <div className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1 truncate">
+          <Building2 className="w-3 h-3 flex-shrink-0" />
+          <span className="truncate">{item.deal_titulo}</span>
+          <span className="text-muted-foreground/60">·</span>
+          <span className="truncate">{item.pipeline_nome}</span>
+        </div>
+      </div>
+    </li>
+  );
+}
+

@@ -5,7 +5,7 @@ import LdrMemberDashboard from "@/pages/LdrMemberDashboard";
 import ThiagoDashboard from "@/pages/ThiagoDashboard";
 import { useAuth } from "@/contexts/AuthContext";
 import { Lock } from "lucide-react";
-import { FlowTasksList } from "@/components/crm/atividades/FlowTasksList";
+
 
 type Colaborador = "aline" | "milena" | "thiago" | "felipe";
 
@@ -58,9 +58,7 @@ export function NucleoOperacional() {
 
       {/* Inner content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="px-6 pt-4">
-          <FlowTasksList ownerLabel={COLABS.find((c) => c.key === colab)?.label} />
-        </div>
+
         {colab === "aline" ? (
           <TeamMemberDashboard memberName="Aline" initials="AL" />
         ) : colab === "milena" ? (
