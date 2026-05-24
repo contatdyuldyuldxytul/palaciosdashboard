@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ReactFlow, ReactFlowProvider, Background, Controls, MiniMap,
-  addEdge, applyEdgeChanges, applyNodeChanges, type Connection, type Edge, type Node,
+  addEdge, applyEdgeChanges, applyNodeChanges, NodeResizer,
+  type Connection, type Edge, type Node,
   type NodeChange, type EdgeChange, MarkerType, Handle, Position,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import {
   ArrowLeft, Save, Play, Mail, MessageCircle, Clock, GitBranch, Zap, Settings2, Trash2,
-  Sparkles, StickyNote, Flag, HelpCircle, CheckSquare, Webhook,
+  Sparkles, StickyNote, Flag, HelpCircle, CheckSquare, Webhook, Square,
   Star, Heart, Target, Lightbulb, Rocket, Bell, Bookmark, Camera, FileText, Folder,
   Image as ImageIcon, Layers, Link2, Map, Music, Package, Phone, Settings, Shield,
   ShoppingCart, Tag, Timer, Wrench, User, Users, Video, CheckCircle,
