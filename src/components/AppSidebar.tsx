@@ -14,7 +14,14 @@ import logoPalaciosIcon from "@/assets/logo-palacios-icon.png";
 
 const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "CRM", url: "/crm", icon: Kanban, hasChildren: true, alwaysExpanded: true },
+  { title: "Deals", url: "/crm", icon: DollarSign, exact: true },
+  { title: "Projects", url: "/crm/projects", icon: ClipboardList },
+  { title: "Atividades", url: "/crm/atividades", icon: Calendar },
+  { title: "E-mail", url: "/crm/email", icon: Mail },
+  { title: "Leads Instagram", url: "/crm/instagram", icon: Instagram },
+  { title: "Contatos", url: "/crm/contatos", icon: Users },
+  { title: "Insights & Forecast", url: "/crm/insights", icon: TrendUp },
+  { title: "Automações I.A", url: "/crm/automacoes", icon: Sparkles },
   { title: "Hunter de Negócios", url: "/hunter", icon: Target },
   { title: "CEO", url: "/ceo", icon: Crown, requireRole: "fundador" as const, isCeo: true },
   { title: "Assistente IA", url: "/assistente", icon: MessageSquare },
@@ -31,17 +38,8 @@ type SubItem = {
   exact?: boolean;
 };
 
-const subItems: SubItem[] = [
-  // CRM sub-tabs
-  { title: "Deals", url: "/crm", parentUrl: "/crm", icon: DollarSign, exact: true },
-  { title: "Projects", url: "/crm/projects", parentUrl: "/crm", icon: ClipboardList },
-  { title: "Atividades", url: "/crm/atividades", parentUrl: "/crm", icon: Calendar },
-  { title: "E-mail", url: "/crm/email", parentUrl: "/crm", icon: Mail },
-  { title: "Leads Instagram", url: "/crm/instagram", parentUrl: "/crm", icon: Instagram },
-  { title: "Contatos", url: "/crm/contatos", parentUrl: "/crm", icon: Users },
-  { title: "Insights & Forecast", url: "/crm/insights", parentUrl: "/crm", icon: TrendUp },
-  { title: "Automações I.A", url: "/crm/automacoes", parentUrl: "/crm", icon: Sparkles },
-];
+const subItems: SubItem[] = [];
+
 
 export function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
@@ -49,13 +47,13 @@ export function AppSidebar() {
   const { signOut, profile, hasRole } = useAuth();
   const { theme, toggle } = useTheme();
 
-  const isActive = (url: string) => {
-    if (url === "/") return location.pathname === "/";
-    return location.pathname.startsWith(url);
+  const isActive = (url: string, exact?: boolean) => {
+    if (url === "/" || exact) return location.pathname === url;
+    return location.pathname === url || location.pathname.startsWith(url + "/");
   };
 
   const visibleItems = navItems.filter(
-    (item) => !item.requireRole || hasRole(item.requireRole)
+    (item) => !(item as any).requireRole || hasRole((item as any).requireRole)
   );
 
   return (
@@ -76,13 +74,13 @@ export function AppSidebar() {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 py-4 px-2">
+      <nav className="flex-1 py-4 px-2 overflow-y-auto">
         <ul className="space-y-1">
           {visibleItems.map((item) => {
-            const active = isActive(item.url);
-            const allChildren = item.hasChildren ? subItems.filter((s) => s.parentUrl === "/crm") : [];
-            const children = allChildren;
-            const showChildren = !collapsed && (item as any).hasChildren && ((item as any).alwaysExpanded || active) && children.length > 0;
+            const active = isActive(item.url, (item as any).exact);
+            const showChildren = false;
+            const children: SubItem[] = [];
+
             return (
               <li key={item.url} className="space-y-0.5">
                 <Link
