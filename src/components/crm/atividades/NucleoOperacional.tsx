@@ -58,9 +58,7 @@ export function NucleoOperacional() {
 
       {/* Inner content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="px-6 pt-4">
-          <FlowTasksList ownerLabel={COLABS.find((c) => c.key === colab)?.label} />
-        </div>
+
         {colab === "aline" ? (
           <TeamMemberDashboard memberName="Aline" initials="AL" />
         ) : colab === "milena" ? (
