@@ -134,13 +134,14 @@ function FlowNode({ data, selected }: any) {
           <Icon className="w-3.5 h-3.5 text-foreground" />
         </div>
         <div className="min-w-0">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{meta.label}</div>
+          <div className="text-[10px] uppercase tracking-wider font-semibold" style={{ color }}>{meta.label}</div>
           <div className="text-xs font-medium text-foreground truncate max-w-[140px]">{data.label || meta.label}</div>
         </div>
       </div>
       {kind === "custom" && data.config?.description && (
-        <div className="mt-1.5 text-[10px] text-muted-foreground line-clamp-2">{data.config.description}</div>
+        <div className="mt-1.5 text-[10px] text-foreground/70 line-clamp-2">{data.config.description}</div>
       )}
+
       {kind === "decision" ? (
         <>
           <Handle type="source" position={Position.Bottom} id="yes" style={{ background: "#22c55e", left: "30%" }} />
