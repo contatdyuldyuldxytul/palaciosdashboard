@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ReactFlow, ReactFlowProvider, Background, Controls, MiniMap,
   addEdge, applyEdgeChanges, applyNodeChanges, NodeResizer,
@@ -10,8 +10,9 @@ import {
   ArrowLeft, Save, Play, Mail, MessageCircle, Clock, GitBranch, Zap, Settings2, Trash2,
   Sparkles, StickyNote, Flag, HelpCircle, CheckSquare, Webhook, Square,
   Star, Heart, Target, Lightbulb, Rocket, Bell, Bookmark, Camera, FileText, Folder,
-  Image as ImageIcon, Layers, Link2, Map, Music, Package, Phone, Settings, Shield,
+  Image as ImageIcon, Layers, Link2, Map as MapIcon, Music, Package, Phone, Settings, Shield,
   ShoppingCart, Tag, Timer, Wrench, User, Users, Video, CheckCircle,
+  Loader2, AlertCircle, Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,7 +47,7 @@ const NODE_META: Record<string, { label: string; icon: any; color: string; group
 // Icon library for "custom" node
 const CUSTOM_ICONS: Record<string, any> = {
   Sparkles, Star, Heart, Flag, Target, Lightbulb, Rocket, Bell, Bookmark, Camera,
-  FileText, Folder, ImageIcon, Layers, Link2, Map, MessageSquare: MessageCircle,
+  FileText, Folder, ImageIcon, Layers, Link2, MessageSquare: MessageCircle, Map: MapIcon,
   Music, Package, Phone, Settings, Shield, ShoppingCart, Tag, Timer, Wrench,
   User, Users, Video, Zap, CheckCircle,
 };
@@ -86,8 +87,8 @@ function FlowNode({ data, selected }: any) {
       >
         <Handle type="target" position={Position.Top} style={{ background: "#eab308", opacity: 0.5 }} />
         <div className="flex items-center gap-1.5 mb-1">
-          <StickyNote className="w-3 h-3 text-amber-400" />
-          <div className="text-[10px] uppercase tracking-wider text-amber-300/80">Nota</div>
+          <StickyNote className="w-3 h-3 text-amber-300" />
+          <div className="text-[10px] uppercase tracking-wider font-semibold text-amber-200">Nota</div>
         </div>
         <div className="text-xs text-foreground whitespace-pre-wrap break-words">
           {data.config?.text || data.label || "Clique para editar…"}
@@ -96,6 +97,7 @@ function FlowNode({ data, selected }: any) {
       </div>
     );
   }
+
 
   // Day/Week badge — visible without selecting the node
   const rawDays = data.config?.dia_offset;
@@ -133,13 +135,14 @@ function FlowNode({ data, selected }: any) {
           <Icon className="w-3.5 h-3.5 text-foreground" />
         </div>
         <div className="min-w-0">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{meta.label}</div>
+          <div className="text-[10px] uppercase tracking-wider font-semibold" style={{ color }}>{meta.label}</div>
           <div className="text-xs font-medium text-foreground truncate max-w-[140px]">{data.label || meta.label}</div>
         </div>
       </div>
       {kind === "custom" && data.config?.description && (
-        <div className="mt-1.5 text-[10px] text-muted-foreground line-clamp-2">{data.config.description}</div>
+        <div className="mt-1.5 text-[10px] text-foreground/70 line-clamp-2">{data.config.description}</div>
       )}
+
       {kind === "decision" ? (
         <>
           <Handle type="source" position={Position.Bottom} id="yes" style={{ background: "#22c55e", left: "30%" }} />
@@ -155,9 +158,19 @@ function FlowNode({ data, selected }: any) {
   );
 }
 
-// Section / Frame node — Figma-style visual grouping
+// Section / Frame node — Figma-style visual grouping with lateral connectors
 function SectionNode({ data, selected }: any) {
   const color = data.color || "#64748b";
+  const startOffset = data.config?.start_offset_dias;
+  const unit = data.config?.start_offset_unit === "semanas" ? "semanas" : "dias";
+  const hasOffset = startOffset !== null && startOffset !== undefined && startOffset !== "" && Number.isFinite(Number(startOffset));
+  const offsetNum = hasOffset ? Number(startOffset) : null;
+  const offsetLabel = offsetNum === null
+    ? null
+    : unit === "semanas"
+      ? `+${offsetNum / 7}sem`
+      : `+${offsetNum}d`;
+
   return (
     <div
       className="relative w-full h-full rounded-2xl border-2 border-dashed transition-all"
@@ -174,20 +187,43 @@ function SectionNode({ data, selected }: any) {
         lineStyle={{ borderColor: color }}
         handleStyle={{ background: color, width: 8, height: 8, borderRadius: 2 }}
       />
+      {/* Lateral connectors (section-to-section) */}
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="section-in"
+        style={{ background: color, width: 12, height: 12, border: "2px solid rgba(255,255,255,0.15)" }}
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="section-out"
+        style={{ background: color, width: 12, height: 12, border: "2px solid rgba(255,255,255,0.15)" }}
+      />
       <div className="absolute -top-3 left-3 px-2 py-0.5 rounded-md border border-white/15 bg-background/95 backdrop-blur-sm flex items-center gap-1.5 max-w-[calc(100%-24px)]">
         <div className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: color }} />
         <span className="text-[11px] font-semibold text-foreground truncate">
           {data.label || "Seção"}
         </span>
       </div>
+      {offsetLabel && (
+        <div
+          className="absolute -top-3 right-3 px-2 py-0.5 rounded-md border border-white/15 bg-background/95 backdrop-blur-sm text-[10px] font-semibold tabular-nums"
+          style={{ color }}
+          title={`Inicia ${offsetNum} ${unit === "semanas" ? "semanas" : "dias"} após o início do fluxo`}
+        >
+          {offsetLabel}
+        </div>
+      )}
       {data.config?.description && (
-        <div className="absolute top-4 left-3 right-3 text-[10px] text-muted-foreground truncate pointer-events-none">
+        <div className="absolute top-4 left-3 right-3 text-[10px] text-foreground/70 truncate pointer-events-none">
           {data.config.description}
         </div>
       )}
     </div>
   );
 }
+
 
 const nodeTypes = { flow: FlowNode, section: SectionNode };
 
@@ -208,20 +244,48 @@ function FlowEditorInner({ flowId, onClose, scope }: { flowId: string; onClose: 
   const update = useUpdateFlow();
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
-  const [selected, setSelected] = useState<Node | null>(null);
+  const [selectedNodes, setSelectedNodes] = useState<Node[]>([]);
   const [name, setName] = useState("");
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+
+  const clipboardRef = useRef<{ nodes: Node[]; edges: Edge[] } | null>(null);
+  const hydratedRef = useRef(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dirtyRef = useRef(false);
+  const latestRef = useRef({ nodes, edges, name });
+
+  useEffect(() => {
+    latestRef.current = { nodes, edges, name };
+  }, [nodes, edges, name]);
 
   useEffect(() => {
     if (flow) {
       setNodes((flow.nodes as any[]) || []);
       setEdges((flow.edges as any[]) || []);
       setName(flow.nome);
+      hydratedRef.current = false;
+      Promise.resolve().then(() => { hydratedRef.current = true; });
     }
   }, [flow]);
 
-  const onNodesChange = useCallback((changes: NodeChange[]) => setNodes(ns => applyNodeChanges(changes, ns)), []);
-  const onEdgesChange = useCallback((changes: EdgeChange[]) => setEdges(es => applyEdgeChanges(changes, es)), []);
-  const onConnect = useCallback((c: Connection) => setEdges(es => addEdge({ ...c, markerEnd: { type: MarkerType.ArrowClosed } }, es)), []);
+  const selected = selectedNodes.length === 1 ? selectedNodes[0] : null;
+
+  const onNodesChange = useCallback((changes: NodeChange[]) => {
+    setNodes(ns => applyNodeChanges(changes, ns));
+    dirtyRef.current = true;
+  }, []);
+  const onEdgesChange = useCallback((changes: EdgeChange[]) => {
+    setEdges(es => applyEdgeChanges(changes, es));
+    dirtyRef.current = true;
+  }, []);
+  const onConnect = useCallback((c: Connection) => {
+    setEdges(es => addEdge({ ...c, markerEnd: { type: MarkerType.ArrowClosed } }, es));
+    dirtyRef.current = true;
+  }, []);
+  const onSelectionChange = useCallback(({ nodes: ns }: { nodes: Node[]; edges: Edge[] }) => {
+    setSelectedNodes(ns || []);
+  }, []);
 
   const addNode = (kind: keyof typeof NODE_META) => {
     const id = `${kind}-${Date.now()}`;
@@ -232,6 +296,7 @@ function FlowEditorInner({ flowId, onClose, scope }: { flowId: string; onClose: 
     }
     if (kind === "section") {
       baseData.color = NODE_META.section.color;
+      baseData.config = { start_offset_dias: null, start_offset_unit: "dias" };
     }
     const isSection = kind === "section";
     const newNode: Node = {
@@ -249,29 +314,192 @@ function FlowEditorInner({ flowId, onClose, scope }: { flowId: string; onClose: 
         : {}),
     };
     setNodes(ns => isSection ? [newNode, ...ns] : [...ns, newNode]);
+    dirtyRef.current = true;
   };
 
   const updateSelected = (patch: any) => {
     if (!selected) return;
     setNodes(ns => ns.map(n => n.id === selected.id ? { ...n, data: { ...n.data, ...patch } } : n));
-    setSelected(s => s ? { ...s, data: { ...s.data, ...patch } } : s);
+    setSelectedNodes(sn => sn.map(n => n.id === selected.id ? { ...n, data: { ...n.data, ...patch } } : n));
+    dirtyRef.current = true;
   };
 
   const deleteSelected = () => {
-    if (!selected) return;
-    setNodes(ns => ns.filter(n => n.id !== selected.id));
-    setEdges(es => es.filter(e => e.source !== selected.id && e.target !== selected.id));
-    setSelected(null);
+    if (selectedNodes.length === 0) return;
+    const ids = new Set(selectedNodes.map(n => n.id));
+    setNodes(ns => ns.filter(n => !ids.has(n.id) && !(n.parentId && ids.has(n.parentId as string))));
+    setEdges(es => es.filter(e => !ids.has(e.source) && !ids.has(e.target)));
+    setSelectedNodes([]);
+    dirtyRef.current = true;
   };
 
-  const save = async () => {
-    try {
-      await update.mutateAsync({ id: flowId, patch: { nodes: nodes as any, edges: edges as any, nome: name } as any });
-      toast({ title: "Fluxo salvo" });
-    } catch (e: any) {
-      toast({ title: "Erro ao salvar", description: e.message, variant: "destructive" });
+  const copySelection = useCallback(() => {
+    if (selectedNodes.length === 0) return;
+    const ids = new Set(selectedNodes.map(n => n.id));
+    const internalEdges = edges.filter(e => ids.has(e.source) && ids.has(e.target));
+    clipboardRef.current = {
+      nodes: selectedNodes.map(n => JSON.parse(JSON.stringify(n))),
+      edges: internalEdges.map(e => JSON.parse(JSON.stringify(e))),
+    };
+  }, [selectedNodes, edges]);
+
+  const pasteFrom = useCallback((payload: { nodes: Node[]; edges: Edge[] } | null, offset = { x: 32, y: 32 }) => {
+    if (!payload || payload.nodes.length === 0) return;
+    const idMap = new Map<string, string>();
+    const stamp = Date.now();
+    const newNodes: Node[] = payload.nodes.map((n, i) => {
+      const newId = `${(n.data as any)?.kind || "node"}-${stamp}-${i}`;
+      idMap.set(n.id, newId);
+      const remappedParent = n.parentId && idMap.get(n.parentId as string);
+      return {
+        ...n,
+        id: newId,
+        position: { x: (n.position?.x || 0) + offset.x, y: (n.position?.y || 0) + offset.y },
+        parentId: remappedParent || undefined,
+        extent: remappedParent ? n.extent : undefined,
+        selected: true,
+      };
+    });
+    const newEdges: Edge[] = payload.edges
+      .filter(e => idMap.has(e.source) && idMap.has(e.target))
+      .map((e, i) => ({
+        ...e,
+        id: `e-${stamp}-${i}`,
+        source: idMap.get(e.source)!,
+        target: idMap.get(e.target)!,
+      }));
+    setNodes(ns => [...ns.map(n => ({ ...n, selected: false })), ...newNodes]);
+    setEdges(es => [...es, ...newEdges]);
+    dirtyRef.current = true;
+  }, []);
+
+  const duplicateSelection = useCallback(() => {
+    if (selectedNodes.length === 0) return;
+    const ids = new Set(selectedNodes.map(n => n.id));
+    const internalEdges = edges.filter(e => ids.has(e.source) && ids.has(e.target));
+    pasteFrom({ nodes: selectedNodes, edges: internalEdges });
+  }, [selectedNodes, edges, pasteFrom]);
+
+  const groupIntoSection = useCallback(() => {
+    const targets = selectedNodes.filter(n => n.type !== "section" && !n.parentId);
+    if (targets.length === 0) {
+      toast({ title: "Selecione nodes soltos para agrupar", variant: "destructive" });
+      return;
     }
-  };
+    const PAD_TOP = 48;
+    const PAD = 24;
+    const DEFAULT_W = 200;
+    const DEFAULT_H = 80;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    targets.forEach(n => {
+      const w = (n.width as number) || (n.style?.width as number) || DEFAULT_W;
+      const h = (n.height as number) || (n.style?.height as number) || DEFAULT_H;
+      minX = Math.min(minX, n.position.x);
+      minY = Math.min(minY, n.position.y);
+      maxX = Math.max(maxX, n.position.x + w);
+      maxY = Math.max(maxY, n.position.y + h);
+    });
+    const sectionId = `section-${Date.now()}`;
+    const sectionX = minX - PAD;
+    const sectionY = minY - PAD_TOP;
+    const sectionW = (maxX - minX) + PAD * 2;
+    const sectionH = (maxY - minY) + PAD_TOP + PAD;
+
+    const section: Node = {
+      id: sectionId,
+      type: "section",
+      position: { x: sectionX, y: sectionY },
+      data: {
+        kind: "section",
+        label: "Nova Seção",
+        color: NODE_META.section.color,
+        config: { start_offset_dias: null, start_offset_unit: "dias" },
+      },
+      style: { width: sectionW, height: sectionH },
+      zIndex: -1,
+      selectable: true,
+      draggable: true,
+    };
+
+    const targetIds = new Set(targets.map(n => n.id));
+    setNodes(ns => {
+      const withSection = [section, ...ns];
+      return withSection.map(n => {
+        if (targetIds.has(n.id)) {
+          return {
+            ...n,
+            parentId: sectionId,
+            extent: "parent" as const,
+            position: { x: n.position.x - sectionX, y: n.position.y - sectionY },
+          };
+        }
+        return n;
+      });
+    });
+    setSelectedNodes([section]);
+    dirtyRef.current = true;
+    toast({ title: `${targets.length} nodes agrupados em uma seção` });
+  }, [selectedNodes]);
+
+  useEffect(() => {
+    const isEditable = (el: EventTarget | null) => {
+      const t = el as HTMLElement | null;
+      if (!t) return false;
+      const tag = t.tagName;
+      return tag === "INPUT" || tag === "TEXTAREA" || t.isContentEditable;
+    };
+    const handler = (e: KeyboardEvent) => {
+      if (isEditable(e.target)) return;
+      const meta = e.metaKey || e.ctrlKey;
+      if (meta && e.key.toLowerCase() === "c") {
+        copySelection();
+      } else if (meta && e.key.toLowerCase() === "v") {
+        pasteFrom(clipboardRef.current);
+      } else if (meta && e.key.toLowerCase() === "d") {
+        e.preventDefault();
+        duplicateSelection();
+      } else if (meta && e.key.toLowerCase() === "g") {
+        e.preventDefault();
+        groupIntoSection();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [copySelection, pasteFrom, duplicateSelection, groupIntoSection]);
+
+  const performSave = useCallback(async (opts: { silent?: boolean } = {}) => {
+    setSaveStatus("saving");
+    try {
+      const { nodes: n, edges: ed, name: nm } = latestRef.current;
+      await update.mutateAsync({ id: flowId, patch: { nodes: n as any, edges: ed as any, nome: nm } as any });
+      setSaveStatus("saved");
+      setLastSavedAt(new Date());
+      dirtyRef.current = false;
+      if (!opts.silent) toast({ title: "Fluxo salvo" });
+    } catch (e: any) {
+      setSaveStatus("error");
+      if (!opts.silent) toast({ title: "Erro ao salvar", description: e.message, variant: "destructive" });
+    }
+  }, [flowId, update]);
+
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    if (!dirtyRef.current) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => { performSave({ silent: true }); }, 1500);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [nodes, edges, name, performSave]);
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (dirtyRef.current) {
+        const { nodes: n, edges: ed, name: nm } = latestRef.current;
+        update.mutateAsync({ id: flowId, patch: { nodes: n as any, edges: ed as any, nome: nm } as any }).catch(() => {});
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (isLoading || !flow) {
     return <div className="p-6 text-sm text-muted-foreground">Carregando fluxo…</div>;
@@ -298,6 +526,21 @@ function FlowEditorInner({ flowId, onClose, scope }: { flowId: string; onClose: 
     );
   };
 
+  const saveIndicator = (() => {
+    if (saveStatus === "saving") {
+      return <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><Loader2 className="w-3 h-3 animate-spin" /> Salvando…</span>;
+    }
+    if (saveStatus === "error") {
+      return <span className="flex items-center gap-1.5 text-[11px] text-red-400"><AlertCircle className="w-3 h-3" /> Erro ao salvar</span>;
+    }
+    if (saveStatus === "saved" && lastSavedAt) {
+      const hh = String(lastSavedAt.getHours()).padStart(2, "0");
+      const mm = String(lastSavedAt.getMinutes()).padStart(2, "0");
+      return <span className="flex items-center gap-1.5 text-[11px] text-emerald-400/80"><Check className="w-3 h-3" /> Salvo às {hh}:{mm}</span>;
+    }
+    return <span className="text-[11px] text-muted-foreground">Auto-save ativo</span>;
+  })();
+
   return (
     <div className="flex flex-col h-[calc(100vh-140px)] -mx-4 lg:-mx-6 -mb-4 lg:-mb-6">
       {/* Toolbar */}
@@ -308,15 +551,16 @@ function FlowEditorInner({ flowId, onClose, scope }: { flowId: string; onClose: 
           </Button>
           <Input
             value={name}
-            onChange={e => setName(e.target.value)}
+            onChange={e => { setName(e.target.value); dirtyRef.current = true; }}
             className="h-8 w-[260px] bg-white/5 border-white/10 text-sm"
           />
+          {saveIndicator}
         </div>
         <div className="flex gap-2">
           <Button size="sm" variant="outline" disabled title="Em breve">
             <Play className="w-3.5 h-3.5 mr-1.5" /> Testar
           </Button>
-          <Button size="sm" onClick={save} disabled={update.isPending}>
+          <Button size="sm" onClick={() => performSave()} disabled={update.isPending}>
             <Save className="w-3.5 h-3.5 mr-1.5" /> {update.isPending ? "Salvando…" : "Salvar"}
           </Button>
         </div>
@@ -331,6 +575,14 @@ function FlowEditorInner({ flowId, onClose, scope }: { flowId: string; onClose: 
           {automationNodes.map(renderPaletteButton)}
           <div className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 py-1.5 mt-3">Personalizado</div>
           {customNodes.map(renderPaletteButton)}
+          <div className="mt-4 px-2 py-2 rounded-lg bg-white/[0.02] border border-white/5 text-[10px] text-muted-foreground leading-relaxed space-y-0.5">
+            <div className="font-semibold text-foreground/80 mb-1">Atalhos</div>
+            <div>Shift+clique: multi-seleção</div>
+            <div>⌘/Ctrl+C / V: copiar/colar</div>
+            <div>⌘/Ctrl+D: duplicar</div>
+            <div>⌘/Ctrl+G: agrupar em seção</div>
+            <div>Delete: excluir</div>
+          </div>
         </div>
 
         {/* Canvas */}
@@ -342,8 +594,11 @@ function FlowEditorInner({ flowId, onClose, scope }: { flowId: string; onClose: 
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
-            onNodeClick={(_, n) => setSelected(n)}
-            onPaneClick={() => setSelected(null)}
+            onSelectionChange={onSelectionChange}
+            multiSelectionKeyCode={["Meta", "Shift", "Control"]}
+            deleteKeyCode={["Delete", "Backspace"]}
+            selectionOnDrag
+            panOnDrag={[1, 2]}
             fitView
             colorMode="dark"
           >
@@ -354,11 +609,30 @@ function FlowEditorInner({ flowId, onClose, scope }: { flowId: string; onClose: 
         </div>
 
         {/* Inspector */}
-        {selected && (
+        {selectedNodes.length > 1 ? (
+          <div className="w-72 border-l border-white/5 bg-background/40 p-3 overflow-y-auto space-y-3">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">Seleção</div>
+            <div className="text-sm text-foreground font-medium">{selectedNodes.length} elementos selecionados</div>
+            <div className="space-y-2">
+              <Button size="sm" variant="outline" className="w-full justify-start" onClick={groupIntoSection}>
+                <Square className="w-3.5 h-3.5 mr-2" /> Agrupar em seção
+              </Button>
+              <Button size="sm" variant="outline" className="w-full justify-start" onClick={duplicateSelection}>
+                <Sparkles className="w-3.5 h-3.5 mr-2" /> Duplicar
+              </Button>
+              <Button size="sm" variant="outline" className="w-full justify-start text-red-400 hover:text-red-300" onClick={deleteSelected}>
+                <Trash2 className="w-3.5 h-3.5 mr-2" /> Excluir todos
+              </Button>
+            </div>
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
+              Use os atalhos do painel esquerdo para acelerar.
+            </p>
+          </div>
+        ) : selected ? (
           <div className="w-72 border-l border-white/5 bg-background/40 p-3 overflow-y-auto">
             <NodeInspector node={selected} scope={scope} onChange={updateSelected} onDelete={deleteSelected} />
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
@@ -518,6 +792,48 @@ function NodeInspector({ node, onChange, onDelete, scope }: { node: Node; onChan
             </div>
           </div>
           <div>
+            <Label className="text-xs">Inicia após o início do fluxo</Label>
+            <div className="flex gap-2 mt-1">
+              <Input
+                type="number"
+                min={0}
+                value={config.start_offset_dias ?? ""}
+                placeholder="0"
+                onChange={e => {
+                  const v = e.target.value;
+                  setCfg({ start_offset_dias: v === "" ? null : Number(v) });
+                }}
+                className="bg-white/5 border-white/10 h-8 text-sm flex-1"
+              />
+              <Select
+                value={config.start_offset_unit || "dias"}
+                onValueChange={v => setCfg({ start_offset_unit: v })}
+              >
+                <SelectTrigger className="bg-white/5 border-white/10 h-8 text-sm w-[110px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="dias">Dias</SelectItem>
+                  <SelectItem value="semanas">Semanas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs">Duração estimada (opcional)</Label>
+            <Input
+              type="number"
+              min={0}
+              value={config.duration_dias ?? ""}
+              placeholder="ex: 5"
+              onChange={e => {
+                const v = e.target.value;
+                setCfg({ duration_dias: v === "" ? null : Number(v) });
+              }}
+              className="bg-white/5 border-white/10 h-8 text-sm"
+            />
+          </div>
+          <div>
             <Label className="text-xs">Descrição (opcional)</Label>
             <Textarea
               value={config.description || ""}
@@ -528,11 +844,11 @@ function NodeInspector({ node, onChange, onDelete, scope }: { node: Node; onChan
             />
           </div>
           <p className="text-[10px] text-muted-foreground">
-            Seções são apenas visuais — agrupam etapas no canvas como frames do Figma.
-            Arraste pelas bordas para redimensionar.
+            Seções agrupam etapas como frames do Figma. Use os plugs nas laterais (esquerda/direita) para conectar uma seção à próxima.
           </p>
         </>
       )}
+
 
       {kind === "note" && (
         <div>
