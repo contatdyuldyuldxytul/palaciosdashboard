@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, ExternalLink, Plus } from "lucide-react";
+import { CheckCircle2, ExternalLink, Plus, Workflow, AlertTriangle, Calendar, Mail, MessageCircle, CheckSquare, Sparkles, Flag, Webhook, Building2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -9,8 +9,10 @@ import {
   useToggleActivity,
   type DailyActivity,
 } from "@/hooks/useDailyActivities";
+import { useFlowActivities, useToggleFlowTask, type FlowActivity } from "@/hooks/useFlowActivities";
 import { useAuth } from "@/contexts/AuthContext";
 import { AddDailyActivityModal } from "@/components/AddDailyActivityModal";
+
 
 type Mode =
   | { kind: "pipedrive"; pipedriveUserId: number }
