@@ -10,8 +10,9 @@ import {
   ArrowLeft, Save, Play, Mail, MessageCircle, Clock, GitBranch, Zap, Settings2, Trash2,
   Sparkles, StickyNote, Flag, HelpCircle, CheckSquare, Webhook, Square,
   Star, Heart, Target, Lightbulb, Rocket, Bell, Bookmark, Camera, FileText, Folder,
-  Image as ImageIcon, Layers, Link2, Map, Music, Package, Phone, Settings, Shield,
+  Image as ImageIcon, Layers, Link2, Map as MapIcon, Music, Package, Phone, Settings, Shield,
   ShoppingCart, Tag, Timer, Wrench, User, Users, Video, CheckCircle,
+  Loader2, AlertCircle, Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
