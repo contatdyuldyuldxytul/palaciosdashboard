@@ -157,9 +157,19 @@ function FlowNode({ data, selected }: any) {
   );
 }
 
-// Section / Frame node — Figma-style visual grouping
+// Section / Frame node — Figma-style visual grouping with lateral connectors
 function SectionNode({ data, selected }: any) {
   const color = data.color || "#64748b";
+  const startOffset = data.config?.start_offset_dias;
+  const unit = data.config?.start_offset_unit === "semanas" ? "semanas" : "dias";
+  const hasOffset = startOffset !== null && startOffset !== undefined && startOffset !== "" && Number.isFinite(Number(startOffset));
+  const offsetNum = hasOffset ? Number(startOffset) : null;
+  const offsetLabel = offsetNum === null
+    ? null
+    : unit === "semanas"
+      ? `+${offsetNum / 7}sem`
+      : `+${offsetNum}d`;
+
   return (
     <div
       className="relative w-full h-full rounded-2xl border-2 border-dashed transition-all"
@@ -176,20 +186,43 @@ function SectionNode({ data, selected }: any) {
         lineStyle={{ borderColor: color }}
         handleStyle={{ background: color, width: 8, height: 8, borderRadius: 2 }}
       />
+      {/* Lateral connectors (section-to-section) */}
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="section-in"
+        style={{ background: color, width: 12, height: 12, border: "2px solid rgba(255,255,255,0.15)" }}
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="section-out"
+        style={{ background: color, width: 12, height: 12, border: "2px solid rgba(255,255,255,0.15)" }}
+      />
       <div className="absolute -top-3 left-3 px-2 py-0.5 rounded-md border border-white/15 bg-background/95 backdrop-blur-sm flex items-center gap-1.5 max-w-[calc(100%-24px)]">
         <div className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: color }} />
         <span className="text-[11px] font-semibold text-foreground truncate">
           {data.label || "Seção"}
         </span>
       </div>
+      {offsetLabel && (
+        <div
+          className="absolute -top-3 right-3 px-2 py-0.5 rounded-md border border-white/15 bg-background/95 backdrop-blur-sm text-[10px] font-semibold tabular-nums"
+          style={{ color }}
+          title={`Inicia ${offsetNum} ${unit === "semanas" ? "semanas" : "dias"} após o início do fluxo`}
+        >
+          {offsetLabel}
+        </div>
+      )}
       {data.config?.description && (
-        <div className="absolute top-4 left-3 right-3 text-[10px] text-muted-foreground truncate pointer-events-none">
+        <div className="absolute top-4 left-3 right-3 text-[10px] text-foreground/70 truncate pointer-events-none">
           {data.config.description}
         </div>
       )}
     </div>
   );
 }
+
 
 const nodeTypes = { flow: FlowNode, section: SectionNode };
 
