@@ -114,6 +114,23 @@ export function DailyTasksPanel({ mode, title = "Checklist", subtitle, assigneeL
         </div>
       </div>
 
+      {flowItems.length > 0 && (
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Workflow className="w-3.5 h-3.5 text-primary" />
+            <span className="text-[11px] uppercase tracking-wider font-semibold text-primary">Tarefas do Fluxo</span>
+            <span className="text-[10px] text-muted-foreground">{flowItems.length}</span>
+          </div>
+          <ul className="space-y-1.5">
+            {flowItems.map((it) => (
+              <FlowTaskItem key={it.key} item={it} onToggle={() => toggleFlow.mutate(it)} />
+            ))}
+          </ul>
+          <div className="mt-3 border-t border-white/5" />
+        </div>
+      )}
+
+
       {mode.kind === "disabled" ? (
         <EmptyState message={mode.emptyMessage} />
       ) : skipForWeekend ? (
