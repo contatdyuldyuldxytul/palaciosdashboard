@@ -1,37 +1,41 @@
 ## Objetivo
-Hoje o campo de agendamento no Editor de Fluxo aceita só um número de dias (`dia_offset`). Vou adicionar a opção de expressar o intervalo em **dias OU semanas**, mantendo a base de cálculo em dias (compatível com `useFlowActivities` e com `flow_task_completions`).
+Tornar o "quando" (dia/semana) das etapas visível **na visão geral do fluxo** e permitir **segmentações estilo Figma** (frames/agrupamentos) para organizar nodes por fase, dia ou tema — sem precisar clicar em cada etapa.
 
 ## Mudanças (somente front-end, sem migration)
 
-### 1. `FlowEditor.tsx` — campo "Dia do fluxo"
-Substituir o input único por um par **número + seletor de unidade**:
+### 1. Badge de dia/semana visível no card do node
+Em `FlowEditor.tsx` → `FlowNode`:
+- Sempre que o node tiver `config.dia_offset`, renderizar um badge discreto no canto superior direito do card:
+  - `D3` se `dia_unit !== "semanas"` (ou valor não múltiplo de 7)
+  - `S2` se `dia_unit === "semanas"` (com `title="Dia 14"`)
+- Estilo: chip pequeno (`text-[9px]`, `px-1.5 py-0.5`, `rounded-md`, fundo `bg-white/10`, borda `border-white/15`), cor herda do node.
+- Aparece sem precisar selecionar o node.
 
-```
-[ 2 ] [ Semanas ▾ ]   → grava dia_offset = 14
-[ 3 ] [ Dias    ▾ ]   → grava dia_offset = 3
-```
+### 2. Segmentações estilo Figma (frames/seções)
+Adicionar um novo tipo de node `section` (group/frame visual):
+- Renderizado como um **retângulo grande translúcido** atrás dos outros nodes, com um label no topo esquerdo (ex.: "Semana 1 — Prospecção").
+- Redimensionável (usa `NodeResizer` do `@xyflow/react`).
+- Cor personalizável (paleta `COLOR_SWATCHES` reaproveitada).
+- `zIndex` negativo para ficar atrás dos outros nodes.
+- Não tem handles (não conecta a nada).
+- Não bloqueia interação: os nodes "filhos" são apenas sobrepostos visualmente — não há parentNode real, para manter simples e não quebrar o cálculo de `dia_offset` existente.
 
-- Unidade default: `Dias`.
-- Ao salvar: `dia_offset = valor * (unidade === "semanas" ? 7 : 1)`.
-- Ao abrir um node existente: se `dia_offset % 7 === 0 && dia_offset >= 7`, pré-seleciona `Semanas` e mostra `dia_offset / 7`; caso contrário `Dias`.
-- A unidade escolhida é só UI (não persistida) — a fonte de verdade continua `config.dia_offset` em dias, então nada quebra em `useFlowActivities`, `FlowTasksList` nem no banco.
-- Helper text atualizado: "Aparece na aba Atividades no dia certo a partir da entrada no pipeline."
+Na paleta lateral, adicionar uma terceira seção **"Organização"** com o botão **Seção** (ícone `Square` ou `LayoutGrid`).
 
-### 2. `FlowTasksList.tsx` — agrupamento por semana
-Adicionar um toggle no topo: **Dia / Semana**.
-- **Dia** (atual): mantém os grupos Atrasadas / Hoje / Amanhã / Próximos.
-- **Semana**: agrupa por `Semana 1 (D1–D7)`, `Semana 2 (D8–D14)`, etc., calculadas a partir de `flow_started_at` do deal. Cada item continua mostrando "Dia X".
+No inspector, quando o node selecionado for `section`:
+- Campo **Título** (já é `label`)
+- Campo **Cor** (paleta)
+- Campo **Descrição** opcional (texto pequeno abaixo do título no canvas)
 
-### 3. Badge no card do node (`FlowEditor`)
-No card do node renderizado no canvas, atualizar o badge atual de "Dia X" para mostrar de forma compacta:
-- `D3` quando dias
-- `S2` quando semanas (com tooltip "Dia 14")
+### 3. Ajuste no inspector
+Remover o badge "Dia X" do inspector se ficar redundante — manter só o helper text. (O badge visível no card já comunica.)
 
 ## Fora de escopo
-- Migration / mudanças no banco (não há).
-- Mudar `useFlowActivities` (continua lendo `dia_offset` em dias).
-- Suporte a meses / horas.
+- Parent/child relationship real entre seção e nodes (drag automático junto). Pode vir depois.
+- Migration ou mudança no schema (`section` é apenas mais um `kind` salvo dentro do array `nodes` do fluxo, igual aos demais).
+- Mudar `useFlowActivities` ou `FlowTasksList`: seções são puramente visuais e ignoradas pela geração de atividades (filtramos por `kind !== "section"`).
+- Auto-agrupar nodes por dia/semana automaticamente — o usuário desenha as seções manualmente, como no Figma.
 
 ## Arquivos
-- `src/components/crm/projects/FlowEditor.tsx` — campo de unidade + badge.
-- `src/components/crm/atividades/FlowTasksList.tsx` — toggle Dia/Semana e agrupamento semanal.
+- `src/components/crm/projects/FlowEditor.tsx` — novo `kind: "section"`, render do badge no `FlowNode`, item na paleta, inspector da seção, `NodeResizer`.
+- `src/hooks/useFlowActivities.ts` — adicionar filtro `kind !== "section"` ao iterar os nodes (defensivo).

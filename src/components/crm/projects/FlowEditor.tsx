@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ReactFlow, ReactFlowProvider, Background, Controls, MiniMap,
-  addEdge, applyEdgeChanges, applyNodeChanges, type Connection, type Edge, type Node,
+  addEdge, applyEdgeChanges, applyNodeChanges, NodeResizer,
+  type Connection, type Edge, type Node,
   type NodeChange, type EdgeChange, MarkerType, Handle, Position,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import {
   ArrowLeft, Save, Play, Mail, MessageCircle, Clock, GitBranch, Zap, Settings2, Trash2,
-  Sparkles, StickyNote, Flag, HelpCircle, CheckSquare, Webhook,
+  Sparkles, StickyNote, Flag, HelpCircle, CheckSquare, Webhook, Square,
   Star, Heart, Target, Lightbulb, Rocket, Bell, Bookmark, Camera, FileText, Folder,
   Image as ImageIcon, Layers, Link2, Map, Music, Package, Phone, Settings, Shield,
   ShoppingCart, Tag, Timer, Wrench, User, Users, Video, CheckCircle,
@@ -26,7 +27,7 @@ import { toast } from "@/hooks/use-toast";
 // Node metadata
 // =========================================
 
-const NODE_META: Record<string, { label: string; icon: any; color: string; group: "automation" | "custom" }> = {
+const NODE_META: Record<string, { label: string; icon: any; color: string; group: "automation" | "custom" | "organization" }> = {
   trigger: { label: "Trigger", icon: Zap, color: "#f59e0b", group: "automation" },
   email: { label: "Email", icon: Mail, color: "#3b82f6", group: "automation" },
   whatsapp: { label: "WhatsApp", icon: MessageCircle, color: "#10b981", group: "automation" },
@@ -39,6 +40,7 @@ const NODE_META: Record<string, { label: string; icon: any; color: string; group
   decision: { label: "Decisão", icon: HelpCircle, color: "#f97316", group: "custom" },
   task: { label: "Tarefa", icon: CheckSquare, color: "#0ea5e9", group: "custom" },
   webhook: { label: "Webhook", icon: Webhook, color: "#64748b", group: "custom" },
+  section: { label: "Seção", icon: Square, color: "#64748b", group: "organization" },
 };
 
 // Icon library for "custom" node
@@ -95,9 +97,20 @@ function FlowNode({ data, selected }: any) {
     );
   }
 
+  // Day/Week badge — visible without selecting the node
+  const rawDays = data.config?.dia_offset;
+  const hasDays = rawDays !== null && rawDays !== undefined && rawDays !== "" && Number.isFinite(Number(rawDays));
+  const numDays = hasDays ? Number(rawDays) : null;
+  const isWeekUnit = data.config?.dia_unit === "semanas" || (data.config?.dia_unit === undefined && numDays !== null && numDays >= 7 && numDays % 7 === 0);
+  const dayBadge = numDays === null
+    ? null
+    : isWeekUnit
+      ? { text: `S${numDays / 7}`, title: `Dia ${numDays} do fluxo` }
+      : { text: `D${numDays}`, title: `Dia ${numDays} do fluxo` };
+
   return (
     <div
-      className={`px-3 py-2.5 rounded-xl border backdrop-blur-xl min-w-[180px] transition-all ${
+      className={`relative px-3 py-2.5 rounded-xl border backdrop-blur-xl min-w-[180px] transition-all ${
         selected ? "ring-2 ring-primary border-primary" : "border-white/15"
       }`}
       style={{
@@ -105,6 +118,15 @@ function FlowNode({ data, selected }: any) {
         boxShadow: `0 4px 16px -4px ${color}40`,
       }}
     >
+      {dayBadge && (
+        <div
+          title={dayBadge.title}
+          className="absolute -top-2 -right-2 text-[9px] font-semibold px-1.5 py-0.5 rounded-md border border-white/15 bg-background/90 backdrop-blur-sm tabular-nums z-10"
+          style={{ color }}
+        >
+          {dayBadge.text}
+        </div>
+      )}
       {!isTrigger && <Handle type="target" position={Position.Top} style={{ background: color }} />}
       <div className="flex items-center gap-2">
         <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${color}40` }}>
@@ -133,7 +155,41 @@ function FlowNode({ data, selected }: any) {
   );
 }
 
-const nodeTypes = { flow: FlowNode };
+// Section / Frame node — Figma-style visual grouping
+function SectionNode({ data, selected }: any) {
+  const color = data.color || "#64748b";
+  return (
+    <div
+      className="relative w-full h-full rounded-2xl border-2 border-dashed transition-all"
+      style={{
+        borderColor: selected ? color : `${color}80`,
+        background: `linear-gradient(135deg, ${color}10, ${color}05)`,
+        boxShadow: selected ? `0 0 0 2px ${color}40` : "none",
+      }}
+    >
+      <NodeResizer
+        isVisible={selected}
+        minWidth={200}
+        minHeight={140}
+        lineStyle={{ borderColor: color }}
+        handleStyle={{ background: color, width: 8, height: 8, borderRadius: 2 }}
+      />
+      <div className="absolute -top-3 left-3 px-2 py-0.5 rounded-md border border-white/15 bg-background/95 backdrop-blur-sm flex items-center gap-1.5 max-w-[calc(100%-24px)]">
+        <div className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: color }} />
+        <span className="text-[11px] font-semibold text-foreground truncate">
+          {data.label || "Seção"}
+        </span>
+      </div>
+      {data.config?.description && (
+        <div className="absolute top-4 left-3 right-3 text-[10px] text-muted-foreground truncate pointer-events-none">
+          {data.config.description}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const nodeTypes = { flow: FlowNode, section: SectionNode };
 
 // =========================================
 // Editor
@@ -174,13 +230,25 @@ function FlowEditorInner({ flowId, onClose, scope }: { flowId: string; onClose: 
       baseData.icon = "Sparkles";
       baseData.color = NODE_META.custom.color;
     }
+    if (kind === "section") {
+      baseData.color = NODE_META.section.color;
+    }
+    const isSection = kind === "section";
     const newNode: Node = {
       id,
-      type: "flow",
+      type: isSection ? "section" : "flow",
       position: { x: 250 + Math.random() * 200, y: 150 + nodes.length * 100 },
       data: baseData,
+      ...(isSection
+        ? {
+            style: { width: 360, height: 240 },
+            zIndex: -1,
+            selectable: true,
+            draggable: true,
+          }
+        : {}),
     };
-    setNodes(ns => [...ns, newNode]);
+    setNodes(ns => isSection ? [newNode, ...ns] : [...ns, newNode]);
   };
 
   const updateSelected = (patch: any) => {
@@ -211,6 +279,7 @@ function FlowEditorInner({ flowId, onClose, scope }: { flowId: string; onClose: 
 
   const automationNodes = (Object.keys(NODE_META) as (keyof typeof NODE_META)[]).filter(k => NODE_META[k].group === "automation");
   const customNodes = (Object.keys(NODE_META) as (keyof typeof NODE_META)[]).filter(k => NODE_META[k].group === "custom");
+  const organizationNodes = (Object.keys(NODE_META) as (keyof typeof NODE_META)[]).filter(k => NODE_META[k].group === "organization");
 
   const renderPaletteButton = (k: keyof typeof NODE_META) => {
     const m = NODE_META[k];
@@ -256,7 +325,9 @@ function FlowEditorInner({ flowId, onClose, scope }: { flowId: string; onClose: 
       <div className="flex-1 flex">
         {/* Palette */}
         <div className="w-44 border-r border-white/5 bg-background/40 p-2 space-y-1 overflow-y-auto">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 py-1.5">Automação</div>
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 py-1.5">Organização</div>
+          {organizationNodes.map(renderPaletteButton)}
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 py-1.5 mt-3">Automação</div>
           {automationNodes.map(renderPaletteButton)}
           <div className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 py-1.5 mt-3">Personalizado</div>
           {customNodes.map(renderPaletteButton)}
@@ -425,6 +496,41 @@ function NodeInspector({ node, onChange, onDelete, scope }: { node: Node; onChan
             <Label className="text-xs">Descrição</Label>
             <Textarea value={config.description || ""} onChange={e => setCfg({ description: e.target.value })} rows={4} className="bg-white/5 border-white/10 text-sm" />
           </div>
+        </>
+      )}
+
+      {kind === "section" && (
+        <>
+          <div>
+            <Label className="text-xs">Cor</Label>
+            <div className="flex flex-wrap gap-1.5 mt-1">
+              {COLOR_SWATCHES.map(c => {
+                const active = (data.color || "#64748b").toLowerCase() === c.toLowerCase();
+                return (
+                  <button
+                    key={c}
+                    onClick={() => onChange({ color: c })}
+                    className={`w-6 h-6 rounded-md border transition ${active ? "ring-2 ring-primary border-transparent scale-110" : "border-white/10"}`}
+                    style={{ background: c }}
+                  />
+                );
+              })}
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs">Descrição (opcional)</Label>
+            <Textarea
+              value={config.description || ""}
+              onChange={e => setCfg({ description: e.target.value })}
+              rows={3}
+              className="bg-white/5 border-white/10 text-sm"
+              placeholder="ex: Semana 1 — Prospecção"
+            />
+          </div>
+          <p className="text-[10px] text-muted-foreground">
+            Seções são apenas visuais — agrupam etapas no canvas como frames do Figma.
+            Arraste pelas bordas para redimensionar.
+          </p>
         </>
       )}
 
