@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button";
 import { useSendEmail, type EmailMessage } from "@/hooks/useEmail";
 import { toast } from "sonner";
 
-export function Composer({ open, onClose, replyTo }: { open: boolean; onClose: () => void; replyTo?: EmailMessage }) {
+export function Composer({ open, onClose, replyTo, initialTo, initialSubject }: { open: boolean; onClose: () => void; replyTo?: EmailMessage; initialTo?: string; initialSubject?: string }) {
   const isReply = !!replyTo;
-  const [to, setTo] = useState(isReply ? (replyTo?.from_email || "") : "");
-  const [subject, setSubject] = useState(isReply ? `Re: ${replyTo?.subject || ""}` : "");
+  const [to, setTo] = useState(initialTo ?? (isReply ? (replyTo?.from_email || "") : ""));
+  const [subject, setSubject] = useState(initialSubject ?? (isReply ? `Re: ${replyTo?.subject || ""}` : ""));
   const [body, setBody] = useState("");
   const send = useSendEmail();
 
