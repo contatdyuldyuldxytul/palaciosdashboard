@@ -47,7 +47,7 @@ const NODE_META: Record<string, { label: string; icon: any; color: string; group
 // Icon library for "custom" node
 const CUSTOM_ICONS: Record<string, any> = {
   Sparkles, Star, Heart, Flag, Target, Lightbulb, Rocket, Bell, Bookmark, Camera,
-  FileText, Folder, ImageIcon, Layers, Link2, Map, MessageSquare: MessageCircle,
+  FileText, Folder, ImageIcon, Layers, Link2, MessageSquare: MessageCircle, Map: MapIcon,
   Music, Package, Phone, Settings, Shield, ShoppingCart, Tag, Timer, Wrench,
   User, Users, Video, Zap, CheckCircle,
 };
