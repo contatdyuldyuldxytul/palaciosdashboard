@@ -97,9 +97,20 @@ function FlowNode({ data, selected }: any) {
     );
   }
 
+  // Day/Week badge — visible without selecting the node
+  const rawDays = data.config?.dia_offset;
+  const hasDays = rawDays !== null && rawDays !== undefined && rawDays !== "" && Number.isFinite(Number(rawDays));
+  const numDays = hasDays ? Number(rawDays) : null;
+  const isWeekUnit = data.config?.dia_unit === "semanas" || (data.config?.dia_unit === undefined && numDays !== null && numDays >= 7 && numDays % 7 === 0);
+  const dayBadge = numDays === null
+    ? null
+    : isWeekUnit
+      ? { text: `S${numDays / 7}`, title: `Dia ${numDays} do fluxo` }
+      : { text: `D${numDays}`, title: `Dia ${numDays} do fluxo` };
+
   return (
     <div
-      className={`px-3 py-2.5 rounded-xl border backdrop-blur-xl min-w-[180px] transition-all ${
+      className={`relative px-3 py-2.5 rounded-xl border backdrop-blur-xl min-w-[180px] transition-all ${
         selected ? "ring-2 ring-primary border-primary" : "border-white/15"
       }`}
       style={{
@@ -107,6 +118,15 @@ function FlowNode({ data, selected }: any) {
         boxShadow: `0 4px 16px -4px ${color}40`,
       }}
     >
+      {dayBadge && (
+        <div
+          title={dayBadge.title}
+          className="absolute -top-2 -right-2 text-[9px] font-semibold px-1.5 py-0.5 rounded-md border border-white/15 bg-background/90 backdrop-blur-sm tabular-nums z-10"
+          style={{ color }}
+        >
+          {dayBadge.text}
+        </div>
+      )}
       {!isTrigger && <Handle type="target" position={Position.Top} style={{ background: color }} />}
       <div className="flex items-center gap-2">
         <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${color}40` }}>
@@ -135,7 +155,41 @@ function FlowNode({ data, selected }: any) {
   );
 }
 
-const nodeTypes = { flow: FlowNode };
+// Section / Frame node — Figma-style visual grouping
+function SectionNode({ data, selected }: any) {
+  const color = data.color || "#64748b";
+  return (
+    <div
+      className="relative w-full h-full rounded-2xl border-2 border-dashed transition-all"
+      style={{
+        borderColor: selected ? color : `${color}80`,
+        background: `linear-gradient(135deg, ${color}10, ${color}05)`,
+        boxShadow: selected ? `0 0 0 2px ${color}40` : "none",
+      }}
+    >
+      <NodeResizer
+        isVisible={selected}
+        minWidth={200}
+        minHeight={140}
+        lineStyle={{ borderColor: color }}
+        handleStyle={{ background: color, width: 8, height: 8, borderRadius: 2 }}
+      />
+      <div className="absolute -top-3 left-3 px-2 py-0.5 rounded-md border border-white/15 bg-background/95 backdrop-blur-sm flex items-center gap-1.5 max-w-[calc(100%-24px)]">
+        <div className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: color }} />
+        <span className="text-[11px] font-semibold text-foreground truncate">
+          {data.label || "Seção"}
+        </span>
+      </div>
+      {data.config?.description && (
+        <div className="absolute top-4 left-3 right-3 text-[10px] text-muted-foreground truncate pointer-events-none">
+          {data.config.description}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const nodeTypes = { flow: FlowNode, section: SectionNode };
 
 // =========================================
 // Editor
