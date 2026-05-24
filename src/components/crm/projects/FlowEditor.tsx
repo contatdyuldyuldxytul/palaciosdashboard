@@ -27,7 +27,7 @@ import { toast } from "@/hooks/use-toast";
 // Node metadata
 // =========================================
 
-const NODE_META: Record<string, { label: string; icon: any; color: string; group: "automation" | "custom" }> = {
+const NODE_META: Record<string, { label: string; icon: any; color: string; group: "automation" | "custom" | "organization" }> = {
   trigger: { label: "Trigger", icon: Zap, color: "#f59e0b", group: "automation" },
   email: { label: "Email", icon: Mail, color: "#3b82f6", group: "automation" },
   whatsapp: { label: "WhatsApp", icon: MessageCircle, color: "#10b981", group: "automation" },
@@ -40,6 +40,7 @@ const NODE_META: Record<string, { label: string; icon: any; color: string; group
   decision: { label: "Decisão", icon: HelpCircle, color: "#f97316", group: "custom" },
   task: { label: "Tarefa", icon: CheckSquare, color: "#0ea5e9", group: "custom" },
   webhook: { label: "Webhook", icon: Webhook, color: "#64748b", group: "custom" },
+  section: { label: "Seção", icon: Square, color: "#64748b", group: "organization" },
 };
 
 // Icon library for "custom" node
