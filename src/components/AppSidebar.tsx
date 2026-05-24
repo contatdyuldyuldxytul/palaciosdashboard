@@ -142,31 +142,8 @@ export function AppSidebar() {
         </ul>
       </nav>
 
-      {/* User & Logout */}
-      {!collapsed && profile && (
-        <div className="px-3 py-2" style={{ borderTop: '1px solid var(--glass-border)' }}>
-          <p className="text-xs text-foreground font-medium truncate">{profile.full_name || profile.email}</p>
-          <p className="text-[10px] text-muted-foreground truncate">{profile.email}</p>
-        </div>
-      )}
-      <button
-        onClick={toggle}
-        className="flex items-center gap-2 px-3 py-2 mx-2 mb-1 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-white/[0.04] transition-all duration-300"
-        title={theme === "dark" ? "Modo claro" : "Modo escuro"}
-      >
-        {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-        {!collapsed && <span>{theme === "dark" ? "Modo claro" : "Modo escuro"}</span>}
-      </button>
-      <button
-        onClick={signOut}
-        className="flex items-center gap-2 px-3 py-2 mx-2 mb-1 rounded-xl text-sm text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-300"
-        title="Sair"
-      >
-        <LogOut className="w-4 h-4" />
-        {!collapsed && <span>Sair</span>}
-      </button>
-
       {/* Collapse toggle */}
+
       <button
         onClick={() => setCollapsed(!collapsed)}
         className="flex items-center justify-center h-10 text-muted-foreground hover:text-foreground transition-all duration-300"

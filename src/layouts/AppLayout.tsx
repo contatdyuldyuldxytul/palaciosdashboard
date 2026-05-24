@@ -1,7 +1,7 @@
 import { Outlet } from "react-router-dom";
 import { useState } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
-import { TickerBar } from "@/components/TickerBar";
+import { TopBar } from "@/components/TopBar";
 import { AuroraBackground } from "@/components/ui/aurora-background";
 import { MobileHeader } from "@/components/mobile/MobileHeader";
 import { MobileBottomNav } from "@/components/mobile/MobileBottomNav";
@@ -31,9 +31,9 @@ export function AppLayout() {
         {/* Mobile header */}
         <MobileHeader onOpenDrawer={() => setDrawerOpen(true)} />
 
-        {/* Ticker — hide on mobile to save vertical space */}
+        {/* Desktop top bar (profile, theme, logout) */}
         <div className="hidden md:block">
-          <TickerBar />
+          <TopBar />
         </div>
 
         {/* Mobile CRM subnav (only on /crm/*) */}
