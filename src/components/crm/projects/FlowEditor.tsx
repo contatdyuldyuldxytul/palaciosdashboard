@@ -792,6 +792,48 @@ function NodeInspector({ node, onChange, onDelete, scope }: { node: Node; onChan
             </div>
           </div>
           <div>
+            <Label className="text-xs">Inicia após o início do fluxo</Label>
+            <div className="flex gap-2 mt-1">
+              <Input
+                type="number"
+                min={0}
+                value={config.start_offset_dias ?? ""}
+                placeholder="0"
+                onChange={e => {
+                  const v = e.target.value;
+                  setCfg({ start_offset_dias: v === "" ? null : Number(v) });
+                }}
+                className="bg-white/5 border-white/10 h-8 text-sm flex-1"
+              />
+              <Select
+                value={config.start_offset_unit || "dias"}
+                onValueChange={v => setCfg({ start_offset_unit: v })}
+              >
+                <SelectTrigger className="bg-white/5 border-white/10 h-8 text-sm w-[110px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="dias">Dias</SelectItem>
+                  <SelectItem value="semanas">Semanas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs">Duração estimada (opcional)</Label>
+            <Input
+              type="number"
+              min={0}
+              value={config.duration_dias ?? ""}
+              placeholder="ex: 5"
+              onChange={e => {
+                const v = e.target.value;
+                setCfg({ duration_dias: v === "" ? null : Number(v) });
+              }}
+              className="bg-white/5 border-white/10 h-8 text-sm"
+            />
+          </div>
+          <div>
             <Label className="text-xs">Descrição (opcional)</Label>
             <Textarea
               value={config.description || ""}
@@ -802,11 +844,11 @@ function NodeInspector({ node, onChange, onDelete, scope }: { node: Node; onChan
             />
           </div>
           <p className="text-[10px] text-muted-foreground">
-            Seções são apenas visuais — agrupam etapas no canvas como frames do Figma.
-            Arraste pelas bordas para redimensionar.
+            Seções agrupam etapas como frames do Figma. Use os plugs nas laterais (esquerda/direita) para conectar uma seção à próxima.
           </p>
         </>
       )}
+
 
       {kind === "note" && (
         <div>
