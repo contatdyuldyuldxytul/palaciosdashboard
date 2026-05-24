@@ -499,6 +499,41 @@ function NodeInspector({ node, onChange, onDelete, scope }: { node: Node; onChan
         </>
       )}
 
+      {kind === "section" && (
+        <>
+          <div>
+            <Label className="text-xs">Cor</Label>
+            <div className="flex flex-wrap gap-1.5 mt-1">
+              {COLOR_SWATCHES.map(c => {
+                const active = (data.color || "#64748b").toLowerCase() === c.toLowerCase();
+                return (
+                  <button
+                    key={c}
+                    onClick={() => onChange({ color: c })}
+                    className={`w-6 h-6 rounded-md border transition ${active ? "ring-2 ring-primary border-transparent scale-110" : "border-white/10"}`}
+                    style={{ background: c }}
+                  />
+                );
+              })}
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs">Descrição (opcional)</Label>
+            <Textarea
+              value={config.description || ""}
+              onChange={e => setCfg({ description: e.target.value })}
+              rows={3}
+              className="bg-white/5 border-white/10 text-sm"
+              placeholder="ex: Semana 1 — Prospecção"
+            />
+          </div>
+          <p className="text-[10px] text-muted-foreground">
+            Seções são apenas visuais — agrupam etapas no canvas como frames do Figma.
+            Arraste pelas bordas para redimensionar.
+          </p>
+        </>
+      )}
+
       {kind === "note" && (
         <div>
           <Label className="text-xs">Texto da anotação</Label>
