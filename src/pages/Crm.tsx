@@ -177,49 +177,52 @@ export default function Crm() {
         </div>
       </div>
 
-      {/* Sub-tabs: Deals / Fluxos */}
-      <div className="flex rounded-full border border-white/10 overflow-hidden glass-card p-0.5 w-fit">
-        <button
-          onClick={() => setTab("deals")}
-          className={`px-3.5 py-1.5 rounded-full text-xs flex items-center gap-1.5 transition-colors ${
-            tab === "deals" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <LayoutGrid className="w-3 h-3" /> Deals
-        </button>
-        <button
-          onClick={() => setTab("fluxos")}
-          className={`px-3.5 py-1.5 rounded-full text-xs flex items-center gap-1.5 transition-colors ${
-            tab === "fluxos" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <Workflow className="w-3 h-3" /> Fluxos
-        </button>
+      {/* Sub-tabs: Deals / Fluxos + view toggle */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex rounded-full border border-white/10 overflow-hidden glass-card p-0.5 w-fit">
+          <button
+            onClick={() => setTab("deals")}
+            className={`px-3.5 py-1.5 rounded-full text-xs flex items-center gap-1.5 transition-colors ${
+              tab === "deals" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <LayoutGrid className="w-3 h-3" /> Deals
+          </button>
+          <button
+            onClick={() => setTab("fluxos")}
+            className={`px-3.5 py-1.5 rounded-full text-xs flex items-center gap-1.5 transition-colors ${
+              tab === "fluxos" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Workflow className="w-3 h-3" /> Fluxos
+          </button>
+        </div>
+
+        {tab === "deals" && (
+          <div className="flex rounded-full border border-white/10 overflow-hidden glass-card p-0.5">
+            <button
+              onClick={() => setView("kanban")}
+              className={`px-3 py-1 rounded-full text-[11px] flex items-center gap-1.5 transition-colors ${
+                view === "kanban" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <LayoutGrid className="w-3 h-3" /> Kanban
+            </button>
+            <button
+              onClick={() => setView("list")}
+              className={`px-3 py-1 rounded-full text-[11px] flex items-center gap-1.5 transition-colors ${
+                view === "list" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <List className="w-3 h-3" /> Lista
+            </button>
+          </div>
+        )}
       </div>
 
       {tab === "deals" ? (
         <>
-          {/* View toggle */}
-          <div className="flex flex-col md:flex-row gap-3 md:items-center">
-            <div className="flex rounded-full border border-white/10 overflow-hidden glass-card p-0.5 md:ml-auto">
-              <button
-                onClick={() => setView("kanban")}
-                className={`px-3 py-1 rounded-full text-[11px] flex items-center gap-1.5 transition-colors ${
-                  view === "kanban" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <LayoutGrid className="w-3 h-3" /> Kanban
-              </button>
-              <button
-                onClick={() => setView("list")}
-                className={`px-3 py-1 rounded-full text-[11px] flex items-center gap-1.5 transition-colors ${
-                  view === "list" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <List className="w-3 h-3" /> Lista
-              </button>
-            </div>
-          </div>
+
 
           {/* KPI strip */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
