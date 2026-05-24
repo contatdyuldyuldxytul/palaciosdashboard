@@ -86,8 +86,8 @@ function FlowNode({ data, selected }: any) {
       >
         <Handle type="target" position={Position.Top} style={{ background: "#eab308", opacity: 0.5 }} />
         <div className="flex items-center gap-1.5 mb-1">
-          <StickyNote className="w-3 h-3 text-amber-400" />
-          <div className="text-[10px] uppercase tracking-wider text-amber-300/80">Nota</div>
+          <StickyNote className="w-3 h-3 text-amber-300" />
+          <div className="text-[10px] uppercase tracking-wider font-semibold text-amber-200">Nota</div>
         </div>
         <div className="text-xs text-foreground whitespace-pre-wrap break-words">
           {data.config?.text || data.label || "Clique para editar…"}
@@ -96,6 +96,7 @@ function FlowNode({ data, selected }: any) {
       </div>
     );
   }
+
 
   // Day/Week badge — visible without selecting the node
   const rawDays = data.config?.dia_offset;
