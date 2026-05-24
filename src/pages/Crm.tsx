@@ -199,18 +199,8 @@ export default function Crm() {
 
       {tab === "deals" ? (
         <>
-          {/* Search + view toggle */}
+          {/* View toggle */}
           <div className="flex flex-col md:flex-row gap-3 md:items-center">
-            <div className="relative flex-1 max-w-md">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar deals por título, empresa, contato ou valor…"
-                className="h-9 pl-9 bg-white/5 border-white/10 text-sm"
-              />
-            </div>
-
             <div className="flex rounded-full border border-white/10 overflow-hidden glass-card p-0.5 md:ml-auto">
               <button
                 onClick={() => setView("kanban")}
