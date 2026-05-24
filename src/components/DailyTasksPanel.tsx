@@ -231,9 +231,8 @@ function EmptyState({ message, hint }: { message: string; hint?: string }) {
       {hint && <p className="text-xs text-muted-foreground mt-1">{hint}</p>}
     </div>
   );
-    </div>
-  );
 }
+
 
 const FLOW_KIND_META: Record<string, { icon: any; color: string; label: string }> = {
   task: { icon: CheckSquare, color: "#0ea5e9", label: "Tarefa" },
