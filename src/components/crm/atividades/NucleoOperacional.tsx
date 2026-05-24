@@ -5,7 +5,7 @@ import LdrMemberDashboard from "@/pages/LdrMemberDashboard";
 import ThiagoDashboard from "@/pages/ThiagoDashboard";
 import { useAuth } from "@/contexts/AuthContext";
 import { Lock } from "lucide-react";
-import { FlowTasksList } from "@/components/crm/atividades/FlowTasksList";
+
 
 type Colaborador = "aline" | "milena" | "thiago" | "felipe";
 
