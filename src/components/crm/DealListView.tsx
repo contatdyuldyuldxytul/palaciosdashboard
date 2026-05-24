@@ -322,27 +322,7 @@ export function DealListView({ deals, stages }: { deals: CrmDeal[]; stages: CrmS
       </div>
 
       {emailOpen && (
-        <Composer
-          open={emailOpen}
-          onClose={() => setEmailOpen(false)}
-          replyTo={{
-            id: "bulk",
-            gmail_message_id: "",
-            gmail_thread_id: "",
-            direction: "out",
-            from_email: emailPrefill,
-            from_name: null,
-            to_emails: null,
-            subject: "",
-            snippet: null,
-            body_html: null,
-            body_text: null,
-            received_at: new Date().toISOString(),
-            is_read: true,
-            deal_id: null,
-            person_id: null,
-          } as any}
-        />
+        <Composer open={emailOpen} onClose={() => setEmailOpen(false)} initialTo={emailPrefill} />
       )}
     </div>
   );
