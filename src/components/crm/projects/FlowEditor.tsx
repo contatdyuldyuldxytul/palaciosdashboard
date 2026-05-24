@@ -279,6 +279,7 @@ function FlowEditorInner({ flowId, onClose, scope }: { flowId: string; onClose: 
 
   const automationNodes = (Object.keys(NODE_META) as (keyof typeof NODE_META)[]).filter(k => NODE_META[k].group === "automation");
   const customNodes = (Object.keys(NODE_META) as (keyof typeof NODE_META)[]).filter(k => NODE_META[k].group === "custom");
+  const organizationNodes = (Object.keys(NODE_META) as (keyof typeof NODE_META)[]).filter(k => NODE_META[k].group === "organization");
 
   const renderPaletteButton = (k: keyof typeof NODE_META) => {
     const m = NODE_META[k];
@@ -324,7 +325,9 @@ function FlowEditorInner({ flowId, onClose, scope }: { flowId: string; onClose: 
       <div className="flex-1 flex">
         {/* Palette */}
         <div className="w-44 border-r border-white/5 bg-background/40 p-2 space-y-1 overflow-y-auto">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 py-1.5">Automação</div>
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 py-1.5">Organização</div>
+          {organizationNodes.map(renderPaletteButton)}
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 py-1.5 mt-3">Automação</div>
           {automationNodes.map(renderPaletteButton)}
           <div className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 py-1.5 mt-3">Personalizado</div>
           {customNodes.map(renderPaletteButton)}
