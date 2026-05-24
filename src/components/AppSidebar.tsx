@@ -47,13 +47,13 @@ export function AppSidebar() {
   const { signOut, profile, hasRole } = useAuth();
   const { theme, toggle } = useTheme();
 
-  const isActive = (url: string) => {
-    if (url === "/") return location.pathname === "/";
-    return location.pathname.startsWith(url);
+  const isActive = (url: string, exact?: boolean) => {
+    if (url === "/" || exact) return location.pathname === url;
+    return location.pathname === url || location.pathname.startsWith(url + "/");
   };
 
   const visibleItems = navItems.filter(
-    (item) => !item.requireRole || hasRole(item.requireRole)
+    (item) => !(item as any).requireRole || hasRole((item as any).requireRole)
   );
 
   return (
@@ -74,13 +74,13 @@ export function AppSidebar() {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 py-4 px-2">
+      <nav className="flex-1 py-4 px-2 overflow-y-auto">
         <ul className="space-y-1">
           {visibleItems.map((item) => {
-            const active = isActive(item.url);
-            const allChildren = item.hasChildren ? subItems.filter((s) => s.parentUrl === "/crm") : [];
-            const children = allChildren;
-            const showChildren = !collapsed && (item as any).hasChildren && ((item as any).alwaysExpanded || active) && children.length > 0;
+            const active = isActive(item.url, (item as any).exact);
+            const showChildren = false;
+            const children: SubItem[] = [];
+
             return (
               <li key={item.url} className="space-y-0.5">
                 <Link
