@@ -230,13 +230,25 @@ function FlowEditorInner({ flowId, onClose, scope }: { flowId: string; onClose: 
       baseData.icon = "Sparkles";
       baseData.color = NODE_META.custom.color;
     }
+    if (kind === "section") {
+      baseData.color = NODE_META.section.color;
+    }
+    const isSection = kind === "section";
     const newNode: Node = {
       id,
-      type: "flow",
+      type: isSection ? "section" : "flow",
       position: { x: 250 + Math.random() * 200, y: 150 + nodes.length * 100 },
       data: baseData,
+      ...(isSection
+        ? {
+            style: { width: 360, height: 240 },
+            zIndex: -1,
+            selectable: true,
+            draggable: true,
+          }
+        : {}),
     };
-    setNodes(ns => [...ns, newNode]);
+    setNodes(ns => isSection ? [newNode, ...ns] : [...ns, newNode]);
   };
 
   const updateSelected = (patch: any) => {
