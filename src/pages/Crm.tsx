@@ -136,31 +136,44 @@ export default function Crm() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="text-xs">
-                <Upload className="w-3.5 h-3.5 mr-1.5" /> Importar <ChevronDown className="w-3 h-3 ml-1" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-background border-white/10">
-              <DropdownMenuItem onClick={() => setCsvOpen(true)}>
-                <FileSpreadsheet className="w-3.5 h-3.5 mr-2" /> Arquivo CSV
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSheetsOpen(true)}>
-                <FileSpreadsheet className="w-3.5 h-3.5 mr-2" /> Google Sheets
-              </DropdownMenuItem>
-              {isFundador && (
-                <DropdownMenuItem onClick={doImport} disabled={importPd.isPending}>
-                  <Download className="w-3.5 h-3.5 mr-2" /> {importPd.isPending ? "Importando…" : "Pipedrive"}
+        <div className="flex items-center gap-3">
+          {tab === "deals" && (
+            <div className="relative w-64 hidden md:block">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar deals…"
+                className="h-9 pl-9 bg-white/5 border-white/10 text-sm"
+              />
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-xs">
+                  <Upload className="w-3.5 h-3.5 mr-1.5" /> Importar <ChevronDown className="w-3 h-3 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-background border-white/10">
+                <DropdownMenuItem onClick={() => setCsvOpen(true)}>
+                  <FileSpreadsheet className="w-3.5 h-3.5 mr-2" /> Arquivo CSV
                 </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <DropdownMenuItem onClick={() => setSheetsOpen(true)}>
+                  <FileSpreadsheet className="w-3.5 h-3.5 mr-2" /> Google Sheets
+                </DropdownMenuItem>
+                {isFundador && (
+                  <DropdownMenuItem onClick={doImport} disabled={importPd.isPending}>
+                    <Download className="w-3.5 h-3.5 mr-2" /> {importPd.isPending ? "Importando…" : "Pipedrive"}
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-          <Button size="sm" onClick={() => setNewOpen(true)} className="shadow-lg shadow-primary/20">
-            <Plus className="w-3.5 h-3.5 mr-1.5" /> Novo Deal
-          </Button>
+            <Button size="sm" onClick={() => setNewOpen(true)} className="shadow-lg shadow-primary/20">
+              <Plus className="w-3.5 h-3.5 mr-1.5" /> Novo Deal
+            </Button>
+          </div>
         </div>
       </div>
 
