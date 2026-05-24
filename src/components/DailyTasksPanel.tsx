@@ -57,6 +57,15 @@ export function DailyTasksPanel({ mode, title = "Checklist", subtitle, assigneeL
   });
   const toggle = useToggleActivity();
 
+  // Flow tasks for this assignee
+  const { grouped: flowGrouped } = useFlowActivities({ owner_label: assigneeLabel || null });
+  const flowItems: FlowActivity[] =
+    tab === "hoje"
+      ? [...flowGrouped.atrasadas, ...flowGrouped.hoje]
+      : [...flowGrouped.atrasadas, ...flowGrouped.hoje, ...flowGrouped.amanha, ...flowGrouped.proximos.filter((i) => i.days_until <= 7)];
+  const toggleFlow = useToggleFlowTask();
+
+
   const today = new Date();
 
   return (
