@@ -259,7 +259,7 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
       </div>
 
       {activeTab === "refinamento" && <RefinamentoDados />}
-      {activeTab === "historico" && <HistoricoPipedrive />}
+      
       {activeTab === "calendario" && <CalendarioVendas defaultFilter="Milena" />}
       {activeTab === "dashboard" && (
       <>
