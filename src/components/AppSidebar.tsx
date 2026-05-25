@@ -3,7 +3,7 @@ import {
   LayoutDashboard, TrendingUp, Users, MessageSquare, Target, Kanban,
   ChevronLeft, ChevronRight, ChevronDown, LogOut, Crown, User, Sun, Moon,
   DollarSign, ClipboardList, Calendar, Mail, Instagram, TrendingUp as TrendUp,
-  Sparkles, Settings, LucideIcon
+  Sparkles, Settings, Radar, LucideIcon
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
