@@ -12,7 +12,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 
 import { RefinamentoDados } from "@/components/milena/RefinamentoDados";
-import { HistoricoPipedrive } from "@/components/milena/HistoricoPipedrive";
+
 import { LockedCommission } from "@/components/LockedCommission";
 
 import { CalendarioVendas } from "@/components/CalendarioVendas";
