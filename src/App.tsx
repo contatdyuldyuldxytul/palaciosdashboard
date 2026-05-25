@@ -48,6 +48,8 @@ import Projects from "@/pages/crm/Projects";
 import Atividades from "@/pages/crm/Atividades";
 import Email from "@/pages/crm/Email";
 import Contatos from "@/pages/crm/Contatos";
+import GeracaoLeads from "@/pages/crm/GeracaoLeads";
+import { HistoricoPipedrive } from "@/components/milena/HistoricoPipedrive";
 import { NucleoOperacional } from "@/components/crm/atividades/NucleoOperacional";
 import { InteligenciaComercial } from "@/components/crm/atividades/InteligenciaComercial";
 import { VisaoGestor } from "@/components/crm/atividades/VisaoGestor";
