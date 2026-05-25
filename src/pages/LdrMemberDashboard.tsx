@@ -12,7 +12,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 
 import { RefinamentoDados } from "@/components/milena/RefinamentoDados";
-import { HistoricoPipedrive } from "@/components/milena/HistoricoPipedrive";
+
 import { LockedCommission } from "@/components/LockedCommission";
 
 import { CalendarioVendas } from "@/components/CalendarioVendas";
@@ -113,7 +113,7 @@ interface ChecklistItem {
 }
 
 export default function LdrMemberDashboard({ memberName, initials, avatarColor = "hsl(45,80%,45%)" }: LdrMemberDashboardProps) {
-  const [activeTab, setActiveTab] = useState<"dashboard" | "refinamento" | "historico" | "calendario">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "refinamento" | "calendario">("dashboard");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("Todos");
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
@@ -239,7 +239,6 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
   const tabs = [
     { key: "dashboard" as const, label: "Dashboard" },
     { key: "refinamento" as const, label: "Filtro de Empresas" },
-    { key: "historico" as const, label: "Histórico Pipedrive" },
     { key: "calendario" as const, label: "📅 Calendário" },
   ];
 
@@ -260,7 +259,7 @@ export default function LdrMemberDashboard({ memberName, initials, avatarColor =
       </div>
 
       {activeTab === "refinamento" && <RefinamentoDados />}
-      {activeTab === "historico" && <HistoricoPipedrive />}
+      
       {activeTab === "calendario" && <CalendarioVendas defaultFilter="Milena" />}
       {activeTab === "dashboard" && (
       <>

@@ -48,6 +48,8 @@ import Projects from "@/pages/crm/Projects";
 import Atividades from "@/pages/crm/Atividades";
 import Email from "@/pages/crm/Email";
 import Contatos from "@/pages/crm/Contatos";
+import GeracaoLeads from "@/pages/crm/GeracaoLeads";
+import { HistoricoPipedrive } from "@/components/milena/HistoricoPipedrive";
 import { NucleoOperacional } from "@/components/crm/atividades/NucleoOperacional";
 import { InteligenciaComercial } from "@/components/crm/atividades/InteligenciaComercial";
 import { VisaoGestor } from "@/components/crm/atividades/VisaoGestor";
@@ -127,8 +129,8 @@ const App = () => (
               {/* Assistente IA */}
               <Route path="/assistente" element={<AssistenteGeral />} />
 
-              {/* Hunter de Negócios */}
-              <Route path="/hunter" element={<HunterGate />} />
+              {/* Hunter de Negócios — redirect para nova localização */}
+              <Route path="/hunter" element={<Navigate to="/crm/geracao-leads/hunter" replace />} />
 
               {/* CRM Integrado */}
               <Route path="/crm" element={<Crm />} />
@@ -140,7 +142,12 @@ const App = () => (
                 <Route path="gestor" element={<VisaoGestorRoute />} />
               </Route>
               <Route path="/crm/email" element={<Email />} />
-              <Route path="/crm/instagram" element={<InstagramLeads />} />
+              <Route path="/crm/geracao-leads" element={<GeracaoLeads />}>
+                <Route path="instagram" element={<InstagramLeads />} />
+                <Route path="pipedrive" element={<HistoricoPipedrive />} />
+                <Route path="hunter" element={<HunterGate />} />
+              </Route>
+              <Route path="/crm/instagram" element={<Navigate to="/crm/geracao-leads/instagram" replace />} />
               <Route path="/crm/contatos" element={<Contatos />} />
               <Route path="/crm/insights" element={<Placeholder title="Insights & Forecast" />} />
               <Route path="/crm/automacoes" element={<Placeholder title="Automações de I.A" />} />
