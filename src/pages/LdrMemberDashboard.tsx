@@ -113,7 +113,7 @@ interface ChecklistItem {
 }
 
 export default function LdrMemberDashboard({ memberName, initials, avatarColor = "hsl(45,80%,45%)" }: LdrMemberDashboardProps) {
-  const [activeTab, setActiveTab] = useState<"dashboard" | "refinamento" | "historico" | "calendario">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "refinamento" | "calendario">("dashboard");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("Todos");
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
