@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import {
-  DollarSign, ClipboardList, Calendar, Mail, Instagram, Users, TrendingUp, Sparkles,
+  DollarSign, ClipboardList, Calendar, Mail, Radar, Users, TrendingUp, Sparkles,
 } from "lucide-react";
 
 const items = [
@@ -8,7 +8,7 @@ const items = [
   { title: "Projects", url: "/crm/projects", icon: ClipboardList },
   { title: "Atividades", url: "/crm/atividades", icon: Calendar },
   { title: "E-mail", url: "/crm/email", icon: Mail },
-  { title: "Instagram", url: "/crm/instagram", icon: Instagram },
+  { title: "Geração", url: "/crm/geracao-leads", icon: Radar },
   { title: "Contatos", url: "/crm/contatos", icon: Users },
   { title: "Insights", url: "/crm/insights", icon: TrendingUp },
   { title: "Automações", url: "/crm/automacoes", icon: Sparkles },
