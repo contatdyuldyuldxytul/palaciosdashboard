@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Kanban, Target, MessageSquare, Menu } from "lucide-react";
+import { LayoutDashboard, Kanban, Radar, MessageSquare, Menu } from "lucide-react";
 
 interface Props {
   onOpenMore: () => void;
@@ -7,8 +7,8 @@ interface Props {
 
 const tabs = [
   { url: "/", label: "Início", icon: LayoutDashboard, match: (p: string) => p === "/" },
-  { url: "/crm", label: "CRM", icon: Kanban, match: (p: string) => p.startsWith("/crm") },
-  { url: "/hunter", label: "Hunter", icon: Target, match: (p: string) => p.startsWith("/hunter") },
+  { url: "/crm", label: "CRM", icon: Kanban, match: (p: string) => p.startsWith("/crm") && !p.startsWith("/crm/geracao-leads") },
+  { url: "/crm/geracao-leads", label: "Leads", icon: Radar, match: (p: string) => p.startsWith("/crm/geracao-leads") || p.startsWith("/hunter") },
   { url: "/assistente", label: "IA", icon: MessageSquare, match: (p: string) => p.startsWith("/assistente") },
 ];
 
