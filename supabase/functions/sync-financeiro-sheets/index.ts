@@ -275,6 +275,99 @@ function parseSalarioThiago(rows: string[][]): { items: ParsedLancamento[]; debu
   return { items, debug };
 }
 
+function parseEconomia(rows: string[][]): { items: ParsedLancamento[]; debug: any } {
+  const items: ParsedLancamento[] = [];
+  const debug: any = { totalRows: rows.length };
+  if (rows.length === 0) return { items, debug };
+
+  // Find month-header row (same as salarioThiago)
+  let monthRowIdx = -1;
+  for (let i = 0; i < Math.min(15, rows.length); i++) {
+    const detected = rows[i].map(c => detectMonth(String(c ?? ""))).filter(Boolean).length;
+    if (detected >= 2) { monthRowIdx = i; break; }
+  }
+  if (monthRowIdx < 0) { debug.error = "month_header_not_found"; return { items, debug }; }
+
+  const monthByCol: Record<number, { month: number; year: number }> = {};
+  const currentYear = new Date().getFullYear();
+  let lastMonth: { month: number; year: number } | null = null;
+  for (let c = 0; c < rows[monthRowIdx].length; c++) {
+    const m = detectMonth(String(rows[monthRowIdx][c] ?? ""));
+    if (m) { lastMonth = { month: m.month, year: m.year ?? currentYear }; monthByCol[c] = lastMonth; }
+    else if (lastMonth) { monthByCol[c] = lastMonth; }
+  }
+
+  // Find subheader row with Realizado labels
+  let subRowIdx = -1;
+  for (let i = monthRowIdx + 1; i < Math.min(monthRowIdx + 5, rows.length); i++) {
+    const r = (rows[i] || []).map(norm);
+    if (r.some(x => x.includes("realiz")) && r.some(x => x.includes("proj"))) { subRowIdx = i; break; }
+  }
+  const realizadoCols: number[] = [];
+  if (subRowIdx >= 0) {
+    const sub = rows[subRowIdx];
+    for (let c = 0; c < sub.length; c++) if (norm(sub[c]).includes("realiz")) realizadoCols.push(c);
+  } else {
+    const firstMonthCol = Math.min(...Object.keys(monthByCol).map(Number));
+    for (let c = firstMonthCol + 1; c < rows[monthRowIdx].length; c += 2) realizadoCols.push(c);
+  }
+  debug.realizadoCols = realizadoCols;
+
+  // Find Economia block: row where any cell normalizes to "economia"
+  let econHeaderIdx = -1;
+  for (let i = 0; i < rows.length; i++) {
+    if ((rows[i] || []).some(c => norm(c) === "economia")) { econHeaderIdx = i; break; }
+  }
+  if (econHeaderIdx < 0) { debug.error = "economia_header_not_found"; return { items, debug }; }
+  debug.econHeaderIdx = econHeaderIdx;
+
+  // Find end: row containing "total investido" (or fallback: 10 rows)
+  let econEndIdx = Math.min(econHeaderIdx + 15, rows.length);
+  for (let i = econHeaderIdx + 1; i < Math.min(econHeaderIdx + 20, rows.length); i++) {
+    const joined = (rows[i] || []).map(norm).join(" ");
+    if (joined.includes("total investido")) { econEndIdx = i; break; }
+  }
+  debug.econEndIdx = econEndIdx;
+
+  // Sum each Realizado column across fund rows
+  const monthTotals: Record<string, { valor: number; year: number; month: number; names: string[] }> = {};
+  for (let r = econHeaderIdx + 1; r < econEndIdx; r++) {
+    const row = rows[r] || [];
+    // pick fund name from the first non-empty text cell
+    let fundName = "";
+    for (let c = 0; c < row.length; c++) {
+      const v = String(row[c] ?? "").trim();
+      if (v && !/^[\d.,\-R$\s]+$/.test(v)) { fundName = v; break; }
+    }
+    if (!fundName) continue;
+    for (const c of realizadoCols) {
+      const monthInfo = monthByCol[c] || monthByCol[c - 1];
+      if (!monthInfo) continue;
+      const valor = parseBRNumber(row[c]);
+      if (valor === 0) continue;
+      const key = `${monthInfo.year}-${monthInfo.month}`;
+      if (!monthTotals[key]) monthTotals[key] = { valor: 0, year: monthInfo.year, month: monthInfo.month, names: [] };
+      monthTotals[key].valor += Math.abs(valor);
+      monthTotals[key].names.push(`${fundName}: ${valor}`);
+    }
+  }
+
+  for (const k of Object.keys(monthTotals)) {
+    const m = monthTotals[k];
+    items.push({
+      data: `${m.year}-${String(m.month).padStart(2, "0")}-01`,
+      tipo: "despesa",
+      categoria: "Fundos",
+      subcategoria: null,
+      descricao: `Fundos / Economia (${m.names.length} aportes)`,
+      valor: m.valor,
+      notas: "sync:economia-fundos",
+    });
+  }
+  debug.imported = items.length;
+  return { items, debug };
+}
+
 // ----- Main handler -----
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
