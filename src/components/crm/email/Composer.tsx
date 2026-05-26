@@ -263,6 +263,17 @@ export function Composer({ open, onClose, replyTo, initialTo, initialSubject, in
     </div>
   );
 
+  if (isInline) return composer;
+
+  if (isModal) {
+    return createPortal(
+      <div className="fixed inset-0 z-[100] bg-background/70 backdrop-blur-sm" onClick={onClose}>
+        <div onClick={(e) => e.stopPropagation()}>{composer}</div>
+      </div>,
+      document.body
+    );
+  }
+
   return createPortal(composer, document.body);
 }
 
