@@ -1,56 +1,65 @@
+# Composer de E-mail estilo Gmail (unificado)
 
 ## Objetivo
-Criar uma nova seção **Geração de Leads** no sidebar (logo abaixo de "E-mail") que agrupe três fontes de prospecção hoje espalhadas pelo app:
-1. **Leads do Instagram** (hoje em `/crm/instagram`)
-2. **Histórico Pipedrive** (hoje como aba interna da dashboard da Milena em `/equipe/milena`)
-3. **Hunter de Negócios** (hoje em `/hunter`)
 
-## Estrutura de navegação
+Substituir o atual `Composer` (modal escuro simples) por uma janela flutuante estilo Gmail, e usá-la em todos os pontos onde já há envio de e-mail na plataforma.
+
+## Onde será usado (mesmo componente em todos)
+
+1. **Caixa de entrada** (`/crm/email`) — botão "Novo e-mail" e "Responder" no `InboxView`.
+2. **Aba E-mail dentro do lead** (`/crm/deal/:id` → aba E-mail no `CrmDealDetail`).
+3. **Disparo em massa de contatos** (`/crm/contatos` — usado no `Contatos.tsx`, prefilled com a lista de contatos selecionados).
+4. **Bulk action de deals** (`DealListView.tsx` — botão "E-mail" na barra de ações em massa, prefilled com e-mails dos deals selecionados).
+
+> Observação: Em `Projects → FlowEditor`, o nó "Email" é apenas **configuração de automação** (template salvo no fluxo), não um envio manual. Não precisa virar Gmail-style — vou deixar a configuração como está.
+
+## Como o novo Composer vai parecer (referência: imagem do Gmail anexada)
 
 ```text
-Sidebar
-├── E-mail
-├── Geração de Leads        ← NOVO item
-│   ├── Instagram
-│   ├── Pipedrive
-│   └── Hunter
-├── Contatos
-└── ...
+┌─────────────────────────────────────────────────────────┐
+│ Nova mensagem                              _   ⤢   ✕   │  ← header cinza claro
+├─────────────────────────────────────────────────────────┤
+│ Destinatários                                  Cc  Bcc  │  ← linha fina
+├─────────────────────────────────────────────────────────┤
+│ Assunto                                                 │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│   Escreva sua mensagem...                               │
+│                                                         │
+│                                                         │
+├─────────────────────────────────────────────────────────┤
+│  [↶ ↷] [Sans Serif ▾] [B  I  U]  [≡ ▾]  [• ≡]          │  ← toolbar formatação
+├─────────────────────────────────────────────────────────┤
+│  [ Enviar ▾ ]   📎 🔗 😊 🖼  …                  🗑     │  ← footer
+└─────────────────────────────────────────────────────────┘
 ```
 
-A página `/crm/geracao-leads` segue o mesmo padrão de `/crm/atividades`: usa `<SectionTabs>` no topo e renderiza rotas filhas via `<Outlet />`.
+### Comportamento
 
-Rotas:
-- `/crm/geracao-leads` → redirect para `/crm/geracao-leads/instagram`
-- `/crm/geracao-leads/instagram` → componente atual de `InstagramLeads`
-- `/crm/geracao-leads/pipedrive` → componente `HistoricoPipedrive`
-- `/crm/geracao-leads/hunter` → componente `HunterNegocios` (mantendo o `PasswordGate` para não‑fundadores)
+- **Janela flutuante** ancorada no canto inferior direito (`fixed bottom-0 right-6`), largura 540px, altura ~560px (não modal — usuário pode navegar pelo app com ele aberto).
+- **Botões do header**: minimizar (recolhe pra barra com só o título), expandir (fullscreen ocupando 80vw/80vh), fechar.
+- **Linha "Destinatários"** com chips quando múltiplos e-mails (CRM bulk), links **Cc** e **Bcc** que mostram linhas extras ao clicar.
+- **Assunto** como input borderless com borda inferior fina.
+- **Corpo**: `contentEditable` (rich text) — permite negrito, itálico, sublinhado, listas, links via `document.execCommand` (simples e funcional).
+- **Toolbar de formatação** acima do footer: undo/redo, B/I/U, alinhamento, lista. Ícones lucide.
+- **Footer**: botão "Enviar" azul Gmail-like (primary), seta dropdown ao lado ("Agendar envio" — placeholder por ora), ícone de anexo (📎 funcional, sobe pro bucket `deal-files` quando há `dealId`, senão só anexa inline), link/emoji/imagem (placeholders por ora), lixeira (descarta).
+- **Auto-save de rascunho** em `localStorage` (chave por contexto: novo / reply-{id} / deal-{id} / bulk-{hash}). Restaura ao reabrir.
 
-## Mudanças por arquivo
+### Tema
 
-### `src/pages/crm/GeracaoLeads.tsx` (novo)
-Página container espelhando `src/pages/crm/Atividades.tsx`: 3 tabs (Instagram, Pipedrive, Hunter) + `<Outlet />`.
+- Fundo branco com texto escuro (autêntico ao Gmail), **mesmo no app dark** — Gmail é branco. Apenas a "casca" (header bar) usa cinza claro `#f2f6fc`. Botão Enviar usa azul `#0b57d0` (cor Gmail).
+- Sombra forte (`shadow-2xl`) para destacar do fundo dark do app.
 
-### `src/App.tsx`
-- Adicionar rotas filhas em `/crm/geracao-leads` com os 3 componentes.
-- Trocar `/crm/instagram` e `/hunter` por `<Navigate replace>` para os novos caminhos (mantém retrocompatibilidade de URLs antigas).
-- Manter `HunterGate` (PasswordGate para não‑fundadores) embrulhando a rota nova.
+## Arquivos a alterar
 
-### `src/components/AppSidebar.tsx`
-- Substituir os itens "Leads Instagram" e "Hunter de Negócios" por um único item **"Geração de Leads"** (ícone `Sparkles` ou `Radar`), posicionado logo abaixo de "E-mail".
-- Remover entrada solta de Hunter da lista principal.
-
-### `src/components/mobile/MobileCrmSubnav.tsx`
-- Substituir "Instagram" por "Geração" apontando para `/crm/geracao-leads`.
-
-### `src/components/mobile/MobileBottomNav.tsx`
-- Atualizar o tab "Hunter" para apontar para `/crm/geracao-leads/hunter` (ou substituir por "Leads"). Mantém atalho rápido.
-
-### `src/pages/LdrMemberDashboard.tsx`
-- Remover a aba **Histórico Pipedrive** (e o bloco `{activeTab === "historico" && <HistoricoPipedrive />}`).
-- Adicionar um link discreto "Ver no CRM → Geração de Leads / Pipedrive" para preservar acesso a partir do painel da Milena.
+- **`src/components/crm/email/Composer.tsx`** — reescrita completa: janela flutuante, rich text, toolbar, header com min/expand, suporte a Cc/Bcc, suporte a múltiplos destinatários (chips), anexos opcionais.
+- **`src/hooks/useEmail.ts`** — estender o tipo de `useSendEmail` para aceitar `cc`, `bcc` (a edge function `gmail-send` já existe; ajusto o payload).
+- **`supabase/functions/gmail-send/index.ts`** — adicionar suporte a `cc` e `bcc` no MIME (mudança mínima).
+- **Sem mudanças** em `InboxView.tsx`, `CrmDealDetail.tsx`, `Contatos.tsx`, `DealListView.tsx` — eles já consomem `<Composer />` com a mesma API (`open`, `onClose`, `initialTo`, `initialSubject`, `replyTo`). A nova versão mantém essa API.
 
 ## Fora do escopo
-- Não alterar a lógica interna de `InstagramLeads`, `HistoricoPipedrive` ou `HunterNegocios`.
-- Não mexer no `PasswordGate` do Hunter — a proteção continua.
-- Sem mudanças de schema/DB.
+
+- Agendamento real de envio (apenas botão visual).
+- Inserção de emoji/imagem via picker (apenas ícones; "anexo" será funcional).
+- Funcionalidade "Me ajude a escrever" (apenas placeholder no body como o Gmail mostra).
+- Mudanças no nó "Email" do FlowEditor (continua sendo configuração de template).
