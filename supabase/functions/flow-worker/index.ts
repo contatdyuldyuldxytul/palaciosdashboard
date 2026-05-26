@@ -47,13 +47,13 @@ function evalCondition(op: string, lhs: any, rhs: any): boolean {
   const Ln = Number(lhs);
   const Rn = Number(rhs);
   switch (op) {
-    case "eq": return L === R;
-    case "neq": return L !== R;
+    case "=": case "eq": return L === R;
+    case "!=": case "neq": return L !== R;
     case "contains": return L.includes(R);
-    case "gt": return Ln > Rn;
-    case "lt": return Ln < Rn;
-    case "gte": return Ln >= Rn;
-    case "lte": return Ln <= Rn;
+    case ">": case "gt": return Ln > Rn;
+    case "<": case "lt": return Ln < Rn;
+    case ">=": case "gte": return Ln >= Rn;
+    case "<=": case "lte": return Ln <= Rn;
     default: return true;
   }
 }
