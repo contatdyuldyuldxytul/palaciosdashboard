@@ -23,6 +23,7 @@ import {
   useUpdateOrganization, useDealNotes, useCreateNote, useCreateActivity, useToggleActivity,
   useDealHistory,
 } from "@/hooks/useCrm";
+import { Composer } from "@/components/crm/email/Composer";
 
 const fmt = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
