@@ -105,8 +105,14 @@ export function Composer({ open, onClose, replyTo, initialTo, initialSubject, in
 
   const isMin = winState === "minimized";
   const isFull = winState === "fullscreen";
+  const isInline = variant === "inline";
+  const isModal = variant === "modal";
 
-  const sizeClass = isFull
+  const sizeClass = isInline
+    ? "relative w-full h-auto"
+    : isModal
+    ? "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(680px,92vw)] h-[min(640px,88vh)]"
+    : isFull
     ? "fixed inset-y-[5vh] inset-x-[8vw] w-auto h-auto"
     : isMin
     ? "fixed right-6 bottom-0 w-[340px] h-11"
@@ -116,7 +122,9 @@ export function Composer({ open, onClose, replyTo, initialTo, initialSubject, in
     <div
       className={cn(
         sizeClass,
-        "z-[100] flex flex-col bg-card text-card-foreground border border-border rounded-t-2xl shadow-2xl overflow-hidden"
+        "z-[100] flex flex-col bg-card text-card-foreground border border-border shadow-2xl overflow-hidden",
+        isInline ? "rounded-2xl" : "rounded-t-2xl",
+        isModal && "rounded-2xl",
       )}
     >
       {/* Header */}
