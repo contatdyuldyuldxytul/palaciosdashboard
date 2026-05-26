@@ -440,3 +440,31 @@ html.light [style*="rgba(255, 255, 255, 0.06)"] {
   border-color: hsl(30 10% 85%) !important;
 }
 
+
+/* ============================================================
+   DARK THEME — anti-contrast safety net for hardcoded classes
+   Neutralizes text-black / bg-white / zinc-900 etc. that some
+   components hardcoded against light surfaces.
+   ============================================================ */
+html:not(.light) .text-black,
+html:not(.light) .text-zinc-900,
+html:not(.light) .text-zinc-800,
+html:not(.light) .text-gray-900,
+html:not(.light) .text-gray-800,
+html:not(.light) .text-slate-900,
+html:not(.light) .text-slate-800 {
+  color: hsl(220 25% 94%) !important;
+}
+
+html:not(.light) .bg-white {
+  background-color: hsl(222 45% 9%) !important;
+}
+html:not(.light) .bg-zinc-50,
+html:not(.light) .bg-zinc-100,
+html:not(.light) .bg-zinc-200,
+html:not(.light) .bg-gray-50,
+html:not(.light) .bg-gray-100,
+html:not(.light) .bg-gray-200,
+html:not(.light) .bg-slate-100 {
+  background-color: hsl(222 35% 12%) !important;
+}
