@@ -142,12 +142,16 @@ export function Composer({ open, onClose, replyTo, initialTo, initialSubject, in
           </span>
         </div>
         <div className="flex items-center gap-0.5">
-          <HeaderBtn onClick={(e) => { e.stopPropagation(); setWinState(isMin ? "normal" : "minimized"); }} title="Minimizar">
-            <Minus className="h-3.5 w-3.5" />
-          </HeaderBtn>
-          <HeaderBtn onClick={(e) => { e.stopPropagation(); setWinState(isFull ? "normal" : "fullscreen"); }} title={isFull ? "Sair da tela cheia" : "Tela cheia"}>
-            {isFull ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
-          </HeaderBtn>
+          {!isInline && !isModal && (
+            <>
+              <HeaderBtn onClick={(e) => { e.stopPropagation(); setWinState(isMin ? "normal" : "minimized"); }} title="Minimizar">
+                <Minus className="h-3.5 w-3.5" />
+              </HeaderBtn>
+              <HeaderBtn onClick={(e) => { e.stopPropagation(); setWinState(isFull ? "normal" : "fullscreen"); }} title={isFull ? "Sair da tela cheia" : "Tela cheia"}>
+                {isFull ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+              </HeaderBtn>
+            </>
+          )}
           <button
             onClick={(e) => { e.stopPropagation(); onClose(); }}
             className="p-1.5 rounded-md text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition"
