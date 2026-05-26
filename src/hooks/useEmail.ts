@@ -71,7 +71,7 @@ export function useSyncGmail() {
 export function useSendEmail() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { to: string; cc?: string; subject: string; html: string; threadId?: string; inReplyTo?: string; mode?: "send" | "draft" }) => {
+    mutationFn: async (payload: { to: string; cc?: string; bcc?: string; subject: string; html: string; threadId?: string; inReplyTo?: string; mode?: "send" | "draft" }) => {
       const { data, error } = await supabase.functions.invoke("gmail-send", { body: { mode: "send", ...payload } });
       if (error) throw error;
       return data;
