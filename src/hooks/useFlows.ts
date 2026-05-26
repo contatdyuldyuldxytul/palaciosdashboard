@@ -75,9 +75,21 @@ export function useUpdateFlow() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Partial<Flow> }) => {
+      // Auto-sync trigger_config from the trigger node so the DB enrollment trigger can match it.
+      let finalPatch: any = { ...patch };
+      const nodes = (patch as any).nodes;
+      if (Array.isArray(nodes)) {
+        const triggerNode = nodes.find((n: any) => n?.data?.kind === "trigger");
+        const cfg = triggerNode?.data?.config || {};
+        if (cfg.event === "stage_enter" && cfg.pipeline_id && cfg.stage_id) {
+          finalPatch.trigger_config = { type: "crm_stage_enter", pipeline_id: cfg.pipeline_id, stage_id: cfg.stage_id };
+        } else if (cfg.event) {
+          finalPatch.trigger_config = { type: cfg.event };
+        }
+      }
       const { data, error } = await supabase
         .from("flows" as any)
-        .update(patch as any)
+        .update(finalPatch as any)
         .eq("id", id)
         .select("id");
       if (error) throw error;
