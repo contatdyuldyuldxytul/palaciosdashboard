@@ -994,8 +994,6 @@ function EmailPanel({ dealId, personEmail, personName }: { dealId: string; perso
 }
 
 function EmailComposerInline({ open, onClose, to, name }: { open: boolean; onClose: () => void; to: string; name: string }) {
-  // Lazy import to avoid circular concerns
-  const { Composer } = require("@/components/crm/email/Composer");
   return <Composer open={open} onClose={onClose} initialTo={to} initialSubject={name ? `Sobre ${name}` : ""} />;
 }
 
