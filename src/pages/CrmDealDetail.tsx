@@ -1028,7 +1028,7 @@ function EmailPanel({ dealId, personEmail, personName }: { dealId: string; perso
 }
 
 function EmailComposerInline({ open, onClose, to, name }: { open: boolean; onClose: () => void; to: string; name: string }) {
-  return <Composer open={open} onClose={onClose} initialTo={to} initialSubject={name ? `Sobre ${name}` : ""} />;
+  return <Composer open={open} onClose={onClose} initialTo={to} initialSubject={name ? `Sobre ${name}` : ""} variant="inline" />;
 }
 
 /* ============ Files Panel ============ */
