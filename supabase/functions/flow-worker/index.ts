@@ -221,10 +221,10 @@ async function processRun(sb: any, run: any, dryRun: boolean) {
     // Delay
     if (kind === "delay") {
       const cfg = node.data?.config || {};
-      const dias = Number(cfg.dias || 0);
-      const horas = Number(cfg.horas || 0);
-      const minutos = Number(cfg.minutos || 0);
-      const ms = ((dias * 24 + horas) * 60 + minutos) * 60 * 1000;
+      const amount = Number(cfg.amount ?? cfg.dias ?? 0);
+      const unit = cfg.unit || (cfg.horas ? "hours" : cfg.minutos ? "minutes" : "days");
+      const mult = unit === "minutes" ? 60_000 : unit === "hours" ? 3_600_000 : 86_400_000;
+      const ms = amount * mult;
       const nextAt = new Date(Date.now() + ms).toISOString();
       const after = nextNodeId(edges, currentId);
       await sb.from("flow_run_steps").insert({ run_id: run.id, node_id: node.id, node_type: kind, status: "ok", output: { resume_at: nextAt, next: after } });
