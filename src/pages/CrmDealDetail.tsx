@@ -23,6 +23,7 @@ import {
   useUpdateOrganization, useDealNotes, useCreateNote, useCreateActivity, useToggleActivity,
   useDealHistory,
 } from "@/hooks/useCrm";
+import { Composer } from "@/components/crm/email/Composer";
 
 const fmt = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
@@ -186,7 +187,7 @@ export default function CrmDealDetail() {
 
         {/* Clickable stage bar */}
         <div className="space-y-2 pt-2">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             {allStages.map((s, idx) => (
               <button
                 key={s.id}
@@ -196,13 +197,13 @@ export default function CrmDealDetail() {
               >
                 <div
                   className={cn(
-                    "h-2 rounded-full transition-all group-hover:h-2.5",
+                    "h-4 rounded-full transition-all group-hover:h-5 shadow-sm",
                     idx <= currentStageIdx ? "" : "bg-white/5"
                   )}
                   style={idx <= currentStageIdx ? { background: s.cor || "hsl(var(--primary))" } : undefined}
                 />
                 <div className={cn(
-                  "text-[9px] mt-1.5 text-center truncate transition-colors",
+                  "text-[10px] mt-2 text-center truncate transition-colors",
                   idx === currentStageIdx ? "text-foreground font-semibold" : "text-muted-foreground group-hover:text-foreground"
                 )}>
                   {s.nome}
@@ -233,12 +234,14 @@ export default function CrmDealDetail() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Main column */}
-        <div className="lg:col-span-2 space-y-4">
+        {/* Main column (now RIGHT) */}
+        <div className="lg:col-span-2 lg:order-2 space-y-4">
           <Tabs defaultValue="atividades">
             <TabsList className="glass-card border border-white/10">
               <TabsTrigger value="atividades">Atividades</TabsTrigger>
               <TabsTrigger value="notas">Notas</TabsTrigger>
+              <TabsTrigger value="email">E-mail</TabsTrigger>
+              <TabsTrigger value="files">Files</TabsTrigger>
             </TabsList>
 
             <TabsContent value="atividades" className="mt-4">
@@ -256,6 +259,18 @@ export default function CrmDealDetail() {
                 notes={notes}
                 onCreate={async (conteudo) => { await createNote.mutateAsync({ deal_id: deal.id, conteudo }); }}
               />
+            </TabsContent>
+
+            <TabsContent value="email" className="mt-4">
+              <EmailPanel
+                dealId={deal.id}
+                personEmail={person?.email || ""}
+                personName={person?.nome || ""}
+              />
+            </TabsContent>
+
+            <TabsContent value="files" className="mt-4">
+              <FilesPanel dealId={deal.id} />
             </TabsContent>
           </Tabs>
 
@@ -276,8 +291,8 @@ export default function CrmDealDetail() {
           </div>
         </div>
 
-        {/* Right sidebar */}
-        <div className="space-y-4">
+        {/* Sidebar (now LEFT) */}
+        <div className="lg:order-1 space-y-4">
           {/* SUMÁRIO */}
           <SectionCard title="Sumário">
             <Field label="Valor">
@@ -909,6 +924,190 @@ function HistoryList({
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/* ============ E-mail Panel ============ */
+function EmailPanel({ dealId, personEmail, personName }: { dealId: string; personEmail: string; personName: string }) {
+  const [open, setOpen] = useState(false);
+  const { data: messages = [] } = useQuery({
+    queryKey: ["deal_emails", dealId, personEmail],
+    queryFn: async () => {
+      let q = supabase.from("email_messages" as any).select("*").order("received_at", { ascending: false }).limit(50);
+      if (personEmail) {
+        q = q.or(`deal_id.eq.${dealId},from_email.eq.${personEmail}`);
+      } else {
+        q = q.eq("deal_id", dealId);
+      }
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+    enabled: !!dealId,
+  });
+
+  return (
+    <div className="glass-card rounded-xl p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <MailIcon className="w-4 h-4 text-muted-foreground" />
+          <h3 className="text-sm font-semibold text-foreground">E-mails</h3>
+        </div>
+        <Button size="sm" onClick={() => setOpen(true)} disabled={!personEmail}>
+          <Plus className="w-3.5 h-3.5 mr-1" /> Novo e-mail
+        </Button>
+      </div>
+      {!personEmail && (
+        <p className="text-xs text-muted-foreground">Adicione um e-mail no contato para enviar mensagens.</p>
+      )}
+      {messages.length === 0 ? (
+        <div className="text-xs text-muted-foreground text-center py-6">Nenhum e-mail encontrado para este deal.</div>
+      ) : (
+        <div className="space-y-2 max-h-96 overflow-y-auto">
+          {messages.map((m: any) => (
+            <div key={m.id} className="border border-white/5 rounded-lg p-3 hover:bg-white/[0.02]">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-medium text-foreground truncate">
+                  {m.direction === "out" ? `Para: ${(m.to_emails || []).join(", ")}` : `De: ${m.from_name || m.from_email}`}
+                </span>
+                <span className="text-[10px] text-muted-foreground flex-shrink-0">
+                  {new Date(m.received_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
+                </span>
+              </div>
+              <div className="text-sm text-foreground mt-1 truncate">{m.subject || "(sem assunto)"}</div>
+              {m.snippet && <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{m.snippet}</div>}
+            </div>
+          ))}
+        </div>
+      )}
+      {open && (
+        <EmailComposerInline
+          open={open}
+          onClose={() => setOpen(false)}
+          to={personEmail}
+          name={personName}
+        />
+      )}
+    </div>
+  );
+}
+
+function EmailComposerInline({ open, onClose, to, name }: { open: boolean; onClose: () => void; to: string; name: string }) {
+  return <Composer open={open} onClose={onClose} initialTo={to} initialSubject={name ? `Sobre ${name}` : ""} />;
+}
+
+/* ============ Files Panel ============ */
+function FilesPanel({ dealId }: { dealId: string }) {
+  const qc = useQueryClient();
+  const [uploading, setUploading] = useState(false);
+
+  const { data: files = [] } = useQuery({
+    queryKey: ["deal_files", dealId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("crm_deal_files" as any)
+        .select("*")
+        .eq("deal_id", dealId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+  });
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const path = `${dealId}/${Date.now()}-${file.name}`;
+      const { error: upErr } = await supabase.storage.from("deal-files").upload(path, file);
+      if (upErr) throw upErr;
+      const { data: userData } = await supabase.auth.getUser();
+      const { error: insErr } = await supabase.from("crm_deal_files" as any).insert({
+        deal_id: dealId,
+        storage_path: path,
+        file_name: file.name,
+        mime_type: file.type,
+        size_bytes: file.size,
+        uploaded_by: userData.user?.id ?? null,
+      });
+      if (insErr) throw insErr;
+      toast({ title: "Arquivo enviado" });
+      qc.invalidateQueries({ queryKey: ["deal_files", dealId] });
+    } catch (err: any) {
+      toast({ title: "Erro ao enviar", description: err.message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleDownload = async (path: string, fileName: string) => {
+    const { data, error } = await supabase.storage.from("deal-files").createSignedUrl(path, 60);
+    if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
+    const a = document.createElement("a");
+    a.href = data.signedUrl;
+    a.download = fileName;
+    a.click();
+  };
+
+  const handleDelete = async (id: string, path: string) => {
+    if (!confirm("Excluir este arquivo?")) return;
+    await supabase.storage.from("deal-files").remove([path]);
+    await supabase.from("crm_deal_files" as any).delete().eq("id", id);
+    qc.invalidateQueries({ queryKey: ["deal_files", dealId] });
+    toast({ title: "Arquivo excluído" });
+  };
+
+  const fmtSize = (b?: number | null) => {
+    if (!b) return "—";
+    if (b < 1024) return `${b} B`;
+    if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
+    return `${(b / 1024 / 1024).toFixed(1)} MB`;
+  };
+
+  return (
+    <div className="glass-card rounded-xl p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Briefcase className="w-4 h-4 text-muted-foreground" />
+          <h3 className="text-sm font-semibold text-foreground">Arquivos</h3>
+        </div>
+        <label className="cursor-pointer">
+          <input type="file" className="hidden" onChange={handleUpload} disabled={uploading} />
+          <span className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:opacity-90">
+            <Plus className="w-3.5 h-3.5" /> {uploading ? "Enviando..." : "Adicionar arquivo"}
+          </span>
+        </label>
+      </div>
+      {files.length === 0 ? (
+        <div className="text-xs text-muted-foreground text-center py-6">Nenhum arquivo anexado.</div>
+      ) : (
+        <div className="space-y-2">
+          {files.map((f: any) => (
+            <div key={f.id} className="flex items-center gap-3 border border-white/5 rounded-lg p-3 hover:bg-white/[0.02]">
+              <div className="w-8 h-8 rounded-md bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
+                <Briefcase className="w-4 h-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm text-foreground truncate">{f.file_name}</div>
+                <div className="text-[10px] text-muted-foreground">
+                  {fmtSize(f.size_bytes)} · {new Date(f.created_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
+                </div>
+              </div>
+              <button
+                onClick={() => handleDownload(f.storage_path, f.file_name)}
+                className="text-xs text-primary hover:underline"
+              >Baixar</button>
+              <button
+                onClick={() => handleDelete(f.id, f.storage_path)}
+                className="text-xs text-red-400 hover:underline"
+              >Excluir</button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
