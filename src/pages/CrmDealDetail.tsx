@@ -186,7 +186,7 @@ export default function CrmDealDetail() {
 
         {/* Clickable stage bar */}
         <div className="space-y-2 pt-2">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             {allStages.map((s, idx) => (
               <button
                 key={s.id}
@@ -196,13 +196,13 @@ export default function CrmDealDetail() {
               >
                 <div
                   className={cn(
-                    "h-2 rounded-full transition-all group-hover:h-2.5",
+                    "h-4 rounded-full transition-all group-hover:h-5 shadow-sm",
                     idx <= currentStageIdx ? "" : "bg-white/5"
                   )}
                   style={idx <= currentStageIdx ? { background: s.cor || "hsl(var(--primary))" } : undefined}
                 />
                 <div className={cn(
-                  "text-[9px] mt-1.5 text-center truncate transition-colors",
+                  "text-[10px] mt-2 text-center truncate transition-colors",
                   idx === currentStageIdx ? "text-foreground font-semibold" : "text-muted-foreground group-hover:text-foreground"
                 )}>
                   {s.nome}
