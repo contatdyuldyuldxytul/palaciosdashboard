@@ -483,19 +483,31 @@ function InlineText({
     );
   }
   return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={() => setEditing(true)}
-      className={cn(
-        "text-sm text-foreground text-right truncate w-full hover:bg-white/5 px-1.5 py-0.5 rounded transition-colors",
-        disabled && "cursor-not-allowed opacity-60",
-        !value && "text-muted-foreground italic",
-        className
+    <div className="flex items-center justify-end gap-1 group/inline w-full">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setEditing(true)}
+        className={cn(
+          "text-sm text-foreground text-right truncate hover:bg-white/5 px-1.5 py-0.5 rounded transition-colors min-w-0",
+          disabled && "cursor-not-allowed opacity-60",
+          !value && "text-muted-foreground italic",
+          className
+        )}
+      >
+        {value === "" || value === null || value === undefined ? placeholder : String(value)}
+      </button>
+      {!disabled && (
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          aria-label="Editar"
+          className="p-1 rounded text-muted-foreground hover:text-primary hover:bg-white/10 opacity-70 group-hover/inline:opacity-100 transition-all flex-shrink-0"
+        >
+          <Edit className="w-3 h-3" />
+        </button>
       )}
-    >
-      {value === "" || value === null || value === undefined ? placeholder : String(value)}
-    </button>
+    </div>
   );
 }
 
