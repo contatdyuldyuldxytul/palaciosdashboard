@@ -13,18 +13,37 @@ function b64url(s: string): string {
     .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
+// Plain base64 (with padding, no URL-safe substitutions) for MIME body encoding.
+function b64(s: string): string {
+  return btoa(unescape(encodeURIComponent(s)));
+}
+
+// RFC 2047 encoded-word for headers containing non-ASCII characters.
+function encodeHeader(value: string): string {
+  // eslint-disable-next-line no-control-regex
+  if (/^[\x00-\x7F]*$/.test(value)) return value;
+  return `=?UTF-8?B?${b64(value)}?=`;
+}
+
+// Split base64 string into lines of 76 chars (RFC 2045).
+function chunk76(s: string): string {
+  return s.match(/.{1,76}/g)?.join("\r\n") ?? s;
+}
+
 function buildRaw(opts: { to: string; cc?: string; bcc?: string; subject: string; html: string; inReplyTo?: string; references?: string; }) {
+  const encodedBody = chunk76(b64(opts.html));
   const lines = [
     `To: ${opts.to}`,
     opts.cc ? `Cc: ${opts.cc}` : "",
     opts.bcc ? `Bcc: ${opts.bcc}` : "",
-    `Subject: ${opts.subject}`,
+    `Subject: ${encodeHeader(opts.subject)}`,
     `MIME-Version: 1.0`,
     `Content-Type: text/html; charset="UTF-8"`,
+    `Content-Transfer-Encoding: base64`,
     opts.inReplyTo ? `In-Reply-To: ${opts.inReplyTo}` : "",
     opts.references ? `References: ${opts.references}` : "",
     "",
-    opts.html,
+    encodedBody,
   ].filter(Boolean).join("\r\n");
   return b64url(lines);
 }
