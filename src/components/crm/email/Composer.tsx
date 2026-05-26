@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
   Minus, Maximize2, Minimize2, X, Trash2, Paperclip, Link as LinkIcon,
-  Smile, Image as ImageIcon, Lock, PenLine, Calendar, MoreVertical,
+  Smile, Image as ImageIcon, Send,
   Bold, Italic, Underline, Undo2, Redo2, AlignLeft, ListOrdered, ChevronDown, Sparkles, Type,
 } from "lucide-react";
 import { useSendEmail, type EmailMessage } from "@/hooks/useEmail";
@@ -15,7 +15,7 @@ interface ComposerProps {
   initialTo?: string;
   initialSubject?: string;
   initialBody?: string;
-  contextKey?: string; // for draft autosave
+  contextKey?: string;
 }
 
 type WinState = "normal" | "minimized" | "fullscreen";
@@ -23,7 +23,7 @@ type WinState = "normal" | "minimized" | "fullscreen";
 export function Composer({ open, onClose, replyTo, initialTo, initialSubject, initialBody, contextKey }: ComposerProps) {
   const isReply = !!replyTo;
   const draftKey = useMemo(
-    () => `gmail-draft:${contextKey || (isReply ? `reply-${replyTo?.id}` : "new")}`,
+    () => `palacios-draft:${contextKey || (isReply ? `reply-${replyTo?.id}` : "new")}`,
     [contextKey, isReply, replyTo?.id]
   );
 
@@ -37,7 +37,6 @@ export function Composer({ open, onClose, replyTo, initialTo, initialSubject, in
   const bodyRef = useRef<HTMLDivElement | null>(null);
   const send = useSendEmail();
 
-  // Initialize / restore draft when opened
   useEffect(() => {
     if (!open) return;
     const saved = (() => {
@@ -56,7 +55,6 @@ export function Composer({ open, onClose, replyTo, initialTo, initialSubject, in
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, draftKey]);
 
-  // Autosave
   useEffect(() => {
     if (!open) return;
     const id = setInterval(() => {
@@ -104,36 +102,47 @@ export function Composer({ open, onClose, replyTo, initialTo, initialSubject, in
   const isFull = winState === "fullscreen";
 
   const shellStyle: React.CSSProperties = isFull
-    ? { position: "fixed", inset: "5vh 10vw", zIndex: 100, width: "auto", height: "auto" }
+    ? { position: "fixed", inset: "5vh 8vw", zIndex: 100, width: "auto", height: "auto" }
     : isMin
-    ? { position: "fixed", right: "24px", bottom: 0, zIndex: 100, width: "320px", height: "40px" }
-    : { position: "fixed", right: "24px", bottom: 0, zIndex: 100, width: "540px", height: "min(560px, 85vh)" };
+    ? { position: "fixed", right: "24px", bottom: 0, zIndex: 100, width: "340px", height: "44px" }
+    : { position: "fixed", right: "24px", bottom: 0, zIndex: 100, width: "580px", height: "min(600px, 88vh)" };
 
   const composer = (
     <div
-      style={shellStyle}
-      className="flex flex-col bg-white text-zinc-900 rounded-t-lg shadow-2xl border border-zinc-200 overflow-hidden font-sans"
+      style={{
+        ...shellStyle,
+        background: "linear-gradient(180deg, rgba(20,28,55,0.92) 0%, rgba(10,16,38,0.92) 100%)",
+        backdropFilter: "blur(20px) saturate(140%)",
+        WebkitBackdropFilter: "blur(20px) saturate(140%)",
+        border: "1px solid var(--glass-border)",
+        boxShadow: "0 20px 60px rgba(0,8,32,0.65), 0 0 0 1px rgba(120,160,230,0.06) inset",
+      }}
+      className="flex flex-col rounded-t-2xl overflow-hidden text-foreground"
     >
       {/* Header */}
       <div
-        className="flex items-center justify-between px-4 h-10 bg-[#f2f6fc] text-zinc-800 select-none cursor-pointer"
+        className="flex items-center justify-between px-4 h-11 select-none cursor-pointer border-b"
+        style={{
+          background: "linear-gradient(90deg, rgba(59,130,246,0.12) 0%, rgba(255,255,255,0.02) 100%)",
+          borderColor: "var(--glass-border)",
+        }}
         onClick={() => isMin && setWinState("normal")}
       >
-        <span className="text-sm font-medium truncate">
-          {isReply ? `Re: ${replyTo?.subject || "Mensagem"}` : (subject || "Nova mensagem")}
-        </span>
-        <div className="flex items-center gap-1 text-zinc-600">
-          <button
-            onClick={(e) => { e.stopPropagation(); setWinState(isMin ? "normal" : "minimized"); }}
-            className="p-1.5 hover:bg-zinc-200 rounded" title="Minimizar"
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_8px_hsl(var(--primary))]" />
+          <span className="text-sm font-medium truncate text-foreground/90">
+            {isReply ? `Re: ${replyTo?.subject || "Mensagem"}` : (subject || "Nova mensagem")}
+          </span>
+        </div>
+        <div className="flex items-center gap-0.5 text-foreground/60">
+          <button onClick={(e) => { e.stopPropagation(); setWinState(isMin ? "normal" : "minimized"); }}
+            className="p-1.5 hover:bg-white/10 rounded-md transition" title="Minimizar"
           ><Minus className="h-3.5 w-3.5" /></button>
-          <button
-            onClick={(e) => { e.stopPropagation(); setWinState(isFull ? "normal" : "fullscreen"); }}
-            className="p-1.5 hover:bg-zinc-200 rounded" title={isFull ? "Sair da tela cheia" : "Tela cheia"}
+          <button onClick={(e) => { e.stopPropagation(); setWinState(isFull ? "normal" : "fullscreen"); }}
+            className="p-1.5 hover:bg-white/10 rounded-md transition" title={isFull ? "Sair da tela cheia" : "Tela cheia"}
           >{isFull ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}</button>
-          <button
-            onClick={(e) => { e.stopPropagation(); onClose(); }}
-            className="p-1.5 hover:bg-zinc-200 rounded" title="Fechar"
+          <button onClick={(e) => { e.stopPropagation(); onClose(); }}
+            className="p-1.5 hover:bg-destructive/30 hover:text-foreground rounded-md transition" title="Fechar"
           ><X className="h-3.5 w-3.5" /></button>
         </div>
       </div>
@@ -141,103 +150,103 @@ export function Composer({ open, onClose, replyTo, initialTo, initialSubject, in
       {!isMin && (
         <>
           {/* Recipients */}
-          <div className="flex items-center px-4 border-b border-zinc-200">
+          <div className="flex items-center px-4 border-b" style={{ borderColor: "var(--glass-border)" }}>
+            <span className="text-xs font-medium text-foreground/40 w-20 shrink-0">Para</span>
             <input
               value={to}
               onChange={(e) => setTo(e.target.value)}
-              placeholder="Destinatários"
-              className="flex-1 py-2.5 text-sm bg-transparent outline-none placeholder:text-zinc-500"
+              placeholder="destinatario@exemplo.com"
+              className="flex-1 py-2.5 text-sm bg-transparent outline-none placeholder:text-foreground/30 text-foreground"
             />
-            <div className="flex items-center gap-2 text-xs text-zinc-600 pl-2">
-              {!showCc && <button onClick={() => setShowCc(true)} className="hover:text-zinc-900">Cc</button>}
-              {!showBcc && <button onClick={() => setShowBcc(true)} className="hover:text-zinc-900">Cco</button>}
+            <div className="flex items-center gap-2 text-xs text-foreground/50 pl-2">
+              {!showCc && <button onClick={() => setShowCc(true)} className="hover:text-primary transition">Cc</button>}
+              {!showBcc && <button onClick={() => setShowBcc(true)} className="hover:text-primary transition">Cco</button>}
             </div>
           </div>
           {showCc && (
-            <div className="px-4 border-b border-zinc-200">
-              <input value={cc} onChange={(e) => setCc(e.target.value)} placeholder="Cc"
-                className="w-full py-2 text-sm bg-transparent outline-none placeholder:text-zinc-500" />
+            <div className="flex items-center px-4 border-b" style={{ borderColor: "var(--glass-border)" }}>
+              <span className="text-xs font-medium text-foreground/40 w-20 shrink-0">Cc</span>
+              <input value={cc} onChange={(e) => setCc(e.target.value)}
+                className="w-full py-2 text-sm bg-transparent outline-none placeholder:text-foreground/30 text-foreground" />
             </div>
           )}
           {showBcc && (
-            <div className="px-4 border-b border-zinc-200">
-              <input value={bcc} onChange={(e) => setBcc(e.target.value)} placeholder="Cco"
-                className="w-full py-2 text-sm bg-transparent outline-none placeholder:text-zinc-500" />
+            <div className="flex items-center px-4 border-b" style={{ borderColor: "var(--glass-border)" }}>
+              <span className="text-xs font-medium text-foreground/40 w-20 shrink-0">Cco</span>
+              <input value={bcc} onChange={(e) => setBcc(e.target.value)}
+                className="w-full py-2 text-sm bg-transparent outline-none placeholder:text-foreground/30 text-foreground" />
             </div>
           )}
 
           {/* Subject */}
-          <div className="px-4 border-b border-zinc-200">
+          <div className="flex items-center px-4 border-b" style={{ borderColor: "var(--glass-border)" }}>
+            <span className="text-xs font-medium text-foreground/40 w-20 shrink-0">Assunto</span>
             <input
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              placeholder="Assunto"
-              className="w-full py-2.5 text-sm bg-transparent outline-none placeholder:text-zinc-500"
+              placeholder="Sobre o que é este e-mail?"
+              className="w-full py-2.5 text-sm bg-transparent outline-none placeholder:text-foreground/30 text-foreground font-medium"
             />
           </div>
 
           {/* Body */}
-          <div className="flex-1 overflow-auto px-4 py-3">
+          <div className="flex-1 overflow-auto px-5 py-4">
             <div
               ref={bodyRef}
               contentEditable
               suppressContentEditableWarning
-              className="min-h-[180px] outline-none text-sm leading-relaxed text-zinc-900 empty:before:content-[attr(data-placeholder)] empty:before:text-zinc-400"
-              data-placeholder='Pressione "/" para usar o recurso "Me ajude a escrever"'
-              onKeyDown={(e) => {
-                if (e.key === "/" && !bodyRef.current?.textContent) {
-                  // placeholder action; do nothing real
-                }
-              }}
+              className="min-h-[180px] outline-none text-sm leading-relaxed text-foreground/90 empty:before:content-[attr(data-placeholder)] empty:before:text-foreground/30"
+              data-placeholder="Escreva sua mensagem..."
             />
           </div>
 
           {/* Formatting toolbar */}
-          <div className="flex items-center gap-1 px-2 py-1.5 mx-3 mb-1 rounded-full bg-zinc-100 text-zinc-700 overflow-x-auto">
-            <button onClick={() => exec("undo")} className="p-1.5 hover:bg-zinc-200 rounded" title="Desfazer"><Undo2 className="h-4 w-4" /></button>
-            <button onClick={() => exec("redo")} className="p-1.5 hover:bg-zinc-200 rounded" title="Refazer"><Redo2 className="h-4 w-4" /></button>
-            <span className="w-px h-5 bg-zinc-300 mx-1" />
-            <button className="px-2 h-7 text-xs hover:bg-zinc-200 rounded flex items-center gap-1"><span>Sans Serif</span><ChevronDown className="h-3 w-3" /></button>
-            <span className="w-px h-5 bg-zinc-300 mx-1" />
-            <button onClick={() => exec("bold")} className="p-1.5 hover:bg-zinc-200 rounded" title="Negrito"><Bold className="h-4 w-4" /></button>
-            <button onClick={() => exec("italic")} className="p-1.5 hover:bg-zinc-200 rounded" title="Itálico"><Italic className="h-4 w-4" /></button>
-            <button onClick={() => exec("underline")} className="p-1.5 hover:bg-zinc-200 rounded" title="Sublinhado"><Underline className="h-4 w-4" /></button>
-            <span className="w-px h-5 bg-zinc-300 mx-1" />
-            <button onClick={() => exec("justifyLeft")} className="p-1.5 hover:bg-zinc-200 rounded" title="Alinhar"><AlignLeft className="h-4 w-4" /></button>
-            <button onClick={() => exec("insertOrderedList")} className="p-1.5 hover:bg-zinc-200 rounded" title="Lista numerada"><ListOrdered className="h-4 w-4" /></button>
-            <button onClick={() => exec("removeFormat")} className="p-1.5 hover:bg-zinc-200 rounded" title="Limpar formatação"><Type className="h-4 w-4" /></button>
+          <div
+            className="flex items-center gap-0.5 px-2 py-1.5 mx-3 mb-2 rounded-xl text-foreground/70 overflow-x-auto"
+            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid var(--glass-border)" }}
+          >
+            <ToolIcon onClick={() => exec("undo")} title="Desfazer"><Undo2 className="h-3.5 w-3.5" /></ToolIcon>
+            <ToolIcon onClick={() => exec("redo")} title="Refazer"><Redo2 className="h-3.5 w-3.5" /></ToolIcon>
+            <Divider />
+            <ToolIcon onClick={() => exec("bold")} title="Negrito"><Bold className="h-3.5 w-3.5" /></ToolIcon>
+            <ToolIcon onClick={() => exec("italic")} title="Itálico"><Italic className="h-3.5 w-3.5" /></ToolIcon>
+            <ToolIcon onClick={() => exec("underline")} title="Sublinhado"><Underline className="h-3.5 w-3.5" /></ToolIcon>
+            <Divider />
+            <ToolIcon onClick={() => exec("justifyLeft")} title="Alinhar"><AlignLeft className="h-3.5 w-3.5" /></ToolIcon>
+            <ToolIcon onClick={() => exec("insertOrderedList")} title="Lista"><ListOrdered className="h-3.5 w-3.5" /></ToolIcon>
+            <ToolIcon onClick={() => exec("removeFormat")} title="Limpar formatação"><Type className="h-3.5 w-3.5" /></ToolIcon>
+            <Divider />
+            <ToolIcon title="Anexar"><Paperclip className="h-3.5 w-3.5" /></ToolIcon>
+            <ToolIcon title="Link"><LinkIcon className="h-3.5 w-3.5" /></ToolIcon>
+            <ToolIcon title="Emoji"><Smile className="h-3.5 w-3.5" /></ToolIcon>
+            <ToolIcon title="Imagem"><ImageIcon className="h-3.5 w-3.5" /></ToolIcon>
+            <ToolIcon title="IA"><Sparkles className="h-3.5 w-3.5 text-primary" /></ToolIcon>
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between px-3 py-2 border-t border-zinc-200 bg-white">
-            <div className="flex items-center gap-1">
-              <div className="flex items-stretch rounded-full overflow-hidden shadow-sm">
-                <button
-                  onClick={handleSend}
-                  disabled={send.isPending}
-                  className="px-6 h-9 bg-[#0b57d0] hover:bg-[#0a4cb8] text-white text-sm font-medium disabled:opacity-60"
-                >
-                  {send.isPending ? "Enviando..." : "Enviar"}
-                </button>
-                <button className="px-1.5 bg-[#0b57d0] hover:bg-[#0a4cb8] text-white border-l border-white/20" title="Mais opções de envio">
-                  <ChevronDown className="h-4 w-4" />
-                </button>
-              </div>
-              <span className="w-2" />
-              <ToolBtn icon={<Type className="h-4 w-4" />} title="Formatação" />
-              <ToolBtn icon={<Sparkles className="h-4 w-4" />} title="Me ajude a escrever" />
-              <ToolBtn icon={<Paperclip className="h-4 w-4" />} title="Anexar arquivo" />
-              <ToolBtn icon={<LinkIcon className="h-4 w-4" />} title="Inserir link" />
-              <ToolBtn icon={<Smile className="h-4 w-4" />} title="Emoji" />
-              <ToolBtn icon={<ImageIcon className="h-4 w-4" />} title="Inserir foto" />
-              <ToolBtn icon={<Lock className="h-4 w-4" />} title="Modo confidencial" />
-              <ToolBtn icon={<PenLine className="h-4 w-4" />} title="Assinatura" />
-              <ToolBtn icon={<Calendar className="h-4 w-4" />} title="Convite" />
-              <ToolBtn icon={<MoreVertical className="h-4 w-4" />} title="Mais opções" />
+          <div
+            className="flex items-center justify-between px-3 py-2.5 border-t"
+            style={{ borderColor: "var(--glass-border)", background: "rgba(255,255,255,0.02)" }}
+          >
+            <div className="flex items-stretch rounded-lg overflow-hidden shadow-[0_4px_14px_rgba(59,130,246,0.35)]">
+              <button
+                onClick={handleSend}
+                disabled={send.isPending}
+                className="px-5 h-9 bg-primary hover:brightness-110 text-primary-foreground text-sm font-semibold disabled:opacity-60 transition flex items-center gap-2"
+              >
+                <Send className="h-3.5 w-3.5" />
+                {send.isPending ? "Enviando..." : "Enviar"}
+              </button>
+              <button className="px-2 bg-primary hover:brightness-110 text-primary-foreground border-l border-primary-foreground/20 transition" title="Mais opções">
+                <ChevronDown className="h-4 w-4" />
+              </button>
             </div>
-            <button onClick={discard} className="p-2 hover:bg-zinc-100 rounded text-zinc-600" title="Descartar rascunho">
-              <Trash2 className="h-4 w-4" />
-            </button>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-foreground/40 hidden sm:block">Rascunho salvo</span>
+              <button onClick={discard} className="p-2 hover:bg-destructive/20 hover:text-destructive rounded-lg text-foreground/50 transition" title="Descartar">
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </>
       )}
@@ -247,10 +256,14 @@ export function Composer({ open, onClose, replyTo, initialTo, initialSubject, in
   return createPortal(composer, document.body);
 }
 
-function ToolBtn({ icon, title }: { icon: React.ReactNode; title: string }) {
+function ToolIcon({ children, title, onClick }: { children: React.ReactNode; title: string; onClick?: () => void }) {
   return (
-    <button title={title} className="p-2 hover:bg-zinc-100 rounded-full text-zinc-600">
-      {icon}
+    <button onClick={onClick} title={title} className="p-1.5 hover:bg-white/10 rounded-md transition text-foreground/70 hover:text-foreground">
+      {children}
     </button>
   );
+}
+
+function Divider() {
+  return <span className="w-px h-4 bg-white/10 mx-0.5" />;
 }
