@@ -62,9 +62,10 @@ export function usePipedrive(autoSyncInterval = 2 * 60 * 60 * 1000) {
   const query = useQuery({
     queryKey: ["pipedrive"],
     queryFn: fetchPipedriveData,
-    staleTime: 60_000,
+    staleTime: 10 * 60_000,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
+    refetchOnMount: false,
     retry: false,
   });
 
@@ -75,6 +76,7 @@ export function usePipedrive(autoSyncInterval = 2 * 60 * 60 * 1000) {
   // Auto-sync every 2 minutes
   useEffect(() => {
     intervalRef.current = setInterval(() => {
+      if (typeof document !== "undefined" && document.hidden) return;
       queryClient.invalidateQueries({ queryKey: ["pipedrive"] });
     }, autoSyncInterval);
 
