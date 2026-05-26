@@ -325,6 +325,7 @@ export default function Contatos() {
         open={composerOpen}
         onClose={() => setComposerOpen(false)}
         initialTo={composerTo}
+        variant="modal"
       />
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>

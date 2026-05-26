@@ -1,58 +1,52 @@
-## Diagnóstico
+## Problema
 
-Causa raiz: no tema **escuro** (`:root` em `src/index.css`), tokens semânticos estão definidos como **branco** (`--card`, `--popover`, `--border`, `--input`, `--sidebar-background`, `--sidebar-accent`), mas os `*-foreground` correspondentes são quase brancos. Isso faz `bg-card text-card-foreground` (usado pelo Composer, Card, Dialog, Popover, Select, DropdownMenu, Sheet do shadcn) renderizar **branco-sobre-branco** no dark.
+1. O Composer de e-mail sempre abre como pop-up fixo no canto inferior direito. Quando há um lugar natural na tela (painel "E-mails" do lead, página Contatos, lista de Deals), ele deveria abrir **embaixo do botão "Novo e-mail"** ocupando aquele espaço. Só quando não houver lugar próprio é que faz sentido abrir centralizado.
+2. E-mails enviados chegam ao destinatário com **assunto e corpo vazios**. Causa: o `buildRaw` em `supabase/functions/gmail-send/index.ts` monta o MIME concatenando o assunto e o HTML como strings cruas e depois aplica `b64url` no envelope inteiro. Caracteres acentuados (português) quebram o cabeçalho `Subject` (precisa de encoding RFC 2047) e o corpo precisa de `Content-Transfer-Encoding: base64` para sobreviver à codificação. Resultado: Gmail descarta/zera os campos.
 
-Além disso, ~40 arquivos usam classes hardcoded (`text-black`, `text-zinc-900`, `bg-white`) que ficam ilegíveis em superfícies escuras.
+## Plano
 
-## Mudanças
+### 1. Composer com modo "inline" + "popup" + "modal"
 
-### 1. `src/index.css` — consertar tokens do dark theme (`:root`)
+Editar `src/components/crm/email/Composer.tsx`:
 
-```css
---card: 222 45% 9%;
---card-foreground: 220 25% 94%;
---popover: 222 45% 9%;
---popover-foreground: 220 25% 94%;
---border: 222 30% 18%;
---input: 222 30% 14%;
---sidebar-background: 222 55% 6%;
---sidebar-accent: 222 35% 14%;
---sidebar-border: 222 30% 18%;
-```
+- Adicionar prop `variant?: "popup" | "inline" | "modal"` (default `"popup"` para retrocompatibilidade).
+- `variant="inline"`: remove `fixed/right-6/bottom-0`, remove `createPortal`, renderiza dentro do fluxo do componente pai, em um card que ocupa 100% da largura disponível, altura adaptativa. Mantém todos os controles, exceto minimizar/tela cheia (ou esconde apenas quando inline).
+- `variant="modal"`: `fixed inset-0` com backdrop, card centralizado (max-w-2xl).
+- `variant="popup"`: comportamento atual.
+- Garantir contraste correto em ambos os temas (já usa tokens `bg-card/text-card-foreground/border-border`, manter).
 
-Isso conserta automaticamente o Composer + todos os primitivos shadcn no dark, sem afetar o tema claro (que já tem overrides em `html.light`).
+### 2. Trocar os call-sites para usar `inline` onde faz sentido
 
-### 2. `src/index.css` — bloco de override anti-contraste para o dark
+- `src/pages/CrmDealDetail.tsx` `EmailPanel`: ao clicar em "Novo e-mail", renderizar `<Composer variant="inline" ... />` logo abaixo do header do painel (e esconder a lista enquanto compõe, ou empurrar para baixo — empurrar para baixo é melhor).
+- `src/components/crm/email/InboxView.tsx`: manter `popup` (a inbox já é uma tela cheia de e-mail, o popup do canto faz sentido lá, igual Gmail).
+- `src/pages/crm/Contatos.tsx`: trocar para `variant="modal"` (centro da tela) — a página é uma tabela de contatos, não tem lugar natural inline.
+- `src/components/crm/DealListView.tsx`: trocar para `variant="modal"`.
 
-Espelho do que já existe em `html.light`, neutralizando classes hardcoded:
+### 3. Corrigir envio de e-mail (assunto/corpo em branco)
 
-```css
-html:not(.light) .text-black,
-html:not(.light) .text-zinc-900,
-html:not(.light) .text-zinc-800,
-html:not(.light) .text-gray-900,
-html:not(.light) .text-gray-800,
-html:not(.light) .text-slate-900 { color: hsl(220 25% 94%) !important; }
+Editar `supabase/functions/gmail-send/index.ts`, função `buildRaw`:
 
-html:not(.light) .bg-white { background-color: hsl(222 45% 9%) !important; }
-html:not(.light) .bg-zinc-100,
-html:not(.light) .bg-zinc-200,
-html:not(.light) .bg-gray-100 { background-color: hsl(222 35% 12%) !important; }
-```
+- Codificar `Subject` (e `To`/`Cc`/`Bcc` quando tiverem nome com acento) em RFC 2047:  
+  `Subject: =?UTF-8?B?<base64 do subject>?=`
+- Adicionar header `Content-Transfer-Encoding: base64` e codificar o corpo HTML em base64 (em linhas de 76 chars):
+  ```
+  Content-Type: text/html; charset="UTF-8"
+  Content-Transfer-Encoding: base64
 
-Cinto de segurança sem risco de regressão no light.
+  <base64 do html>
+  ```
+- Manter `b64url` final do envelope (exigência da Gmail API).
+- Sempre incluir `From: me` não é necessário (Gmail preenche), mas garantir CRLF entre headers e corpo (uma linha em branco) — já existe.
 
-### 3. Validação
+### 4. Validação
 
-- Browser screenshot do Composer em dark e light.
-- Crop e verificação de contraste em 4 telas críticas: `/crm/deal/:id`, `/crm/email`, `/crm/contatos`, `/ceo/financeiro`.
-- Alternar tema (`html.light`) e reconfirmar que nada quebrou no claro.
+- Após o deploy automático da edge function, enviar um e-mail de teste com acento no assunto ("Olá — teste de envio") e corpo com acentos a partir do painel do deal e confirmar que o destinatário recebe assunto e corpo corretos.
+- Verificar visualmente que o composer abre **inline** no painel do deal (e empurra a lista de e-mails para baixo) e **modal centralizado** em Contatos/DealList.
 
-## Fora de escopo
+## Arquivos afetados
 
-- Não reescrever os 40 arquivos com classes hardcoded — os overrides do passo 2 resolvem.
-- Não tocar no tema claro nem nas classes `glass-*`.
-
-## Arquivo alterado
-
-- `src/index.css` (único)
+- `src/components/crm/email/Composer.tsx` (adicionar variant)
+- `src/pages/CrmDealDetail.tsx` (usar inline)
+- `src/pages/crm/Contatos.tsx` (usar modal)
+- `src/components/crm/DealListView.tsx` (usar modal)
+- `supabase/functions/gmail-send/index.ts` (encoding MIME correto)
