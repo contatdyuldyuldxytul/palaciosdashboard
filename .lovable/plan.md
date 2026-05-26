@@ -1,52 +1,61 @@
-## Problema
+## Diagnóstico
 
-1. O Composer de e-mail sempre abre como pop-up fixo no canto inferior direito. Quando há um lugar natural na tela (painel "E-mails" do lead, página Contatos, lista de Deals), ele deveria abrir **embaixo do botão "Novo e-mail"** ocupando aquele espaço. Só quando não houver lugar próprio é que faz sentido abrir centralizado.
-2. E-mails enviados chegam ao destinatário com **assunto e corpo vazios**. Causa: o `buildRaw` em `supabase/functions/gmail-send/index.ts` monta o MIME concatenando o assunto e o HTML como strings cruas e depois aplica `b64url` no envelope inteiro. Caracteres acentuados (português) quebram o cabeçalho `Subject` (precisa de encoding RFC 2047) e o corpo precisa de `Content-Transfer-Encoding: base64` para sobreviver à codificação. Resultado: Gmail descarta/zera os campos.
+O último envio retornou `200 { id: "19e64910...", labelIds: ["SENT"] }` — para o Gmail, **a mensagem foi aceita e enviada**. Mesmo assim, o destinatário não vê assunto nem corpo. Como tanto o assunto ("Sobre titopalaciosg5@gmail.com" — ASCII puro) quanto o corpo ("Teste 12345678") sumiram, o problema não é encoding de acentos — é o **formato do MIME** sendo aceito pelo Gmail mas interpretado como cabeçalhos vazios + corpo vazio.
+
+A causa mais provável: o `raw` da Gmail API exige uma mensagem RFC 2822 **completa**. Quando faltam headers obrigatórios (`From`, `Date`, `Message-ID`) e o `Content-Transfer-Encoding: base64` é aplicado sem o corpo estar perfeitamente conforme, alguns servidores Gmail aceitam o envelope mas reenviam apenas o cabeçalho — o destinatário recebe um "phantom email". Também é possível que `b64url` em cima de um MIME que já tem base64 chunked com CRLF esteja embaralhando o boundary entre headers e corpo.
+
+Não dá para confirmar sem ver o MIME exato que está sendo gerado. Por isso o plano começa por **instrumentar** a edge function.
 
 ## Plano
 
-### 1. Composer com modo "inline" + "popup" + "modal"
+### 1. Instrumentar `supabase/functions/gmail-send/index.ts`
 
-Editar `src/components/crm/email/Composer.tsx`:
+- Antes de enviar para o gateway, logar:
+  - O MIME **decodificado** (string crua antes do `b64url`)
+  - O length do `raw` final
+  - O status + body completo da resposta do Gmail API
+- Logar também o `id` retornado para conseguir cruzar com a mensagem no Gmail.
 
-- Adicionar prop `variant?: "popup" | "inline" | "modal"` (default `"popup"` para retrocompatibilidade).
-- `variant="inline"`: remove `fixed/right-6/bottom-0`, remove `createPortal`, renderiza dentro do fluxo do componente pai, em um card que ocupa 100% da largura disponível, altura adaptativa. Mantém todos os controles, exceto minimizar/tela cheia (ou esconde apenas quando inline).
-- `variant="modal"`: `fixed inset-0` com backdrop, card centralizado (max-w-2xl).
-- `variant="popup"`: comportamento atual.
-- Garantir contraste correto em ambos os temas (já usa tokens `bg-card/text-card-foreground/border-border`, manter).
+### 2. Reescrever `buildRaw` para um MIME que sabidamente funciona
 
-### 2. Trocar os call-sites para usar `inline` onde faz sentido
+Trocar a estratégia para algo mais robusto e mais próximo do que o Gmail espera:
 
-- `src/pages/CrmDealDetail.tsx` `EmailPanel`: ao clicar em "Novo e-mail", renderizar `<Composer variant="inline" ... />` logo abaixo do header do painel (e esconder a lista enquanto compõe, ou empurrar para baixo — empurrar para baixo é melhor).
-- `src/components/crm/email/InboxView.tsx`: manter `popup` (a inbox já é uma tela cheia de e-mail, o popup do canto faz sentido lá, igual Gmail).
-- `src/pages/crm/Contatos.tsx`: trocar para `variant="modal"` (centro da tela) — a página é uma tabela de contatos, não tem lugar natural inline.
-- `src/components/crm/DealListView.tsx`: trocar para `variant="modal"`.
+- **Adicionar headers obrigatórios**:
+  - `From: me` (Gmail substitui automaticamente pelo e-mail autenticado)
+  - `Date:` com data atual em formato RFC 2822
+  - `Message-ID: <uuid@palacios-os>`
+- **Voltar para envio sem `Content-Transfer-Encoding: base64`** no caso simples (texto puro/HTML curto), porque foi assim que sempre funcionou no Gmail e o `b64url` final já cuida do transporte. Manter o encoding RFC 2047 apenas no `Subject` (para acentos).
+- Garantir CRLF (`\r\n`) em todas as quebras de linha — incluindo a separação header/body.
 
-### 3. Corrigir envio de e-mail (assunto/corpo em branco)
+Formato final:
+```
+From: me
+To: <to>
+Subject: =?UTF-8?B?<base64 subject>?=   (ou plain se ASCII)
+Date: <RFC 2822 date>
+Message-ID: <uuid@palacios-os.local>
+MIME-Version: 1.0
+Content-Type: text/html; charset="UTF-8"
 
-Editar `supabase/functions/gmail-send/index.ts`, função `buildRaw`:
+<HTML cru>
+```
 
-- Codificar `Subject` (e `To`/`Cc`/`Bcc` quando tiverem nome com acento) em RFC 2047:  
-  `Subject: =?UTF-8?B?<base64 do subject>?=`
-- Adicionar header `Content-Transfer-Encoding: base64` e codificar o corpo HTML em base64 (em linhas de 76 chars):
-  ```
-  Content-Type: text/html; charset="UTF-8"
-  Content-Transfer-Encoding: base64
+Depois `b64url` no envelope inteiro (Gmail API exige `raw` em URL-safe base64). Como o body é HTML cru (texto), o `b64url` que internamente faz `unescape(encodeURIComponent(...))` preserva os acentos.
 
-  <base64 do html>
-  ```
-- Manter `b64url` final do envelope (exigência da Gmail API).
-- Sempre incluir `From: me` não é necessário (Gmail preenche), mas garantir CRLF entre headers e corpo (uma linha em branco) — já existe.
+### 3. Deploy + teste imediato via `curl_edge_functions`
 
-### 4. Validação
+Após editar:
+- Deploy automático.
+- Chamar a função com payload de teste e ler os logs (`edge_function_logs`) para validar:
+  - O MIME montado está correto;
+  - O Gmail retornou um id válido;
+  - O `From` está sendo preenchido pela conta autenticada.
+- Pedir ao usuário para confirmar que o e-mail de teste chegou com assunto + corpo no destinatário.
 
-- Após o deploy automático da edge function, enviar um e-mail de teste com acento no assunto ("Olá — teste de envio") e corpo com acentos a partir do painel do deal e confirmar que o destinatário recebe assunto e corpo corretos.
-- Verificar visualmente que o composer abre **inline** no painel do deal (e empurra a lista de e-mails para baixo) e **modal centralizado** em Contatos/DealList.
+### 4. Se ainda assim falhar
 
-## Arquivos afetados
+Se o teste mostrar MIME correto mas o destinatário continuar não recebendo conteúdo, o próximo passo é trocar de `users/me/messages/send` com `raw` para usar `users/me/drafts` → send do draft, que faz o parsing server-side mais tolerante. Decidir baseado no resultado do passo 3.
 
-- `src/components/crm/email/Composer.tsx` (adicionar variant)
-- `src/pages/CrmDealDetail.tsx` (usar inline)
-- `src/pages/crm/Contatos.tsx` (usar modal)
-- `src/components/crm/DealListView.tsx` (usar modal)
-- `supabase/functions/gmail-send/index.ts` (encoding MIME correto)
+## Arquivo afetado
+
+- `supabase/functions/gmail-send/index.ts`
