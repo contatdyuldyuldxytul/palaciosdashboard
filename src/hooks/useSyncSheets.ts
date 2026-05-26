@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 
-const SYNC_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
+const SYNC_INTERVAL_MS = 2 * 60 * 60 * 1000; // 2 hours
+const MIN_SYNC_GAP_MS = 2 * 60 * 60 * 1000; // never auto-sync more than once every 2h
 
 const SYNC_INVALIDATE_KEYS: string[][] = [
   ["lancamentos"],
@@ -99,6 +100,8 @@ export function useSyncSheets() {
     if (!autoSync) return;
     intervalRef.current = setInterval(() => {
       if (typeof document !== "undefined" && document.hidden) return;
+      const last = localStorage.getItem("lastSheetSync");
+      if (last && Date.now() - new Date(last).getTime() < MIN_SYNC_GAP_MS) return;
       sync(undefined, true);
     }, SYNC_INTERVAL_MS);
 

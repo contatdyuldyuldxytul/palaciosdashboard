@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -8,56 +9,52 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { PasswordGate } from "@/components/PasswordGate";
 import { AppLayout } from "@/layouts/AppLayout";
-
-import { ClientesLayout } from "@/layouts/ClientesLayout";
-import { CeoLayout } from "@/layouts/CeoLayout";
-
-import Dashboard from "@/pages/Dashboard";
-import Leads from "@/pages/Leads";
-import TeamMemberDashboard from "@/pages/TeamMemberDashboard";
-import LdrMemberDashboard from "@/pages/LdrMemberDashboard";
-import ThiagoDashboard from "@/pages/ThiagoDashboard";
-import Funil from "@/pages/Funil";
-import Metas from "@/pages/Metas";
-import Scripts from "@/pages/Scripts";
-import AssistenteVendas from "@/pages/AssistenteVendas";
-
-import AssistenteGeral from "@/pages/AssistenteGeral";
-import ClientesAtivos from "@/pages/ClientesAtivos";
-import HunterNegocios from "@/pages/HunterNegocios";
-import Comissoes from "@/pages/Comissoes";
-import Estrategias from "@/pages/Estrategias";
-
-import Login from "@/pages/Login";
-import ResetPassword from "@/pages/ResetPassword";
-import Placeholder from "@/pages/Placeholder";
-import NotFound from "@/pages/NotFound";
-import CeoFinanceiro from "@/pages/ceo/CeoFinanceiro";
-import CeoMetas from "@/pages/ceo/CeoMetas";
-import CeoSaude from "@/pages/ceo/CeoSaude";
-import CeoPipeline from "@/pages/ceo/CeoPipeline";
-import CeoJuridico from "@/pages/ceo/CeoJuridico";
-import CeoProcessos from "@/pages/ceo/CeoProcessos";
-import CeoMemoria from "@/pages/ceo/CeoMemoria";
-import CeoClientes from "@/pages/ceo/CeoClientes";
-import CeoColaboradores from "@/pages/ceo/CeoColaboradores";
-import Crm from "@/pages/Crm";
-import CrmDealDetail from "@/pages/CrmDealDetail";
-import InstagramLeads from "@/pages/crm/InstagramLeads";
-import Projects from "@/pages/crm/Projects";
-import Atividades from "@/pages/crm/Atividades";
-import Email from "@/pages/crm/Email";
-import Contatos from "@/pages/crm/Contatos";
-import GeracaoLeads from "@/pages/crm/GeracaoLeads";
-import { HistoricoPipedrive } from "@/components/milena/HistoricoPipedrive";
-import { NucleoOperacional } from "@/components/crm/atividades/NucleoOperacional";
-import { InteligenciaComercial } from "@/components/crm/atividades/InteligenciaComercial";
-import { VisaoGestor } from "@/components/crm/atividades/VisaoGestor";
-
-const NucleoOperacionalRoute = () => <NucleoOperacional />;
-const InteligenciaComercialRoute = () => <InteligenciaComercial />;
-const VisaoGestorRoute = () => <VisaoGestor />;
 import { useAuth } from "@/contexts/AuthContext";
+
+// Eager — critical path
+import Dashboard from "@/pages/Dashboard";
+import Login from "@/pages/Login";
+
+// Lazy — everything else
+const ClientesLayout = lazy(() => import("@/layouts/ClientesLayout").then(m => ({ default: m.ClientesLayout })));
+const CeoLayout = lazy(() => import("@/layouts/CeoLayout").then(m => ({ default: m.CeoLayout })));
+const Leads = lazy(() => import("@/pages/Leads"));
+const TeamMemberDashboard = lazy(() => import("@/pages/TeamMemberDashboard"));
+const LdrMemberDashboard = lazy(() => import("@/pages/LdrMemberDashboard"));
+const ThiagoDashboard = lazy(() => import("@/pages/ThiagoDashboard"));
+const Funil = lazy(() => import("@/pages/Funil"));
+const Metas = lazy(() => import("@/pages/Metas"));
+const Scripts = lazy(() => import("@/pages/Scripts"));
+const AssistenteVendas = lazy(() => import("@/pages/AssistenteVendas"));
+const AssistenteGeral = lazy(() => import("@/pages/AssistenteGeral"));
+const ClientesAtivos = lazy(() => import("@/pages/ClientesAtivos"));
+const HunterNegocios = lazy(() => import("@/pages/HunterNegocios"));
+const Comissoes = lazy(() => import("@/pages/Comissoes"));
+const Estrategias = lazy(() => import("@/pages/Estrategias"));
+const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
+const Placeholder = lazy(() => import("@/pages/Placeholder"));
+const NotFound = lazy(() => import("@/pages/NotFound"));
+const CeoFinanceiro = lazy(() => import("@/pages/ceo/CeoFinanceiro"));
+const CeoMetas = lazy(() => import("@/pages/ceo/CeoMetas"));
+const CeoSaude = lazy(() => import("@/pages/ceo/CeoSaude"));
+const CeoPipeline = lazy(() => import("@/pages/ceo/CeoPipeline"));
+const CeoJuridico = lazy(() => import("@/pages/ceo/CeoJuridico"));
+const CeoProcessos = lazy(() => import("@/pages/ceo/CeoProcessos"));
+const CeoMemoria = lazy(() => import("@/pages/ceo/CeoMemoria"));
+const CeoClientes = lazy(() => import("@/pages/ceo/CeoClientes"));
+const CeoColaboradores = lazy(() => import("@/pages/ceo/CeoColaboradores"));
+const Crm = lazy(() => import("@/pages/Crm"));
+const CrmDealDetail = lazy(() => import("@/pages/CrmDealDetail"));
+const InstagramLeads = lazy(() => import("@/pages/crm/InstagramLeads"));
+const Projects = lazy(() => import("@/pages/crm/Projects"));
+const Atividades = lazy(() => import("@/pages/crm/Atividades"));
+const Email = lazy(() => import("@/pages/crm/Email"));
+const Contatos = lazy(() => import("@/pages/crm/Contatos"));
+const GeracaoLeads = lazy(() => import("@/pages/crm/GeracaoLeads"));
+const HistoricoPipedrive = lazy(() => import("@/components/milena/HistoricoPipedrive").then(m => ({ default: m.HistoricoPipedrive })));
+const NucleoOperacional = lazy(() => import("@/components/crm/atividades/NucleoOperacional").then(m => ({ default: m.NucleoOperacional })));
+const InteligenciaComercial = lazy(() => import("@/components/crm/atividades/InteligenciaComercial").then(m => ({ default: m.InteligenciaComercial })));
+const VisaoGestor = lazy(() => import("@/components/crm/atividades/VisaoGestor").then(m => ({ default: m.VisaoGestor })));
 
 function HunterGate() {
   const { isFundador } = useAuth();
@@ -72,10 +69,17 @@ const queryClient = new QueryClient({
       gcTime: 30 * 60 * 1000,
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
+      refetchOnMount: false,
       retry: 1,
     },
   },
 });
+
+const PageFallback = () => (
+  <div className="flex items-center justify-center h-screen w-full">
+    <div className="h-8 w-8 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+  </div>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -85,6 +89,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <Suspense fallback={<PageFallback />}>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/reset-password" element={<ResetPassword />} />
@@ -104,7 +109,6 @@ const App = () => (
               <Route path="/equipe/thiago" element={<ProtectedRoute requireSlug="thiago"><ThiagoDashboard /></ProtectedRoute>} />
               <Route path="/equipe/felipe" element={<TeamMemberDashboard memberName="Felipe" initials="FE" />} />
 
-              {/* Clientes */}
               {/* Clientes */}
               <Route path="/clientes" element={<PasswordGate title="Clientes"><ClientesLayout /></PasswordGate>}>
                 <Route index element={<ClientesAtivos />} />
@@ -137,9 +141,9 @@ const App = () => (
               <Route path="/crm/deal/:id" element={<CrmDealDetail />} />
               <Route path="/crm/projects" element={<Projects />} />
               <Route path="/crm/atividades" element={<Atividades />}>
-                <Route path="nucleo" element={<NucleoOperacionalRoute />} />
-                <Route path="inteligencia" element={<InteligenciaComercialRoute />} />
-                <Route path="gestor" element={<VisaoGestorRoute />} />
+                <Route path="nucleo" element={<NucleoOperacional />} />
+                <Route path="inteligencia" element={<InteligenciaComercial />} />
+                <Route path="gestor" element={<VisaoGestor />} />
               </Route>
               <Route path="/crm/email" element={<Email />} />
               <Route path="/crm/geracao-leads" element={<GeracaoLeads />}>
@@ -165,6 +169,7 @@ const App = () => (
 
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

@@ -1,61 +1,59 @@
+# Plano: Acelerar o Palacios OS
+
+O app está lento principalmente por **três causas estruturais** que identifiquei no código. Abaixo o diagnóstico e o plano de ação, em ordem de impacto.
+
 ## Diagnóstico
 
-O último envio retornou `200 { id: "19e64910...", labelIds: ["SENT"] }` — para o Gmail, **a mensagem foi aceita e enviada**. Mesmo assim, o destinatário não vê assunto nem corpo. Como tanto o assunto ("Sobre titopalaciosg5@gmail.com" — ASCII puro) quanto o corpo ("Teste 12345678") sumiram, o problema não é encoding de acentos — é o **formato do MIME** sendo aceito pelo Gmail mas interpretado como cabeçalhos vazios + corpo vazio.
+**1. Bundle gigante carregado de uma vez** (`src/App.tsx`)
+- Hoje todas as ~50 páginas são importadas no topo do `App.tsx` (Dashboard, CEO, CRM, Clientes, Financeiro, Assistentes, etc). O usuário baixa tudo no primeiro load, mesmo para abrir só uma tela.
 
-A causa mais provável: o `raw` da Gmail API exige uma mensagem RFC 2822 **completa**. Quando faltam headers obrigatórios (`From`, `Date`, `Message-ID`) e o `Content-Transfer-Encoding: base64` é aplicado sem o corpo estar perfeitamente conforme, alguns servidores Gmail aceitam o envelope mas reenviam apenas o cabeçalho — o destinatário recebe um "phantom email". Também é possível que `b64url` em cima de um MIME que já tem base64 chunked com CRLF esteja embaralhando o boundary entre headers e corpo.
+**2. Auto-sync pesado rodando em background**
+- `useSyncSheets` dispara sincronização do Google Sheets a cada **30 min** (10+ abas, milhares de linhas) — invalida 11 query keys de uma vez, forçando re-render em cascata.
+- `usePipedrive` dispara sync a cada **2h** chamando a edge function `sync-pipedrive` (pesada, com risco de 429).
+- Esses syncs concorrem com a navegação e travam a UI quando disparam.
 
-Não dá para confirmar sem ver o MIME exato que está sendo gerado. Por isso o plano começa por **instrumentar** a edge function.
+**3. Queries sem cache adequado / re-fetch excessivo**
+- Vários hooks (`useLeads`, `useLancamentos`, `useClientesCEO`, etc.) provavelmente não respeitam o `staleTime` global de 5 min porque são invalidados em massa pelos syncs.
+- `useParcelaMatcher` roda um `useMemo` pesado (loop O(n×m) com regex por descrição) e ainda dispara `supabase.update` em paralelo — toda vez que muda lançamento ou cliente.
 
-## Plano
+## Plano de ação (4 frentes)
 
-### 1. Instrumentar `supabase/functions/gmail-send/index.ts`
+### Frente 1 — Code splitting por rota (impacto alto, risco baixo)
+- Converter os imports de páginas em `App.tsx` para `React.lazy(() => import(...))`.
+- Envolver `<Routes>` em `<Suspense fallback={<LoadingScreen />}>`.
+- Manter eager apenas: `Login`, `Dashboard`, `AppLayout`, `ProtectedRoute`.
+- Resultado esperado: bundle inicial cai 60–80%, first paint muito mais rápido.
 
-- Antes de enviar para o gateway, logar:
-  - O MIME **decodificado** (string crua antes do `b64url`)
-  - O length do `raw` final
-  - O status + body completo da resposta do Gmail API
-- Logar também o `id` retornado para conseguir cruzar com a mensagem no Gmail.
+### Frente 2 — Reduzir trabalho em background
+- `useSyncSheets`: aumentar intervalo de **30 min → 2 h**, e só rodar quando `document.visibilityState === "visible"` E última sync > 2h (já tem o gate de visibility, falta o gate de tempo).
+- `usePipedrive`: aumentar `staleTime` de 60s → 10 min, manter auto-sync de 2h mas pular se aba escondida.
+- Invalidação granular: em vez de invalidar 11 keys de uma vez no sync-sheets, invalidar só as keys das abas que efetivamente vieram com `success: true` e `count > 0`.
 
-### 2. Reescrever `buildRaw` para um MIME que sabidamente funciona
+### Frente 3 — Otimizar `useParcelaMatcher`
+- Pré-computar o mapa de aliases uma vez (fora do loop).
+- Só persistir no Supabase quando o usuário estiver na tela de CEO/Clientes (mover o `update` para um hook explícito `useSyncParcelas` que roda sob demanda, não dentro do `useMemo`).
 
-Trocar a estratégia para algo mais robusto e mais próximo do que o Gmail espera:
+### Frente 4 — React Query Devtools off + ajustes finos
+- Confirmar `refetchOnMount: false` onde fizer sentido (dashboards que não precisam de dado fresco a cada navegação).
+- Verificar se o `QueryClient` está com `gcTime: 30min` (já está) e considerar `persistQueryClient` no localStorage para sobreviver a refresh.
 
-- **Adicionar headers obrigatórios**:
-  - `From: me` (Gmail substitui automaticamente pelo e-mail autenticado)
-  - `Date:` com data atual em formato RFC 2822
-  - `Message-ID: <uuid@palacios-os>`
-- **Voltar para envio sem `Content-Transfer-Encoding: base64`** no caso simples (texto puro/HTML curto), porque foi assim que sempre funcionou no Gmail e o `b64url` final já cuida do transporte. Manter o encoding RFC 2047 apenas no `Subject` (para acentos).
-- Garantir CRLF (`\r\n`) em todas as quebras de linha — incluindo a separação header/body.
+## Detalhes técnicos
 
-Formato final:
+```text
+Arquivos afetados:
+  src/App.tsx                    → lazy + Suspense
+  src/hooks/useSyncSheets.ts     → intervalo + gate de tempo
+  src/hooks/usePipedrive.ts      → staleTime + visibility gate
+  src/hooks/useParcelaMatcher.ts → separar match de persistência
 ```
-From: me
-To: <to>
-Subject: =?UTF-8?B?<base64 subject>?=   (ou plain se ASCII)
-Date: <RFC 2822 date>
-Message-ID: <uuid@palacios-os.local>
-MIME-Version: 1.0
-Content-Type: text/html; charset="UTF-8"
 
-<HTML cru>
-```
+Nenhuma mudança visual, nenhuma mudança de funcionalidade — só performance.
 
-Depois `b64url` no envelope inteiro (Gmail API exige `raw` em URL-safe base64). Como o body é HTML cru (texto), o `b64url` que internamente faz `unescape(encodeURIComponent(...))` preserva os acentos.
+## O que NÃO está incluído
 
-### 3. Deploy + teste imediato via `curl_edge_functions`
+- Trocar de provider de hosting / aumentar instância do Lovable Cloud (posso sugerir depois se mesmo com isso continuar lento).
+- Refatorar componentes específicos (Dashboard, CEO) — faria em uma 2ª rodada se necessário.
 
-Após editar:
-- Deploy automático.
-- Chamar a função com payload de teste e ler os logs (`edge_function_logs`) para validar:
-  - O MIME montado está correto;
-  - O Gmail retornou um id válido;
-  - O `From` está sendo preenchido pela conta autenticada.
-- Pedir ao usuário para confirmar que o e-mail de teste chegou com assunto + corpo no destinatário.
+## Próximo passo
 
-### 4. Se ainda assim falhar
-
-Se o teste mostrar MIME correto mas o destinatário continuar não recebendo conteúdo, o próximo passo é trocar de `users/me/messages/send` com `raw` para usar `users/me/drafts` → send do draft, que faz o parsing server-side mais tolerante. Decidir baseado no resultado do passo 3.
-
-## Arquivo afetado
-
-- `supabase/functions/gmail-send/index.ts`
+Quer que eu execute as 4 frentes de uma vez, ou prefere começar só pela **Frente 1 (code splitting)** que já costuma resolver 70% da percepção de lentidão?
