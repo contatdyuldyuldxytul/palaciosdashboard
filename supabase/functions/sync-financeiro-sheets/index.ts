@@ -394,7 +394,7 @@ Deno.serve(async (req) => {
         // try alternative tab name spellings
         await readRange(token, SHEETS_ID, "Entradas e Saídas!A1:Z2000")
       ),
-      readRange(token, SHEETS_ID, "Orçamento!A1:ZZ60"),
+      readRange(token, SHEETS_ID, "Orçamento!A1:ZZ100"),
     ]);
 
     const entradasResult = parseEntradaSaidas(entradasRows);
