@@ -45,11 +45,12 @@ export default function CeoFinDRE() {
     const telefonia = sumCat("Saída", "Telefonia + Internet");
     const equipamentos = sumCat("Saída", "Equipamentos");
     const outras = sumCat("Saída", "Outras Despesas");
+    const fundos = sumCat("Saída", "Fundos");
     const totalDesp = pessoas + equipeVendas + equipeArtistas + educacao + softwares + contabilidade + impostos + telefonia + equipamentos + outras;
     const ebit = receitaLiq - totalDesp;
-    const resultadoLiq = ebit + recOutras;
+    const resultadoLiq = ebit + recOutras - fundos;
 
-    return { recPalacios, recBKV, recOutras, receitaBruta, deducoes, receitaLiq, pessoas, equipeVendas, equipeArtistas, educacao, softwares, contabilidade, impostos, telefonia, equipamentos, outras, totalDesp, ebit, resultadoLiq };
+    return { recPalacios, recBKV, recOutras, receitaBruta, deducoes, receitaLiq, pessoas, equipeVendas, equipeArtistas, educacao, softwares, contabilidade, impostos, telefonia, equipamentos, outras, fundos, totalDesp, ebit, resultadoLiq };
   };
 
   const cur = useMemo(() => calcDRE(curQ.data || []), [curQ.data]);
@@ -88,6 +89,7 @@ export default function CeoFinDRE() {
     { label: "= LUCRO OPERACIONAL (EBIT)", cur: cur.ebit, prev: prev.ebit, bold: true, highlight: true,
       sub: cur.receitaBruta > 0 ? `Margem Operacional: ${pct(cur.ebit / cur.receitaBruta)}` : undefined },
     { label: "(+) Outras Receitas (não operacional)", cur: cur.recOutras, prev: prev.recOutras },
+    { label: "(-) Fundos / Economia (Reserva, Liberdade Financeira, etc.)", cur: -cur.fundos, prev: -prev.fundos },
     { label: "= RESULTADO LÍQUIDO", cur: cur.resultadoLiq, prev: prev.resultadoLiq, bold: true, highlight: true,
       sub: cur.receitaBruta > 0 ? `% Resultado: ${pct(cur.resultadoLiq / cur.receitaBruta)}` : undefined },
   ];

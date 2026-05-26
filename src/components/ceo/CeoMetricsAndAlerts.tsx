@@ -30,10 +30,12 @@ export function CeoMetricsAndAlerts() {
     const recOutras = entriesMes.filter(e => e.classificacao === "Entrada" && e.categoria === "Outras").reduce((s, e) => s + Number(e.valor), 0);
     const receitaBruta = recPalacios + recBKV;
     const totalEntradasMes = receitaBruta + recOutras;
-    const despesasMes = entriesMes.filter(e => e.classificacao === "Saída").reduce((s, e) => s + Number(e.valor), 0);
+    const despesasMes = entriesMes.filter(e => e.classificacao === "Saída" && e.categoria !== "Fundos").reduce((s, e) => s + Number(e.valor), 0);
+    const fundosMes = entriesMes.filter(e => e.classificacao === "Saída" && e.categoria === "Fundos").reduce((s, e) => s + Number(e.valor), 0);
     const issMes = receitaBruta * 0.05;
     const receitaLiq = receitaBruta - issMes;
     const resultadoOp = receitaLiq - despesasMes;
+    const resultadoLiq = resultadoOp - fundosMes;
 
     // Caixa: acumulado histórico
     const totalEntradasHist = entriesAll.filter(e => e.classificacao === "Entrada").reduce((s, e) => s + Number(e.valor), 0);
@@ -48,7 +50,7 @@ export function CeoMetricsAndAlerts() {
     const metaReceita = Number(currentMeta?.meta_receita || 20000);
     const pctMeta = metaReceita > 0 ? (receitaBruta / metaReceita) * 100 : 0;
 
-    return { receitaBruta, totalEntradasMes, resultadoOp, caixa, runway, metaReceita, pctMeta };
+    return { receitaBruta, totalEntradasMes, resultadoOp, resultadoLiq, fundosMes, caixa, runway, metaReceita, pctMeta };
   }, [lancMes.data, lancAll.data, metas.data]);
 
   const contratosMes = summary?.won_this_month ?? 0;
@@ -73,13 +75,15 @@ export function CeoMetricsAndAlerts() {
         <p className="text-[10px] mt-1 font-medium" style={{ color: AMBER }}>{metrics.pctMeta.toFixed(0)}% atingido</p>
       </div>
 
-      {/* Resultado Operacional */}
+      {/* Resultado Líquido */}
       <div className="glass-card p-4">
-        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Resultado Operacional</p>
-        <p className={`text-lg font-bold mt-1 ${metrics.resultadoOp >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-          <AnimatedNumber value={metrics.resultadoOp} formatAsCurrency />
+        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Resultado Líquido</p>
+        <p className={`text-lg font-bold mt-1 ${metrics.resultadoLiq >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+          <AnimatedNumber value={metrics.resultadoLiq} formatAsCurrency />
         </p>
-        <p className="text-[10px] text-muted-foreground mt-1">Rec. Líquida − Despesas (mês)</p>
+        <p className="text-[10px] text-muted-foreground mt-1">
+          Rec. Líq. − Despesas {metrics.fundosMes > 0 ? `− Fundos (R$ ${metrics.fundosMes.toLocaleString("pt-BR")})` : ""}
+        </p>
       </div>
 
       {/* Caixa */}
