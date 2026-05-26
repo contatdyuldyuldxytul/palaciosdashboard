@@ -1,5 +1,4 @@
 // deno-lint-ignore-file no-explicit-any
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,44 +7,46 @@ const corsHeaders = {
 
 const GATEWAY = "https://connector-gateway.lovable.dev/google_mail/gmail/v1";
 
+// URL-safe base64 (no padding) — required by Gmail API's `raw` field.
 function b64url(s: string): string {
   return btoa(unescape(encodeURIComponent(s)))
     .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-// Plain base64 (with padding, no URL-safe substitutions) for MIME body encoding.
+// Standard base64 for header encoding only.
 function b64(s: string): string {
   return btoa(unescape(encodeURIComponent(s)));
 }
 
-// RFC 2047 encoded-word for headers containing non-ASCII characters.
+// RFC 2047 encoded-word for header values containing non-ASCII characters.
 function encodeHeader(value: string): string {
   // eslint-disable-next-line no-control-regex
   if (/^[\x00-\x7F]*$/.test(value)) return value;
   return `=?UTF-8?B?${b64(value)}?=`;
 }
 
-// Split base64 string into lines of 76 chars (RFC 2045).
-function chunk76(s: string): string {
-  return s.match(/.{1,76}/g)?.join("\r\n") ?? s;
-}
-
-function buildRaw(opts: { to: string; cc?: string; bcc?: string; subject: string; html: string; inReplyTo?: string; references?: string; }) {
-  const encodedBody = chunk76(b64(opts.html));
-  const lines = [
+function buildRaw(opts: {
+  to: string; cc?: string; bcc?: string; subject: string; html: string;
+  inReplyTo?: string; references?: string;
+}) {
+  const headers: string[] = [
+    `From: me`,
     `To: ${opts.to}`,
-    opts.cc ? `Cc: ${opts.cc}` : "",
-    opts.bcc ? `Bcc: ${opts.bcc}` : "",
-    `Subject: ${encodeHeader(opts.subject)}`,
-    `MIME-Version: 1.0`,
-    `Content-Type: text/html; charset="UTF-8"`,
-    `Content-Transfer-Encoding: base64`,
-    opts.inReplyTo ? `In-Reply-To: ${opts.inReplyTo}` : "",
-    opts.references ? `References: ${opts.references}` : "",
-    "",
-    encodedBody,
-  ].filter(Boolean).join("\r\n");
-  return b64url(lines);
+  ];
+  if (opts.cc) headers.push(`Cc: ${opts.cc}`);
+  if (opts.bcc) headers.push(`Bcc: ${opts.bcc}`);
+  headers.push(`Subject: ${encodeHeader(opts.subject)}`);
+  headers.push(`Date: ${new Date().toUTCString()}`);
+  headers.push(`Message-ID: <${crypto.randomUUID()}@palacios-os.local>`);
+  headers.push(`MIME-Version: 1.0`);
+  headers.push(`Content-Type: text/html; charset="UTF-8"`);
+  if (opts.inReplyTo) headers.push(`In-Reply-To: ${opts.inReplyTo}`);
+  if (opts.references) headers.push(`References: ${opts.references}`);
+
+  // Body is plain HTML — Gmail will accept it as-is. The b64url wrap at the
+  // end handles transport encoding so the HTML can contain any UTF-8.
+  const mime = headers.join("\r\n") + "\r\n\r\n" + opts.html;
+  return { raw: b64url(mime), mime };
 }
 
 Deno.serve(async (req) => {
@@ -67,8 +68,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    const raw = buildRaw({ to, cc, bcc, subject, html, inReplyTo, references });
+    const { raw, mime } = buildRaw({ to, cc, bcc, subject, html, inReplyTo, references });
 
+    console.log("[gmail-send] MIME being sent:\n" + mime);
+    console.log("[gmail-send] raw length:", raw.length);
 
     const path = mode === "draft" ? "/users/me/drafts" : "/users/me/messages/send";
     const body = mode === "draft"
@@ -86,6 +89,8 @@ Deno.serve(async (req) => {
     });
 
     const data = await r.json();
+    console.log("[gmail-send] Gmail response status:", r.status, "body:", JSON.stringify(data));
+
     if (!r.ok) {
       return new Response(JSON.stringify({ error: data }), {
         status: r.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -96,6 +101,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e: any) {
+    console.error("[gmail-send] error:", e);
     return new Response(JSON.stringify({ error: String(e?.message || e) }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
