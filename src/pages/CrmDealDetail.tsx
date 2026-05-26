@@ -128,9 +128,20 @@ export default function CrmDealDetail() {
   };
 
   const handlePatchPerson = async (patch: Record<string, any>) => {
-    if (!deal.person_id) return;
     try {
-      await updatePerson.mutateAsync({ id: deal.person_id, patch });
+      let personId = deal.person_id;
+      if (!personId) {
+        const { data: newP, error } = await supabase
+          .from("crm_persons")
+          .insert({ nome: patch.first_name || patch.last_name || patch.email || "Novo contato", ...patch })
+          .select()
+          .single();
+        if (error) throw error;
+        personId = newP.id;
+        await updateDeal.mutateAsync({ id: deal.id, patch: { person_id: personId } });
+      } else {
+        await updatePerson.mutateAsync({ id: personId, patch });
+      }
       refresh();
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
@@ -138,9 +149,20 @@ export default function CrmDealDetail() {
   };
 
   const handlePatchOrg = async (patch: Record<string, any>) => {
-    if (!deal.organization_id) return;
     try {
-      await updateOrg.mutateAsync({ id: deal.organization_id, patch });
+      let orgId = deal.organization_id;
+      if (!orgId) {
+        const { data: newO, error } = await supabase
+          .from("crm_organizations")
+          .insert({ nome: patch.nome || "Nova empresa", ...patch })
+          .select()
+          .single();
+        if (error) throw error;
+        orgId = newO.id;
+        await updateDeal.mutateAsync({ id: deal.id, patch: { organization_id: orgId } });
+      } else {
+        await updateOrg.mutateAsync({ id: orgId, patch });
+      }
       refresh();
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
