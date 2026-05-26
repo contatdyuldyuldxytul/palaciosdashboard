@@ -30,10 +30,12 @@ export function CeoMetricsAndAlerts() {
     const recOutras = entriesMes.filter(e => e.classificacao === "Entrada" && e.categoria === "Outras").reduce((s, e) => s + Number(e.valor), 0);
     const receitaBruta = recPalacios + recBKV;
     const totalEntradasMes = receitaBruta + recOutras;
-    const despesasMes = entriesMes.filter(e => e.classificacao === "Saída").reduce((s, e) => s + Number(e.valor), 0);
+    const despesasMes = entriesMes.filter(e => e.classificacao === "Saída" && e.categoria !== "Fundos").reduce((s, e) => s + Number(e.valor), 0);
+    const fundosMes = entriesMes.filter(e => e.classificacao === "Saída" && e.categoria === "Fundos").reduce((s, e) => s + Number(e.valor), 0);
     const issMes = receitaBruta * 0.05;
     const receitaLiq = receitaBruta - issMes;
     const resultadoOp = receitaLiq - despesasMes;
+    const resultadoLiq = resultadoOp - fundosMes;
 
     // Caixa: acumulado histórico
     const totalEntradasHist = entriesAll.filter(e => e.classificacao === "Entrada").reduce((s, e) => s + Number(e.valor), 0);
@@ -48,7 +50,7 @@ export function CeoMetricsAndAlerts() {
     const metaReceita = Number(currentMeta?.meta_receita || 20000);
     const pctMeta = metaReceita > 0 ? (receitaBruta / metaReceita) * 100 : 0;
 
-    return { receitaBruta, totalEntradasMes, resultadoOp, caixa, runway, metaReceita, pctMeta };
+    return { receitaBruta, totalEntradasMes, resultadoOp, resultadoLiq, fundosMes, caixa, runway, metaReceita, pctMeta };
   }, [lancMes.data, lancAll.data, metas.data]);
 
   const contratosMes = summary?.won_this_month ?? 0;
