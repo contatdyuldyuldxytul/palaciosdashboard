@@ -10,10 +10,10 @@
     --background: 222 60% 5%;
     --foreground: 220 25% 94%;
 
-    --card: 0 0% 100%;
+    --card: 222 45% 9%;
     --card-foreground: 220 25% 94%;
 
-    --popover: 0 0% 100%;
+    --popover: 222 45% 9%;
     --popover-foreground: 220 25% 94%;
 
     --primary: 217 91% 60%;
@@ -31,19 +31,19 @@
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 100%;
-    --input: 0 0% 100%;
+    --border: 222 30% 18%;
+    --input: 222 30% 14%;
     --ring: 217 91% 60%;
 
     --radius: 1rem;
 
-    --sidebar-background: 0 0% 100%;
+    --sidebar-background: 222 55% 6%;
     --sidebar-foreground: 220 15% 60%;
     --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 222 60% 5%;
-    --sidebar-accent: 0 0% 100%;
+    --sidebar-accent: 222 35% 14%;
     --sidebar-accent-foreground: 220 25% 92%;
-    --sidebar-border: 0 0% 100%;
+    --sidebar-border: 222 30% 18%;
     --sidebar-ring: 217 91% 60%;
 
     /* Custom tokens */
