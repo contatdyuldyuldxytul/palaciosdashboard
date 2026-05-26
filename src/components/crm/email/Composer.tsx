@@ -17,11 +17,15 @@ interface ComposerProps {
   initialSubject?: string;
   initialBody?: string;
   contextKey?: string;
+  /** popup = floating bottom-right (default, Gmail-like).
+   *  inline = renders in normal document flow, full width of parent.
+   *  modal  = centered overlay with backdrop. */
+  variant?: "popup" | "inline" | "modal";
 }
 
 type WinState = "normal" | "minimized" | "fullscreen";
 
-export function Composer({ open, onClose, replyTo, initialTo, initialSubject, initialBody, contextKey }: ComposerProps) {
+export function Composer({ open, onClose, replyTo, initialTo, initialSubject, initialBody, contextKey, variant = "popup" }: ComposerProps) {
   const isReply = !!replyTo;
   const draftKey = useMemo(
     () => `palacios-draft:${contextKey || (isReply ? `reply-${replyTo?.id}` : "new")}`,
