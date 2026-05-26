@@ -233,12 +233,14 @@ export default function CrmDealDetail() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Main column */}
-        <div className="lg:col-span-2 space-y-4">
+        {/* Main column (now RIGHT) */}
+        <div className="lg:col-span-2 lg:order-2 space-y-4">
           <Tabs defaultValue="atividades">
             <TabsList className="glass-card border border-white/10">
               <TabsTrigger value="atividades">Atividades</TabsTrigger>
               <TabsTrigger value="notas">Notas</TabsTrigger>
+              <TabsTrigger value="email">E-mail</TabsTrigger>
+              <TabsTrigger value="files">Files</TabsTrigger>
             </TabsList>
 
             <TabsContent value="atividades" className="mt-4">
@@ -256,6 +258,18 @@ export default function CrmDealDetail() {
                 notes={notes}
                 onCreate={async (conteudo) => { await createNote.mutateAsync({ deal_id: deal.id, conteudo }); }}
               />
+            </TabsContent>
+
+            <TabsContent value="email" className="mt-4">
+              <EmailPanel
+                dealId={deal.id}
+                personEmail={person?.email || ""}
+                personName={person?.nome || ""}
+              />
+            </TabsContent>
+
+            <TabsContent value="files" className="mt-4">
+              <FilesPanel dealId={deal.id} />
             </TabsContent>
           </Tabs>
 
@@ -276,8 +290,8 @@ export default function CrmDealDetail() {
           </div>
         </div>
 
-        {/* Right sidebar */}
-        <div className="space-y-4">
+        {/* Sidebar (now LEFT) */}
+        <div className="lg:order-1 space-y-4">
           {/* SUMÁRIO */}
           <SectionCard title="Sumário">
             <Field label="Valor">
