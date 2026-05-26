@@ -1125,6 +1125,8 @@ export type Database = {
           completed: boolean
           completed_at: string | null
           created_at: string
+          flow_node_id: string | null
+          flow_run_id: string | null
           id: string
           notes: string | null
           priority: number
@@ -1142,6 +1144,8 @@ export type Database = {
           completed?: boolean
           completed_at?: string | null
           created_at?: string
+          flow_node_id?: string | null
+          flow_run_id?: string | null
           id?: string
           notes?: string | null
           priority?: number
@@ -1159,6 +1163,8 @@ export type Database = {
           completed?: boolean
           completed_at?: string | null
           created_at?: string
+          flow_node_id?: string | null
+          flow_run_id?: string | null
           id?: string
           notes?: string | null
           priority?: number
@@ -1584,6 +1590,7 @@ export type Database = {
       flow_runs: {
         Row: {
           context: Json | null
+          crm_deal_id: string | null
           current_node_id: string | null
           error: string | null
           finished_at: string | null
@@ -1593,9 +1600,11 @@ export type Database = {
           resume_at: string | null
           started_at: string
           status: string
+          waiting_activity_id: string | null
         }
         Insert: {
           context?: Json | null
+          crm_deal_id?: string | null
           current_node_id?: string | null
           error?: string | null
           finished_at?: string | null
@@ -1605,9 +1614,11 @@ export type Database = {
           resume_at?: string | null
           started_at?: string
           status?: string
+          waiting_activity_id?: string | null
         }
         Update: {
           context?: Json | null
+          crm_deal_id?: string | null
           current_node_id?: string | null
           error?: string | null
           finished_at?: string | null
@@ -1617,6 +1628,7 @@ export type Database = {
           resume_at?: string | null
           started_at?: string
           status?: string
+          waiting_activity_id?: string | null
         }
         Relationships: [
           {
@@ -1788,6 +1800,27 @@ export type Database = {
           recebimentos_clientes_real?: number | null
           venda_ativos_proj?: number | null
           venda_ativos_real?: number | null
+        }
+        Relationships: []
+      }
+      integration_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
         }
         Relationships: []
       }
@@ -2854,7 +2887,7 @@ export type Database = {
       }
     }
     Enums: {
-      activity_source: "auto" | "manual" | "claude_briefing"
+      activity_source: "auto" | "manual" | "claude_briefing" | "flow"
       activity_type:
         | "cadence"
         | "strategic"
@@ -3028,7 +3061,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      activity_source: ["auto", "manual", "claude_briefing"],
+      activity_source: ["auto", "manual", "claude_briefing", "flow"],
       activity_type: [
         "cadence",
         "strategic",
