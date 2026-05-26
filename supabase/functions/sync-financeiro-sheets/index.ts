@@ -399,8 +399,9 @@ Deno.serve(async (req) => {
 
     const entradasResult = parseEntradaSaidas(entradasRows);
     const salarioResult = parseSalarioThiago(orcamentoRows);
+    const economiaResult = parseEconomia(orcamentoRows);
 
-    const allItems = [...entradasResult.items, ...salarioResult.items];
+    const allItems = [...entradasResult.items, ...salarioResult.items, ...economiaResult.items];
 
     if (dryRun) {
       return new Response(JSON.stringify({
@@ -410,15 +411,16 @@ Deno.serve(async (req) => {
         debug: {
           entradaSaidas: entradasResult.debug,
           salarioThiago: salarioResult.debug,
+          economia: economiaResult.debug,
         },
-        sample: allItems.slice(0, 20),
+        sample: allItems.slice(0, 30),
+        economiaItems: economiaResult.items,
         total: allItems.length,
       }, null, 2), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Map to lancamentos schema (the table the CEO panel reads from)
     const lancamentosRows = allItems.map((it) => {
       const [y, m] = it.data.split("-");
       return {
@@ -432,11 +434,10 @@ Deno.serve(async (req) => {
       };
     });
 
-    // Wipe previous synced records (keep manual entries intact)
     const { error: delErr } = await supabase
       .from("lancamentos")
       .delete()
-      .in("notas", ["sync:entradas-saidas", "sync:orcamento-salario-thiago"]);
+      .in("notas", ["sync:entradas-saidas", "sync:orcamento-salario-thiago", "sync:economia-fundos"]);
     if (delErr) console.error("delete lancamentos error", delErr);
 
     // Also clean up old data we accidentally pushed to financeiro_empresa earlier
