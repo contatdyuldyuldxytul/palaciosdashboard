@@ -13,10 +13,11 @@ function b64url(s: string): string {
     .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-function buildRaw(opts: { to: string; cc?: string; subject: string; html: string; inReplyTo?: string; references?: string; }) {
+function buildRaw(opts: { to: string; cc?: string; bcc?: string; subject: string; html: string; inReplyTo?: string; references?: string; }) {
   const lines = [
     `To: ${opts.to}`,
     opts.cc ? `Cc: ${opts.cc}` : "",
+    opts.bcc ? `Bcc: ${opts.bcc}` : "",
     `Subject: ${opts.subject}`,
     `MIME-Version: 1.0`,
     `Content-Type: text/html; charset="UTF-8"`,
@@ -40,14 +41,15 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { mode = "send", to, cc, subject, html, threadId, inReplyTo, references } = await req.json();
+    const { mode = "send", to, cc, bcc, subject, html, threadId, inReplyTo, references } = await req.json();
     if (!to || !subject || !html) {
       return new Response(JSON.stringify({ error: "to, subject, html required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const raw = buildRaw({ to, cc, subject, html, inReplyTo, references });
+    const raw = buildRaw({ to, cc, bcc, subject, html, inReplyTo, references });
+
 
     const path = mode === "draft" ? "/users/me/drafts" : "/users/me/messages/send";
     const body = mode === "draft"
