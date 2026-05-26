@@ -322,7 +322,7 @@ export function DealListView({ deals, stages }: { deals: CrmDeal[]; stages: CrmS
       </div>
 
       {emailOpen && (
-        <Composer open={emailOpen} onClose={() => setEmailOpen(false)} initialTo={emailPrefill} />
+        <Composer open={emailOpen} onClose={() => setEmailOpen(false)} initialTo={emailPrefill} variant="modal" />
       )}
     </div>
   );
