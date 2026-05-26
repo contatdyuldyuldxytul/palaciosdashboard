@@ -80,7 +80,7 @@ async function execEmail(sb: any, node: any, ctx: any, dryRun: boolean) {
 async function execWhatsapp(sb: any, node: any, ctx: any, dryRun: boolean) {
   const cfg = node.data?.config || {};
   const rawTo = renderTemplate(cfg.to || ctx.person?.whatsapp || ctx.org?.whatsapp || ctx.person?.telefone || "", ctx);
-  const body = renderTemplate(cfg.body || cfg.template_text || "", ctx);
+  const body = renderTemplate(cfg.message || cfg.body || cfg.template_text || "", ctx);
   if (!rawTo) return { status: "failed", error: "telefone WhatsApp ausente" };
   if (!body) return { status: "failed", error: "corpo da mensagem vazio" };
 
