@@ -128,9 +128,20 @@ export default function CrmDealDetail() {
   };
 
   const handlePatchPerson = async (patch: Record<string, any>) => {
-    if (!deal.person_id) return;
     try {
-      await updatePerson.mutateAsync({ id: deal.person_id, patch });
+      let personId = deal.person_id;
+      if (!personId) {
+        const { data: newP, error } = await supabase
+          .from("crm_persons")
+          .insert({ nome: patch.first_name || patch.last_name || patch.email || "Novo contato", ...patch })
+          .select()
+          .single();
+        if (error) throw error;
+        personId = newP.id;
+        await updateDeal.mutateAsync({ id: deal.id, patch: { person_id: personId } });
+      } else {
+        await updatePerson.mutateAsync({ id: personId, patch });
+      }
       refresh();
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
@@ -138,9 +149,20 @@ export default function CrmDealDetail() {
   };
 
   const handlePatchOrg = async (patch: Record<string, any>) => {
-    if (!deal.organization_id) return;
     try {
-      await updateOrg.mutateAsync({ id: deal.organization_id, patch });
+      let orgId = deal.organization_id;
+      if (!orgId) {
+        const { data: newO, error } = await supabase
+          .from("crm_organizations")
+          .insert({ nome: patch.nome || "Nova empresa", ...patch })
+          .select()
+          .single();
+        if (error) throw error;
+        orgId = newO.id;
+        await updateDeal.mutateAsync({ id: deal.id, patch: { organization_id: orgId } });
+      } else {
+        await updateOrg.mutateAsync({ id: orgId, patch });
+      }
       refresh();
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
@@ -339,53 +361,53 @@ export default function CrmDealDetail() {
           {/* DADOS DO LEAD */}
           <SectionCard title="Dados do Lead">
             <Field label="Telefone">
-              <InlineText value={person?.telefone || ""} onSave={(v) => handlePatchPerson({ telefone: v })} placeholder="—" disabled={!deal.person_id} />
+              <InlineText value={person?.telefone || ""} onSave={(v) => handlePatchPerson({ telefone: v })} placeholder="—" />
             </Field>
             <Field label="Email">
-              <InlineText value={person?.email || ""} onSave={(v) => handlePatchPerson({ email: v })} placeholder="—" disabled={!deal.person_id} />
+              <InlineText value={person?.email || ""} onSave={(v) => handlePatchPerson({ email: v })} placeholder="—" />
             </Field>
             <Field label="First name">
-              <InlineText value={person?.first_name || ""} onSave={(v) => handlePatchPerson({ first_name: v })} placeholder="—" disabled={!deal.person_id} />
+              <InlineText value={person?.first_name || ""} onSave={(v) => handlePatchPerson({ first_name: v })} placeholder="—" />
             </Field>
             <Field label="Last name">
-              <InlineText value={person?.last_name || ""} onSave={(v) => handlePatchPerson({ last_name: v })} placeholder="—" disabled={!deal.person_id} />
+              <InlineText value={person?.last_name || ""} onSave={(v) => handlePatchPerson({ last_name: v })} placeholder="—" />
             </Field>
             <Field label="Cargo">
-              <InlineText value={person?.cargo || ""} onSave={(v) => handlePatchPerson({ cargo: v })} placeholder="—" disabled={!deal.person_id} />
+              <InlineText value={person?.cargo || ""} onSave={(v) => handlePatchPerson({ cargo: v })} placeholder="—" />
             </Field>
             <Field label="LinkedIn">
-              <InlineText value={person?.linkedin || ""} onSave={(v) => handlePatchPerson({ linkedin: v })} placeholder="—" disabled={!deal.person_id} />
+              <InlineText value={person?.linkedin || ""} onSave={(v) => handlePatchPerson({ linkedin: v })} placeholder="—" />
             </Field>
           </SectionCard>
 
           {/* DADOS DA EMPRESA */}
           <SectionCard title="Dados da Empresa">
             <Field label="Nome">
-              <InlineText value={org?.nome || ""} onSave={(v) => handlePatchOrg({ nome: v })} placeholder="—" disabled={!deal.organization_id} />
+              <InlineText value={org?.nome || ""} onSave={(v) => handlePatchOrg({ nome: v })} placeholder="—" />
             </Field>
             <Field label="Endereço">
-              <InlineText value={org?.endereco || ""} onSave={(v) => handlePatchOrg({ endereco: v })} placeholder="—" disabled={!deal.organization_id} />
+              <InlineText value={org?.endereco || ""} onSave={(v) => handlePatchOrg({ endereco: v })} placeholder="—" />
             </Field>
             <Field label="Website">
-              <InlineText value={org?.site || ""} onSave={(v) => handlePatchOrg({ site: v })} placeholder="—" disabled={!deal.organization_id} />
+              <InlineText value={org?.site || ""} onSave={(v) => handlePatchOrg({ site: v })} placeholder="—" />
             </Field>
             <Field label="Nº Colaboradores">
-              <InlineText value={org?.num_colaboradores ?? ""} onSave={(v) => handlePatchOrg({ num_colaboradores: v ? Number(v) : null })} placeholder="—" disabled={!deal.organization_id} />
+              <InlineText value={org?.num_colaboradores ?? ""} onSave={(v) => handlePatchOrg({ num_colaboradores: v ? Number(v) : null })} placeholder="—" />
             </Field>
             <Field label="Porte">
-              <InlineText value={org?.porte || ""} onSave={(v) => handlePatchOrg({ porte: v })} placeholder="—" disabled={!deal.organization_id} />
+              <InlineText value={org?.porte || ""} onSave={(v) => handlePatchOrg({ porte: v })} placeholder="—" />
             </Field>
             <Field label="Faturamento">
-              <InlineText value={org?.faturamento ?? ""} onSave={(v) => handlePatchOrg({ faturamento: v ? Number(v) : null })} placeholder="—" disabled={!deal.organization_id} />
+              <InlineText value={org?.faturamento ?? ""} onSave={(v) => handlePatchOrg({ faturamento: v ? Number(v) : null })} placeholder="—" />
             </Field>
             <Field label="Instagram">
-              <InlineText value={org?.instagram || ""} onSave={(v) => handlePatchOrg({ instagram: v })} placeholder="—" disabled={!deal.organization_id} />
+              <InlineText value={org?.instagram || ""} onSave={(v) => handlePatchOrg({ instagram: v })} placeholder="—" />
             </Field>
             <Field label="LinkedIn">
-              <InlineText value={org?.linkedin || ""} onSave={(v) => handlePatchOrg({ linkedin: v })} placeholder="—" disabled={!deal.organization_id} />
+              <InlineText value={org?.linkedin || ""} onSave={(v) => handlePatchOrg({ linkedin: v })} placeholder="—" />
             </Field>
             <Field label="WhatsApp">
-              <InlineText value={org?.whatsapp || ""} onSave={(v) => handlePatchOrg({ whatsapp: v })} placeholder="—" disabled={!deal.organization_id} />
+              <InlineText value={org?.whatsapp || ""} onSave={(v) => handlePatchOrg({ whatsapp: v })} placeholder="—" />
             </Field>
           </SectionCard>
 
