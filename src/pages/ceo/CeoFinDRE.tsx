@@ -45,11 +45,12 @@ export default function CeoFinDRE() {
     const telefonia = sumCat("Saída", "Telefonia + Internet");
     const equipamentos = sumCat("Saída", "Equipamentos");
     const outras = sumCat("Saída", "Outras Despesas");
+    const fundos = sumCat("Saída", "Fundos");
     const totalDesp = pessoas + equipeVendas + equipeArtistas + educacao + softwares + contabilidade + impostos + telefonia + equipamentos + outras;
     const ebit = receitaLiq - totalDesp;
-    const resultadoLiq = ebit + recOutras;
+    const resultadoLiq = ebit + recOutras - fundos;
 
-    return { recPalacios, recBKV, recOutras, receitaBruta, deducoes, receitaLiq, pessoas, equipeVendas, equipeArtistas, educacao, softwares, contabilidade, impostos, telefonia, equipamentos, outras, totalDesp, ebit, resultadoLiq };
+    return { recPalacios, recBKV, recOutras, receitaBruta, deducoes, receitaLiq, pessoas, equipeVendas, equipeArtistas, educacao, softwares, contabilidade, impostos, telefonia, equipamentos, outras, fundos, totalDesp, ebit, resultadoLiq };
   };
 
   const cur = useMemo(() => calcDRE(curQ.data || []), [curQ.data]);
