@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { LayoutGrid, Workflow, Shield } from "lucide-react";
 import { ProjectsKanban } from "@/components/crm/projects/ProjectsKanban";
-import { FlowsList } from "@/components/crm/projects/FlowsList";
+import { N8nAutomations } from "@/components/crm/projects/N8nAutomations";
 import { AdminPlaceholder } from "@/components/crm/projects/AdminPlaceholder";
 
 type Tab = "kanban" | "fluxos" | "admin";
 
 const TABS: { id: Tab; label: string; icon: any }[] = [
   { id: "kanban", label: "Kanban", icon: LayoutGrid },
-  { id: "fluxos", label: "Fluxos do Processo", icon: Workflow },
+  { id: "fluxos", label: "Automações N8N", icon: Workflow },
   { id: "admin", label: "Admin", icon: Shield },
 ];
 
