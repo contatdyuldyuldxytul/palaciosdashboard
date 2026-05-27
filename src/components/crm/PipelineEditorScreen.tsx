@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { ArrowLeft, ArrowRight, Plus, Trash2, X, Workflow, ExternalLink } from "lucide-react";
+import { ArrowLeft, ArrowRight, Plus, Trash2, X, Workflow, ExternalLink, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -140,6 +140,36 @@ export function PipelineEditorScreen({ mode, pipelineId, onClose, onSaved }: Pro
     }
   };
 
+  const duplicate = async () => {
+    if (!isEdit) return;
+    if (stages.length === 0) {
+      toast({ title: "Nada para duplicar", variant: "destructive" });
+      return;
+    }
+    const baseName = nome.trim() || pipeline?.nome || "Pipeline";
+    try {
+      const created = await create.mutateAsync({
+        nome: `${baseName} (cópia)`,
+        flow_type: "personalizado",
+        flow_id: null,
+        owner_user_id: null,
+        owner_label: null,
+        stages: stages.map((s, i) => ({
+          nome: s.nome,
+          ordem: i,
+          cor: s.cor,
+          is_won: !!s.is_won,
+          is_lost: !!s.is_lost,
+        })),
+      });
+      toast({ title: "Pipeline duplicado", description: "Apenas as etapas foram copiadas." });
+      if (created?.id) onSaved?.(created.id);
+      onClose();
+    } catch (e: any) {
+      toast({ title: "Erro ao duplicar", description: e.message, variant: "destructive" });
+    }
+  };
+
   const pending = create.isPending || update.isPending || replace.isPending;
   const [sidebarOffset, setSidebarOffset] = useState(0);
 
@@ -248,6 +278,17 @@ export function PipelineEditorScreen({ mode, pipelineId, onClose, onSaved }: Pro
         </div>
 
         <div className="ml-auto flex items-center gap-2">
+          {isEdit && (
+            <Button
+              variant="outline"
+              onClick={duplicate}
+              disabled={pending}
+              className="gap-2 border-white/10 bg-white/5 hover:bg-white/10"
+              title="Duplicar pipeline (apenas etapas)"
+            >
+              <Copy className="w-4 h-4" /> Duplicar
+            </Button>
+          )}
           <Button variant="ghost" onClick={onClose}>
             Cancelar
           </Button>
