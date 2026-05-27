@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useN8nWorkflows, useN8nBindings, useN8nExecutions, useN8nTest } from "@/hooks/useN8n";
-import { useCrm } from "@/hooks/useCrm";
+import { useCrmPipelines, useCrmStages } from "@/hooks/useCrm";
 import { toast } from "@/hooks/use-toast";
 
 const EVENT_TYPES = [
@@ -22,7 +22,8 @@ export function N8nAutomations() {
   const bindings = useN8nBindings();
   const execs = useN8nExecutions();
   const test = useN8nTest();
-  const { pipelines, stages } = useCrm();
+  const { data: pipelines } = useCrmPipelines();
+  const { data: stages } = useCrmStages();
 
   const [newBinding, setNewBinding] = useState({ event_type: "crm_stage_enter", workflow_id: "", webhook_url: "", stage_id: "", descricao: "" });
 
