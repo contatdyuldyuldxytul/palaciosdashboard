@@ -278,6 +278,17 @@ export function PipelineEditorScreen({ mode, pipelineId, onClose, onSaved }: Pro
         </div>
 
         <div className="ml-auto flex items-center gap-2">
+          {isEdit && (
+            <Button
+              variant="outline"
+              onClick={duplicate}
+              disabled={pending}
+              className="gap-2 border-white/10 bg-white/5 hover:bg-white/10"
+              title="Duplicar pipeline (apenas etapas)"
+            >
+              <Copy className="w-4 h-4" /> Duplicar
+            </Button>
+          )}
           <Button variant="ghost" onClick={onClose}>
             Cancelar
           </Button>
