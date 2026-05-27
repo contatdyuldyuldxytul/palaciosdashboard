@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { ArrowLeft, ArrowRight, Plus, Trash2, X, Workflow, ExternalLink } from "lucide-react";
+import { ArrowLeft, ArrowRight, Plus, Trash2, X, Workflow, ExternalLink, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
