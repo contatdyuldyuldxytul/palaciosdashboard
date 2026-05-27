@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useN8nWorkflows, useN8nBindings, useN8nExecutions, useN8nTest } from "@/hooks/useN8n";
-import { useCrm } from "@/hooks/useCrm";
+import { useCrmPipelines, useCrmStages } from "@/hooks/useCrm";
 import { toast } from "@/hooks/use-toast";
 
 const EVENT_TYPES = [
