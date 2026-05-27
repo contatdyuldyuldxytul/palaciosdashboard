@@ -135,7 +135,7 @@ export function ImportCsvModal({ open, onOpenChange, pipelineId, stages }: Props
               <Select value={defaultStage} onValueChange={setDefaultStage}>
                 <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>
-                  {stages.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}
+                  {stages.filter((s) => s.id).map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}
                 </SelectContent>
               </Select>
               <p className="text-[10px] text-muted-foreground mt-1">
