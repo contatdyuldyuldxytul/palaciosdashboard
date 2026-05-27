@@ -22,7 +22,8 @@ export function N8nAutomations() {
   const bindings = useN8nBindings();
   const execs = useN8nExecutions();
   const test = useN8nTest();
-  const { pipelines, stages } = useCrm();
+  const { data: pipelines } = useCrmPipelines();
+  const { data: stages } = useCrmStages();
 
   const [newBinding, setNewBinding] = useState({ event_type: "crm_stage_enter", workflow_id: "", webhook_url: "", stage_id: "", descricao: "" });
 
