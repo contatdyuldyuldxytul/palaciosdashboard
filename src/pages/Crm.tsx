@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { LayoutGrid, List, Plus, Download, TrendingUp, Target, CheckCircle2, Search, Upload, FileSpreadsheet, ChevronDown, Workflow } from "lucide-react";
 import { FlowsList } from "@/components/crm/projects/FlowsList";
+import { N8nAutomations } from "@/components/crm/projects/N8nAutomations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -194,7 +195,7 @@ export default function Crm() {
               tab === "fluxos" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Workflow className="w-3 h-3" /> Fluxos
+            <Workflow className="w-3 h-3" /> Automações N8N
           </button>
         </div>
 
@@ -243,11 +244,7 @@ export default function Crm() {
           )}
         </>
       ) : (
-        <FlowsList
-          scope="deals"
-          title="Fluxos de Deals"
-          description="Automatize emails, WhatsApp e movimentações de deals por etapa do pipeline de vendas."
-        />
+        <N8nAutomations />
       )}
 
 
