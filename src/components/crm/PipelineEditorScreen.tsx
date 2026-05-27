@@ -140,6 +140,36 @@ export function PipelineEditorScreen({ mode, pipelineId, onClose, onSaved }: Pro
     }
   };
 
+  const duplicate = async () => {
+    if (!isEdit) return;
+    if (stages.length === 0) {
+      toast({ title: "Nada para duplicar", variant: "destructive" });
+      return;
+    }
+    const baseName = nome.trim() || pipeline?.nome || "Pipeline";
+    try {
+      const created = await create.mutateAsync({
+        nome: `${baseName} (cópia)`,
+        flow_type: "personalizado",
+        flow_id: null,
+        owner_user_id: null,
+        owner_label: null,
+        stages: stages.map((s, i) => ({
+          nome: s.nome,
+          ordem: i,
+          cor: s.cor,
+          is_won: !!s.is_won,
+          is_lost: !!s.is_lost,
+        })),
+      });
+      toast({ title: "Pipeline duplicado", description: "Apenas as etapas foram copiadas." });
+      if (created?.id) onSaved?.(created.id);
+      onClose();
+    } catch (e: any) {
+      toast({ title: "Erro ao duplicar", description: e.message, variant: "destructive" });
+    }
+  };
+
   const pending = create.isPending || update.isPending || replace.isPending;
   const [sidebarOffset, setSidebarOffset] = useState(0);
 
