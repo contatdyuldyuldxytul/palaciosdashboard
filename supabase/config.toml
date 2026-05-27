@@ -26,3 +26,15 @@ verify_jwt = false
 
 [functions.process-email-sequences]
 verify_jwt = false
+
+[functions.n8n-dispatch]
+verify_jwt = false
+
+[functions.crm-context]
+verify_jwt = false
+
+[functions.flow-task-create]
+verify_jwt = false
+
+[functions.flow-task-callback]
+verify_jwt = false
