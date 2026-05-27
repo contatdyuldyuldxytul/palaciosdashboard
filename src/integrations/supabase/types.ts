@@ -2318,6 +2318,145 @@ export type Database = {
         }
         Relationships: []
       }
+      n8n_event_bindings: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          event_filter: Json
+          event_type: string
+          id: string
+          updated_at: string
+          webhook_url: string
+          workflow_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          event_filter?: Json
+          event_type: string
+          id?: string
+          updated_at?: string
+          webhook_url: string
+          workflow_id: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          event_filter?: Json
+          event_type?: string
+          id?: string
+          updated_at?: string
+          webhook_url?: string
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "n8n_event_bindings_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "n8n_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      n8n_executions: {
+        Row: {
+          created_at: string
+          crm_deal_id: string | null
+          error: string | null
+          event_payload: Json | null
+          event_type: string | null
+          finished_at: string | null
+          id: string
+          n8n_execution_id: string | null
+          n8n_workflow_id: string | null
+          related_activity_id: string | null
+          started_at: string
+          status: string
+          workflow_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          crm_deal_id?: string | null
+          error?: string | null
+          event_payload?: Json | null
+          event_type?: string | null
+          finished_at?: string | null
+          id?: string
+          n8n_execution_id?: string | null
+          n8n_workflow_id?: string | null
+          related_activity_id?: string | null
+          started_at?: string
+          status?: string
+          workflow_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          crm_deal_id?: string | null
+          error?: string | null
+          event_payload?: Json | null
+          event_type?: string | null
+          finished_at?: string | null
+          id?: string
+          n8n_execution_id?: string | null
+          n8n_workflow_id?: string | null
+          related_activity_id?: string | null
+          started_at?: string
+          status?: string
+          workflow_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "n8n_executions_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "n8n_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      n8n_workflows: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          id: string
+          last_synced_at: string
+          n8n_workflow_id: string
+          nome: string
+          tags: string[] | null
+          updated_at: string
+          webhook_url: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          last_synced_at?: string
+          n8n_workflow_id: string
+          nome: string
+          tags?: string[] | null
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          last_synced_at?: string
+          n8n_workflow_id?: string
+          nome?: string
+          tags?: string[] | null
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Relationships: []
+      }
       planejamento_mensal: {
         Row: {
           aprovado: boolean
