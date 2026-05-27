@@ -43,7 +43,7 @@ export default function Projects() {
       </div>
 
       {tab === "kanban" && <ProjectsKanban />}
-      {tab === "fluxos" && <FlowsList />}
+      {tab === "fluxos" && <N8nAutomations />}
       {tab === "admin" && <AdminPlaceholder />}
     </div>
   );
