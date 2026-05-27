@@ -135,7 +135,7 @@ export function ImportCsvModal({ open, onOpenChange, pipelineId, stages }: Props
               <Select value={defaultStage} onValueChange={setDefaultStage}>
                 <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>
-                  {stages.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}
+                  {stages.filter((s) => s.id).map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}
                 </SelectContent>
               </Select>
               <p className="text-[10px] text-muted-foreground mt-1">
@@ -154,7 +154,7 @@ export function ImportCsvModal({ open, onOpenChange, pipelineId, stages }: Props
                     <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__none__">— Ignorar —</SelectItem>
-                      {headers.map((h) => <SelectItem key={h} value={h}>{h}</SelectItem>)}
+                      {headers.filter((h) => h && h.trim()).map((h) => <SelectItem key={h} value={h}>{h}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
