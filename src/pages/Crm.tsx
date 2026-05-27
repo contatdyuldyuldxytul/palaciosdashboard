@@ -243,11 +243,7 @@ export default function Crm() {
           )}
         </>
       ) : (
-        <FlowsList
-          scope="deals"
-          title="Fluxos de Deals"
-          description="Automatize emails, WhatsApp e movimentações de deals por etapa do pipeline de vendas."
-        />
+        <N8nAutomations />
       )}
 
 
