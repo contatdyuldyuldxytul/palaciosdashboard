@@ -195,7 +195,7 @@ export default function Crm() {
               tab === "fluxos" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Workflow className="w-3 h-3" /> Fluxos
+            <Workflow className="w-3 h-3" /> Automações N8N
           </button>
         </div>
 
