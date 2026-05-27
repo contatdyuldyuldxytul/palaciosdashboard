@@ -1,117 +1,96 @@
-## Objetivo
+# Integração n8n Cloud — substitui o motor de Fluxos
 
-Transformar a aba **Fluxos do Processo** em automação 100% funcional: quando um deal entra em uma etapa do CRM (ou um projeto vira ativo), o fluxo desenhado no editor **executa de verdade** — envia emails, dispara mensagens de WhatsApp via Twilio, cria tarefas para o colaborador responsável e respeita delays/condições. IA fica de fora nesta fase.
+## Recomendações (das duas dúvidas que você levantou)
 
----
+**Como "mexer no n8n" pelo dashboard:** REST API do n8n Cloud + webhooks. Você gera 1 API key no n8n e salvamos como secret. Com isso o dashboard consegue:
+- Listar todos os workflows da sua conta
+- Ativar / desativar
+- Ver execuções recentes (sucesso, erro, duração)
+- Disparar manualmente ("Executar agora")
+- Abrir o workflow no n8n com 1 clique (link direto)
 
-## Como vai funcionar (visão de produto)
+Não vamos *editar* nodes pelo dashboard — isso é o que o n8n já faz lindamente. A ideia é o dashboard ser o **painel de controle**, e o n8n o **canvas de edição**.
+
+**Como o n8n cria tarefas para colaboradores:** Webhook bidirecional. Mais simples e seguro que dar acesso direto ao banco. Fluxo:
+1. CRM dispara evento → webhook do n8n
+2. n8n decide o que fazer (mandar email, WhatsApp, ler etapa do funil…)
+3. Quando precisa de ação humana, n8n chama uma edge function nossa (`flow-task-create`) que insere em `daily_activities`
+4. Quando o colaborador marca como concluída, outra edge function (`flow-task-callback`) dispara webhook de volta pro n8n continuar o workflow
+
+n8n consegue ler etapas do funil, dados do deal, person, org via outra edge function (`crm-context`) — não precisa acesso direto ao Postgres.
+
+## Arquitetura
 
 ```text
- Deal entra na etapa X  ─►  cria flow_run (fila)
-                              │
-        ┌─────────────────────┼─────────────────────┐
-        ▼                     ▼                     ▼
-   [Email node]         [WhatsApp node]         [Task node]
-   envia via Gmail      envia via Twilio        cria daily_activity
-   marca completed      marca completed         para responsável
-        │                     │                     │
-        └─────────────────────┼─────────────────────┘
-                              ▼
-                         [Delay 3 dias]
-                              ▼
-                  worker volta após resume_at
-                              ▼
-                      próximos nós…
+CRM (stage change, deal won, etc.)
+  │
+  ├─► trigger Postgres ──► edge function `n8n-dispatch`
+  │                          (chama webhook configurado do n8n Cloud)
+  │
+n8n Cloud workflow executa:
+  ├─► Email (Gmail node nativo do n8n)
+  ├─► WhatsApp (Twilio node nativo do n8n)
+  ├─► HTTP → `crm-context`     (ler deal/funil/colaborador)
+  ├─► HTTP → `flow-task-create` (criar daily_activity)
+  └─► Wait → callback de `flow-task-callback`
+
+Dashboard ◄──► n8n REST API (listar, ativar, executar workflows)
 ```
 
-- Cada fluxo tem um **trigger** configurável (entrada em etapa do CRM, ou criação de project_deal).
-- A cada 5 min um **worker (edge function via pg_cron)** processa runs pendentes.
-- Nós automáticos (`email`, `whatsapp`, `update`, `delay`, `condition`) executam sozinhos.
-- Nós humanos (`task`, `custom`, `milestone`) criam uma `daily_activity` para o `owner_label` do deal — quando o colaborador marca como feita no checklist diário, registra `flow_task_completion` e libera os próximos nós.
+## Mudanças no app
 
----
+### Backend
+1. **Migração**:
+   - `n8n_workflows` (cache local: workflow_id n8n, nome, ativo, trigger_event, descrição, última sync)
+   - `n8n_executions` (cache de execuções recentes pra exibir no dashboard)
+   - `n8n_event_bindings` (mapeia evento do CRM → workflow_id + webhook URL). Ex: `crm_stage_enter:<stage_id> → webhook X`
+   - Remover (deprecar) `flows`, `flow_runs`, `flow_run_steps`, `flow_task_completions`, triggers `crm_deal_enroll_flows`, `daily_activity_resume_flow`
+   - Manter colunas `flow_run_id` / `flow_node_id` em `daily_activities` mas renomear conceito para `n8n_execution_id` / `n8n_node_id` (ou só reaproveitar)
 
-## Etapas
+2. **Edge functions**:
+   - `n8n-dispatch`: recebe evento interno, chama webhook configurado no n8n
+   - `n8n-proxy`: proxy pra REST API do n8n (lista workflows, ativa/desativa, executa) — usa API key do secret
+   - `crm-context`: GET autenticado por token compartilhado, devolve JSON de deal/funil/pessoa
+   - `flow-task-create`: POST do n8n cria daily_activity (autenticado por token)
+   - `flow-task-callback`: quando atividade é concluída, dispara webhook de retorno pro n8n
+   - Trigger Postgres em `crm_deals` + `daily_activities` → chama `n8n-dispatch` via `pg_net`
 
-### 1. Configuração de fluxo (frontend)
-- Painel **Trigger** no `FlowEditor`: escolher "Entrada em etapa do CRM" + pipeline + stage (grava em `flows.trigger_config`).
-- Painel de configuração por nó (já parcialmente existe), padronizar para:
-  - **Email**: `subject`, `body` (com `{{deal.titulo}}`, `{{person.nome}}`, `{{owner.label}}`), `from_account`.
-  - **WhatsApp**: `template_text` + checkbox "usar template Twilio aprovado" + `template_sid` opcional.
-  - **Task / Custom**: `titulo`, `descricao`, `prioridade`, `assignee` (default: owner do deal).
-  - **Delay**: `dias` / `horas`.
-  - **Condition**: campo + operador + valor (sobre o deal).
+3. **Secrets necessários**:
+   - `N8N_API_KEY` (criada em n8n Cloud → Settings → API)
+   - `N8N_BASE_URL` (ex: `https://palacios.app.n8n.cloud`)
+   - `N8N_WEBHOOK_TOKEN` (token compartilhado que o n8n inclui ao chamar nossas edge functions)
 
-### 2. Configuração global de WhatsApp/Twilio
-- Conectar o **conector Twilio** da Lovable (via `standard_connectors--connect`).
-- Tela **Admin → Integrações → WhatsApp**: input para "Número From WhatsApp Business" (E.164, ex: `whatsapp:+5511...`) salvo em uma nova tabela `integration_settings` (key/value).
-- Indicador visual de status (conectado / faltando número / desconectado).
+### Frontend — nova aba "Automações (n8n)" substituindo Fluxos
+- **Painel de status**: conexão com n8n (verde/vermelho), nº de workflows ativos, execuções últimas 24h
+- **Lista de workflows** vinda da API do n8n: nome, status (ativo/inativo), última execução, sucesso/erro
+  - Botões: Ativar/Desativar (toggle), Executar agora, Abrir no n8n (link)
+- **Bindings de eventos**: tabela "Quando isso acontece → executar este workflow"
+  - Eventos disponíveis: deal entra em etapa X, deal won, deal lost, atividade criada, etc.
+  - Dropdown de workflows do n8n
+- **Histórico de execuções** (das últimas N): timestamp, workflow, status, link pro detalhe no n8n
+- **Setup wizard**: tela com 3 passos para colar URL do n8n + API key + testar conexão
 
-### 3. Banco de dados (migração)
-- `integration_settings (key text pk, value jsonb)` para guardar o número Twilio e outras configs.
-- `flows.trigger_config` passa a ter shape: `{ type: 'crm_stage_enter', pipeline_id, stage_id }`.
-- Adicionar coluna `flow_runs.crm_deal_id uuid` (hoje só tem `project_deal_id`).
-- Trigger Postgres em `crm_deals` (AFTER UPDATE de `stage_id`): se algum fluxo ativo tem `trigger_config.stage_id = NEW.stage_id`, insere uma linha em `flow_runs` com `status='pending'`, `resume_at=now()`, `context={deal_id, current_node=trigger_node_id}`.
-- Trigger análogo para `project_deals` (criação) reutilizando o que já existe.
+### Remoção
+- `src/components/crm/projects/FlowEditor.tsx`, `FlowsList.tsx` → deletados
+- `src/hooks/useFlows.ts`, `src/hooks/useFlowActivities.ts`, `useFlowAutomation.ts` → substituídos por `useN8n.ts`
+- `supabase/functions/flow-worker` → deletado
+- Aba "Integrações & Automação" no AdminPlaceholder fica só com Twilio (até remover Twilio também, já que o n8n cuida)
 
-### 4. Edge function `flow-worker` (motor)
-- `supabase/functions/flow-worker/index.ts`.
-- Roda a cada 5 min via `pg_cron` + `pg_net`.
-- Lógica por iteração:
-  1. Seleciona até 50 `flow_runs` com `status='pending'` e `resume_at <= now()`.
-  2. Para cada run: carrega `flow.nodes/edges`, encontra o próximo nó a partir de `current_node_id`.
-  3. Executa o nó conforme `kind`:
-     - `email`: chama `gmail-send` (já existe) com template renderizado.
-     - `whatsapp`: POST para Twilio gateway (`/Messages.json` com `To`, `From`, `Body`).
-     - `task` / `custom` / `milestone`: insere `daily_activities` (assignee_label = owner do deal, `source='flow'`, `related_deal_id`, `notes` com flow_id+node_id) e marca run como `waiting_human`.
-     - `delay`: seta `resume_at = now() + offset` e mantém `pending`.
-     - `condition`: avalia, escolhe edge `yes`/`no` ou `else`.
-     - `update`: aplica patch em `crm_deals` (ex: mover etapa, mudar temperatura).
-  4. Cria `flow_run_steps` com `status` e `output` de cada execução.
-  5. Avança `current_node_id` para o próximo nó conectado; sem próximos = `status='completed'`.
-- Tratamento de erro: marca step `failed`, run vai para `status='error'` com mensagem; não trava a fila.
+## Ordem de execução
+1. Migração (criar `n8n_*`, deprecar `flows`)
+2. Secrets (`N8N_API_KEY`, `N8N_BASE_URL`, `N8N_WEBHOOK_TOKEN`) via add_secret
+3. Edge functions `n8n-proxy` + `crm-context` + `flow-task-create` + `flow-task-callback` + `n8n-dispatch`
+4. Trigger Postgres de dispatch
+5. UI: nova aba "Automações" (lista, bindings, execuções, setup wizard)
+6. Remover código velho de flows
+7. Documentar no app: workflow exemplo "Deal entra em Negociação → criar tarefa de follow-up para Aline em 2 dias"
 
-### 5. Auto-completion de tarefa humana
-- Quando colaborador marca uma `daily_activity` com `source='flow'` como `completed`, um trigger Postgres:
-  - Insere em `flow_task_completions (deal_id, flow_id, node_id, completed_by)`.
-  - Atualiza o `flow_run` correspondente: `status='pending'`, `resume_at=now()` → worker pega na próxima iteração e avança.
-- Botão "Concluir e avançar fluxo" no `AIDailyChecklist` para tarefas com `task_type='flow'`.
+## Pré-requisitos seus (eu te guio na hora)
+- Criar conta n8n Cloud (plano Starter ~US$20/mês ok pra começar)
+- Em **Settings → n8n API**: gerar API key
+- Me dar a URL da instância (ex: `palaciosos.app.n8n.cloud`)
 
-### 6. UI de monitoramento
-- Nova aba **Runs** no `FlowEditor` mostrando, para o fluxo aberto: deal, status, nó atual, última execução, erro. Lê `flow_runs` + `flow_run_steps`. Botão "Re-executar" e "Cancelar".
-- Badge ▶ "ao vivo" no card da lista de fluxos contando runs ativos.
-
-### 7. Testes / validação manual
-- Botão **Testar fluxo** no editor: simula com um deal escolhido, executa os nós em modo `dry_run=true` (não envia email/WhatsApp de verdade, só registra `flow_run_steps` com `output` mockado).
-- `supabase--curl_edge_functions` para validar o worker com payload sintético antes de ligar o cron.
-
----
-
-## Detalhes técnicos
-
-- **Conector Twilio**: usar gateway `https://connector-gateway.lovable.dev/twilio/Messages.json` com `TWILIO_API_KEY` + `LOVABLE_API_KEY`. Body `application/x-www-form-urlencoded` com `To=whatsapp:+55...`, `From=<número configurado>`, `Body=<texto>`.
-- **Email**: reaproveitar `gmail-send` existente (Gmail connector já ativo). Renderização de variáveis em util compartilhada com `cadenceEngine.ts`.
-- **Cron**: usar `cron.schedule('flow-worker', '*/5 * * * *', $$ select net.http_post(...) $$)` via `supabase--insert` (não migração, porque contém URL/anon-key específicos do projeto).
-- **Idempotência**: cada `flow_run_step` é único por `(run_id, node_id, executed_at)`; worker confere antes de re-executar.
-- **Concorrência**: `SELECT ... FOR UPDATE SKIP LOCKED LIMIT 50` para evitar dupla execução se duas instâncias rodarem.
-- **RLS**: `integration_settings` só fundador edita; `flow_runs` já está OK.
-- **Limite Twilio Brasil**: avisar usuário para ativar SMS Pumping Protection e Geo Permissions (BR) no console Twilio depois de conectar.
-
----
-
-## Fora do escopo desta fase
-- IA escolhendo responsável / reescrevendo texto (combinamos deixar de fora).
-- WhatsApp inbound (receber respostas) — só envio nesta fase.
-- Recorrência / fluxos cíclicos — fluxos são lineares com delays.
-- Editor visual de variáveis de template — usuário digita `{{deal.titulo}}` manualmente nesta fase.
-
----
-
-## Ordem de execução sugerida
-
-1. Migração: `integration_settings`, coluna `crm_deal_id` em `flow_runs`, trigger de enrollment, trigger de auto-complete.
-2. Conectar Twilio + tela de configuração do número.
-3. Edge function `flow-worker` + dry-run.
-4. UI de trigger e configuração de nós no `FlowEditor`.
-5. Aba **Runs** + badges.
-6. Ligar pg_cron e testar com um fluxo real ponta a ponta (Email → Delay → Task → WhatsApp).
+## Fora de escopo (por enquanto)
+- Editor visual de workflow dentro do dashboard (use o n8n direto)
+- IA distribuidora de tarefas (você pediu pra deixar de lado)
+- Migração automática dos fluxos existentes (vamos recriar no n8n — são poucos)
