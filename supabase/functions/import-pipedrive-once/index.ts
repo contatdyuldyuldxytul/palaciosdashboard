@@ -268,6 +268,108 @@ Deno.serve(async (req) => {
       notesImported++;
     }
 
+    // 8) Mail messages (inbox + sent) — links by deal_id / person_id when available
+    let mailImported = 0;
+    let mailPartial = false;
+    const personByPdId = new Map<number, string>();
+    for (const [pdId, uuid] of personIdMap) personByPdId.set(pdId, uuid);
+    try {
+      for (const folder of ["inbox", "sent", "archive"]) {
+        let threads: any[] = [];
+        try {
+          threads = await pdPaginated(`/mailbox/mailThreads?folder=${folder}`, API_KEY);
+        } catch (e) {
+          console.warn(`mailThreads ${folder} failed:`, e);
+          mailPartial = true;
+          continue;
+        }
+        for (const t of threads) {
+          let msgs: any[] = [];
+          try {
+            const r = await pdGet(`/mailbox/mailThreads/${t.id}/mailMessages`, API_KEY);
+            msgs = r.data || [];
+          } catch (e) {
+            mailPartial = true;
+            continue;
+          }
+          const dealUuid = t.deal_id ? dealIdMap.get(t.deal_id) : null;
+          const personUuid = t.person_id ? personByPdId.get(t.person_id) : null;
+          for (const m of msgs) {
+            const fromArr = Array.isArray(m.from) ? m.from : [];
+            const toArr = Array.isArray(m.to) ? m.to : [];
+            const ccArr = Array.isArray(m.cc) ? m.cc : [];
+            const direction = m.message_type === 1 || folder === "sent" ? "sent" : "received";
+            const row = {
+              gmail_message_id: `pd_${m.id}`,
+              gmail_thread_id: `pd_${t.id}`,
+              direction,
+              from_email: fromArr[0]?.email_address || null,
+              from_name: fromArr[0]?.name || null,
+              to_emails: toArr.map((x: any) => x.email_address).filter(Boolean),
+              cc_emails: ccArr.map((x: any) => x.email_address).filter(Boolean),
+              subject: m.subject || t.subject || null,
+              snippet: m.snippet || null,
+              body_html: m.body_url ? null : (m.body || null),
+              body_text: null,
+              raw_payload: m,
+              person_id: personUuid ?? null,
+              deal_id: dealUuid ?? null,
+              labels: [folder],
+              is_read: !!m.read_flag,
+              received_at: m.add_time || t.add_time || new Date().toISOString(),
+            };
+            const { error } = await supabase
+              .from("email_messages")
+              .upsert(row, { onConflict: "gmail_message_id" });
+            if (!error) mailImported++;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("mail block failed:", e);
+      mailPartial = true;
+    }
+
+    // 9) Deal flow / changelog — runs in batches of 10 parallel
+    let historyImported = 0;
+    let historyPartial = false;
+    const dealEntries = Array.from(dealIdMap.entries());
+    const BATCH = 10;
+    for (let i = 0; i < dealEntries.length; i += BATCH) {
+      const batch = dealEntries.slice(i, i + BATCH);
+      await Promise.all(
+        batch.map(async ([pdId, uuid]) => {
+          try {
+            const r = await pdGet(`/deals/${pdId}/flow?items=dealChange`, API_KEY);
+            const items = r.data || [];
+            for (const it of items) {
+              if (it.object !== "dealChange") continue;
+              const d = it.data || {};
+              const payload = {
+                field: d.field_key || d.field || null,
+                old_value: d.old_value ?? null,
+                new_value: d.new_value ?? null,
+                time: d.log_time || d.add_time || null,
+                user: d.user_id ?? null,
+              };
+              if (!payload.field || !payload.time) continue;
+              const { error } = await supabase.from("crm_deal_history").insert({
+                deal_id: uuid,
+                evento: "pipedrive_change",
+                payload,
+                created_at: payload.time,
+              });
+              if (!error) historyImported++;
+              // ignore unique-conflict errors (re-runs)
+            }
+          } catch (e) {
+            const msg = String((e as Error)?.message || e);
+            if (msg.includes("429")) historyPartial = true;
+          }
+        })
+      );
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -277,8 +379,13 @@ Deno.serve(async (req) => {
           organizations: orgIdMap.size,
           persons: personIdMap.size,
           deals: dealIdMap.size,
+          deleted_deals: deletedImported,
           activities: actsImported,
           notes: notesImported,
+          mail_messages: mailImported,
+          mail_partial: mailPartial,
+          history_entries: historyImported,
+          history_partial: historyPartial,
         },
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
