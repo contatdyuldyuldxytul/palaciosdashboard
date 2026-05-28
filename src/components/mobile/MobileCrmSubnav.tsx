@@ -27,7 +27,7 @@ export function MobileCrmSubnav() {
   return (
     <div className="md:hidden sticky top-12 z-20 backdrop-blur-xl border-b border-border bg-background/70">
       <div className="flex gap-1.5 overflow-x-auto px-3 py-2 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: "none" }}>
-        {items.map((it) => {
+        {visible.map((it) => {
           const active = isActive(it.url, it.exact);
           const Icon = it.icon;
           return (
