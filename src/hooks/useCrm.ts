@@ -51,6 +51,7 @@ export interface CrmDeal {
   score_fit?: number | null;
   score_budget?: number | null;
   score_urgencia?: number | null;
+  label_ids: string[];
   organization?: { id: string; nome: string } | null;
   person?: { id: string; nome: string; email: string | null; telefone: string | null } | null;
 }
