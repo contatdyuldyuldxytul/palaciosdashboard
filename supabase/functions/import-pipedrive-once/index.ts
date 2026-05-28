@@ -152,12 +152,22 @@ Deno.serve(async (req) => {
     if (phase === "all" || phase === "orgs") {
       const orgs = await pdPaginated("/organizations", API_KEY);
       const rows = orgs.map((o: any) => ({
-        nome: o.name || "Sem nome", pipedrive_org_id: o.id,
+        nome: o.name || "Sem nome",
+        pipedrive_org_id: o.id,
+        endereco: o.address || null,
+        cidade: o.address_locality || null,
+        estado: o.address_admin_area_level_1 || null,
+        pais: o.address_country || null,
+        cep: o.address_postal_code || null,
+        site: o.web || null,
+        num_colaboradores: typeof o.people_count === "number" ? o.people_count : null,
+        raw_payload: o,
       }));
       let imported = 0;
-      for (const batch of chunks(rows, 500)) {
+      for (const batch of chunks(rows, 300)) {
         const { error } = await sb.from("crm_organizations").upsert(batch, { onConflict: "pipedrive_org_id" });
         if (!error) imported += batch.length;
+        else console.warn("orgs batch err:", error.message);
       }
       summary.orgs = imported;
     }
