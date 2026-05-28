@@ -149,17 +149,29 @@ Deno.serve(async (req) => {
       if (data) personIdMap.set(p.id, data.id);
     }
 
-    // 5) Deals (all_not_deleted from all pipelines)
+    // 5) Deals (open/won/lost + deleted from trash)
     const deals = await pdPaginated("/deals?status=all_not_deleted", API_KEY);
+    let deletedDeals: any[] = [];
+    try {
+      deletedDeals = await pdPaginated("/deals?status=deleted", API_KEY);
+    } catch (e) {
+      console.warn("Could not fetch deleted deals:", e);
+    }
     const dealIdMap = new Map<number, string>();
-    for (const d of deals) {
+    const allDeals = [
+      ...deals.map((d: any) => ({ ...d, _deleted: false })),
+      ...deletedDeals.map((d: any) => ({ ...d, _deleted: true })),
+    ];
+    let deletedImported = 0;
+    for (const d of allDeals) {
       const pipelineUuid = pipelineIdMap.get(d.pipeline_id);
       const stageUuid = stageIdMap.get(d.stage_id);
       if (!pipelineUuid || !stageUuid) continue;
       const orgUuid = d.org_id?.value ? orgIdMap.get(d.org_id.value) : null;
       const personUuid = d.person_id?.value ? personIdMap.get(d.person_id.value) : null;
       const ownerName = d.user_id?.name || d.owner_name || null;
-      const status = d.status === "won" ? "won" : d.status === "lost" ? "lost" : "open";
+      let status: string = d.status === "won" ? "won" : d.status === "lost" ? "lost" : "open";
+      if (d._deleted) status = "lost";
 
       const { data } = await supabase
         .from("crm_deals")
@@ -173,18 +185,22 @@ Deno.serve(async (req) => {
             valor: d.value || 0,
             owner_label: ownerLabel(ownerName),
             status,
-            motivo_perda: d.lost_reason || null,
+            motivo_perda: d._deleted ? "[deletado no Pipedrive]" : d.lost_reason || null,
             expected_close_date: d.expected_close_date || null,
             data_fechamento: d.won_time || d.lost_time || null,
             stage_entered_at: d.stage_change_time || d.add_time,
             pipedrive_id: d.id,
             origem: "pipedrive",
+            deleted_in_pipedrive: !!d._deleted,
           },
           { onConflict: "pipedrive_id" }
         )
         .select("id")
         .single();
-      if (data) dealIdMap.set(d.id, data.id);
+      if (data) {
+        dealIdMap.set(d.id, data.id);
+        if (d._deleted) deletedImported++;
+      }
     }
 
     // 6) Activities
