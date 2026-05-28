@@ -177,18 +177,30 @@ Deno.serve(async (req) => {
       const orgMap = await buildMap("crm_organizations", "pipedrive_org_id");
       const persons = await pdPaginated("/persons", API_KEY);
       const rows = persons.map((p: any) => {
-        const email = Array.isArray(p.email) && p.email.length ? p.email[0].value : null;
-        const phone = Array.isArray(p.phone) && p.phone.length ? p.phone[0].value : null;
+        const emails = Array.isArray(p.email) ? p.email : [];
+        const phones = Array.isArray(p.phone) ? p.phone : [];
+        const email = emails.length ? emails[0].value : null;
+        const phone = phones.length ? phones[0].value : null;
         const orgUuid = p.org_id?.value ? orgMap.get(p.org_id.value) : null;
         return {
-          nome: p.name || "Sem nome", email, telefone: phone,
-          organization_id: orgUuid ?? null, pipedrive_person_id: p.id,
+          nome: p.name || "Sem nome",
+          first_name: p.first_name || null,
+          last_name: p.last_name || null,
+          email,
+          telefone: phone,
+          emails,
+          telefones: phones,
+          cargo: p.job_title || null,
+          organization_id: orgUuid ?? null,
+          pipedrive_person_id: p.id,
+          raw_payload: p,
         };
       });
       let imported = 0;
-      for (const batch of chunks(rows, 500)) {
+      for (const batch of chunks(rows, 300)) {
         const { error } = await sb.from("crm_persons").upsert(batch, { onConflict: "pipedrive_person_id" });
         if (!error) imported += batch.length;
+        else console.warn("persons batch err:", error.message);
       }
       summary.persons = imported;
     }
