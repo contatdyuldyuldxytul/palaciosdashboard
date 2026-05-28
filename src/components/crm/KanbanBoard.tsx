@@ -36,11 +36,15 @@ const ownerColor = (label: string | null) => {
   }
 };
 
-function DealCard({ deal, isDragging = false, onOpen }: { deal: CrmDeal; isDragging?: boolean; onOpen?: () => void }) {
+function DealCard({ deal, isDragging = false, onOpen, labelMap }: { deal: CrmDeal; isDragging?: boolean; onOpen?: () => void; labelMap: Map<string, CrmLabel> }) {
   const { attributes, listeners, setNodeRef, transform, isDragging: dragging } = useDraggable({ id: deal.id });
   const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 50 } : undefined;
   const daysIn = Math.floor((Date.now() - new Date(deal.stage_entered_at).getTime()) / 86400000);
   const stale = daysIn >= 7;
+
+  const dealLabels = (deal.label_ids || [])
+    .map((id) => labelMap.get(id))
+    .filter((l): l is CrmLabel => !!l);
 
   return (
     <div
@@ -61,21 +65,23 @@ function DealCard({ deal, isDragging = false, onOpen }: { deal: CrmDeal; isDragg
           {deal.titulo}
         </div>
 
-        {(deal.person?.nome || deal.owner_label) && (
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {deal.person?.nome && (
-              <span className="text-[10.5px] text-muted-foreground">
-                {deal.person.nome.split(" ")[0]}
-              </span>
-            )}
-            {deal.owner_label && (
+        {deal.person?.nome && (
+          <div className="text-[10.5px] text-muted-foreground">
+            {deal.person.nome.split(" ")[0]}
+          </div>
+        )}
+
+        {dealLabels.length > 0 && (
+          <div className="flex items-center gap-1 flex-wrap">
+            {dealLabels.map((l) => (
               <span
+                key={l.id}
                 className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full text-white"
-                style={{ background: ownerColor(deal.owner_label) }}
+                style={{ background: l.cor }}
               >
-                {deal.owner_label}
+                {l.nome}
               </span>
-            )}
+            ))}
           </div>
         )}
 
@@ -117,7 +123,7 @@ function DealCard({ deal, isDragging = false, onOpen }: { deal: CrmDeal; isDragg
   );
 }
 
-function StageColumn({ stage, deals, onOpen }: { stage: CrmStage; deals: CrmDeal[]; onOpen: (id: string) => void }) {
+function StageColumn({ stage, deals, onOpen, labelMap }: { stage: CrmStage; deals: CrmDeal[]; onOpen: (id: string) => void; labelMap: Map<string, CrmLabel> }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
   const total = deals.reduce((s, d) => s + (Number(d.valor) || 0), 0);
   const color = stage.cor || "#3b82f6";
@@ -148,7 +154,7 @@ function StageColumn({ stage, deals, onOpen }: { stage: CrmStage; deals: CrmDeal
         className="flex-1 space-y-2 p-2 min-h-[300px] overflow-y-auto scrollbar-none [&::-webkit-scrollbar]:hidden"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" } as React.CSSProperties}
       >
-        {deals.map(d => <DealCard key={d.id} deal={d} onOpen={() => onOpen(d.id)} />)}
+        {deals.map(d => <DealCard key={d.id} deal={d} onOpen={() => onOpen(d.id)} labelMap={labelMap} />)}
         {deals.length === 0 && (
           <div className="flex items-center justify-center text-[10px] text-muted-foreground/50 py-12 italic border border-dashed border-white/5 rounded-lg">
             arraste deals aqui
