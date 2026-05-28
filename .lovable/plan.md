@@ -1,71 +1,37 @@
-## Objetivo
+## Bug identificado
 
-Migrar **100%** do Pipedrive pro Lovable Cloud rodando uma única edge function pelo backend, sem nova UI. A função já existente `import-pipedrive-once` é idempotente (upsert por `pipedrive_id`), então rodar de novo só atualiza o que mudou — segura pra repetir quantas vezes precisar.
+A tabela `crm_stages` **não tem unique constraint em `pipedrive_stage_id`**, então o upsert `onConflict: "pipedrive_stage_id"` falhou silenciosamente. Resultado: os 44 stages que já existiam (criados manualmente antes) ficaram com `pipedrive_stage_id = NULL`. Sem esse mapeamento, todos os deals do Pipedrive caem no `.filter(Boolean)` e voltam 0 importados.
 
-## O que já é importado hoje
+Mesma classe de problema **não afeta** orgs/persons/deals/activities — todas têm unique key correta. Só stages.
 
-A função `supabase/functions/import-pipedrive-once` já cobre:
-- Pipelines → `crm_pipelines`
-- Stages → `crm_stages` (incl. `pipedrive_stage_id`)
-- Organizations → `crm_organizations`
-- Persons → `crm_persons`
-- Deals abertos/won/lost → `crm_deals`
-- Activities (call, email, meeting, task, deadline) → `crm_activities`
-- Notes → `crm_notes`
+## Correção
 
-## O que falta (escopo desta migração)
-
-Com base na sua resposta, adiciono três blocos:
-
-### 1. Emails sincronizados no Pipedrive
-- Endpoint: `GET /mailbox/mailMessages` (paginado) + `GET /mailbox/mailThreads`
-- Mapeio cada email pra `email_messages` (tabela já existe), vinculando `deal_id` e `person_id` via `pipedrive_id`
-- Campos: `gmail_message_id` (uso o ID do Pipedrive prefixado com `pd_` pra não colidir com Gmail), `direction` (sent/received), `subject`, `from_email`, `to_emails`, `body_html`, `received_at`, `raw_payload` (JSON original)
-- Dedup: chave única `gmail_message_id` (já é unique na tabela; se não for, adiciono índice único parcial)
-
-### 2. Deals deletados
-- Endpoint: `GET /deals?status=deleted` (paginado)
-- Importo no `crm_deals` com `status='lost'` + `motivo_perda='[deletado no Pipedrive]'` + flag em coluna nova `deleted_in_pipedrive boolean default false`
-- Migration mínima: adiciona essa coluna em `crm_deals`
-
-### 3. Histórico de mudanças dos deals (changelog)
-- Endpoint por deal: `GET /deals/{id}/flow` (devolve change log + activities + notes — uso só o `dealChange`)
-- Mapeio cada mudança pra `crm_deal_history` (tabela já existe) com `evento='pipedrive_change'` e `payload` = `{field, old_value, new_value, time, user}`
-- Dedup: índice único `(deal_id, evento, payload->>'time', payload->>'field')` pra não duplicar em re-runs
-- **Custo de API**: 1 request por deal. Pra ~N deals isso é O(N) calls. Vou rodar em lotes de 10 paralelos com backoff em 429 (limite diário do Pipedrive)
-
-## Mudanças técnicas
-
-### Migration (1 arquivo)
-```
-ALTER TABLE crm_deals ADD COLUMN IF NOT EXISTS deleted_in_pipedrive boolean DEFAULT false;
-CREATE UNIQUE INDEX IF NOT EXISTS email_messages_gmail_msg_uniq ON email_messages(gmail_message_id);
-CREATE UNIQUE INDEX IF NOT EXISTS crm_deal_history_pd_change_uniq
-  ON crm_deal_history(deal_id, evento, (payload->>'time'), (payload->>'field'))
-  WHERE evento = 'pipedrive_change';
+### 1. Migration (1 arquivo)
+```sql
+-- Permite upsert por pipedrive_stage_id
+CREATE UNIQUE INDEX IF NOT EXISTS crm_stages_pipedrive_stage_id_key
+  ON public.crm_stages(pipedrive_stage_id)
+  WHERE pipedrive_stage_id IS NOT NULL;
 ```
 
-### Edge function `import-pipedrive-once` — estender com 3 blocos
-- Bloco 8: Mail messages
-- Bloco 9: Deleted deals
-- Bloco 10: Deal flow / change log (paralelizado em batches de 10, backoff em 429)
-- Retorna summary expandido: `{ mail_messages, deleted_deals, history_entries }`
+### 2. Ajuste no edge function `import-pipedrive-once`, fase `stages`
+Antes do upsert, fazer **backfill por (pipeline_id, nome)** nos stages existentes que ainda estão sem `pipedrive_stage_id`. Aí o upsert seguinte funciona normalmente pros novos.
 
-### Tratamento de 429 (limite diário do Pipedrive)
-- Se receber 429, aguarda 60s e tenta de novo (máx 3x); se persistir, marca o bloco como "parcial" no summary e segue
-- Você consegue rerodar amanhã pra terminar (idempotência garante que não duplica)
+```ts
+// para cada stage do Pipedrive, se já existe row com mesmo (pipeline_uuid, nome) e pipedrive_stage_id NULL → UPDATE pipedrive_stage_id
+// depois faz o upsert normal pros que ficarem faltando
+```
 
-## Execução
+### 3. Executar as fases restantes em sequência (backend, sem UI)
+1. `stages` → arruma o mapeamento (44 stages ganham pipedrive_stage_id)
+2. `deals` → agora consegue mapear e importar (deals abertos + 67 deletados já achados)
+3. `activities` → atividades vinculadas aos deals
+4. `notes` → notas vinculadas aos deals
+5. `mail` → emails do Pipedrive Mail Sync
+6. `history` → changelog por deal (parallel batch 10, backoff 429)
 
-Depois que você aprovar este plano:
-1. Aplico a migration (você aprova no popup)
-2. Edito a edge function adicionando os 3 blocos
-3. Chamo `supabase--curl_edge_functions` em `/import-pipedrive-once` e te entrego o summary no chat com os contadores: pipelines, stages, orgs, persons, deals (incl. deletados), activities, notes, emails, history entries
-4. Se algo retornar parcial por 429, te aviso e você decide quando rerodar
+Reporto contadores finais no chat após cada fase. Se `mail` ou `history` retornarem `partial: true` por 429, te aviso pra rerodar depois (já é idempotente).
 
-## Fora de escopo (você marcou só email + deletados + histórico)
-
-- Arquivos/anexos dos deals (não foi pedido — posso adicionar depois)
-- Custom fields (não foi pedido — posso adicionar depois mapeando pra coluna `custom_fields jsonb`)
-- Webhooks bidirecionais (já existe stub em `n8n-dispatch`, fora deste escopo)
-- UI de progresso/migração (você escolheu rodar sem UI)
+## Fora de escopo
+- UI de progresso (você escolheu sem UI)
+- Arquivos, custom fields, webhooks (você não pediu)
