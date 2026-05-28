@@ -206,7 +206,9 @@ export function KanbanBoard({ stages, deals }: { stages: CrmStage[]; deals: CrmD
   const [lostDealId, setLostDealId] = useState<string | null>(null);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { data: labels = [] } = useCrmLabels();
 
+  const labelMap = useMemo(() => new Map(labels.map((l) => [l.id, l])), [labels]);
 
   const dealsByStage = useMemo(() => {
     const map = new Map<string, CrmDeal[]>();
