@@ -811,8 +811,12 @@ export type Database = {
       }
       crm_organizations: {
         Row: {
+          cep: string | null
+          cidade: string | null
           created_at: string
+          email: string | null
           endereco: string | null
+          estado: string | null
           faturamento: number | null
           id: string
           instagram: string | null
@@ -820,16 +824,23 @@ export type Database = {
           nome: string
           notas: string | null
           num_colaboradores: number | null
+          pais: string | null
           pipedrive_org_id: number | null
           porte: string | null
+          raw_payload: Json | null
           segmento: string | null
           site: string | null
+          telefone: string | null
           updated_at: string
           whatsapp: string | null
         }
         Insert: {
+          cep?: string | null
+          cidade?: string | null
           created_at?: string
+          email?: string | null
           endereco?: string | null
+          estado?: string | null
           faturamento?: number | null
           id?: string
           instagram?: string | null
@@ -837,16 +848,23 @@ export type Database = {
           nome: string
           notas?: string | null
           num_colaboradores?: number | null
+          pais?: string | null
           pipedrive_org_id?: number | null
           porte?: string | null
+          raw_payload?: Json | null
           segmento?: string | null
           site?: string | null
+          telefone?: string | null
           updated_at?: string
           whatsapp?: string | null
         }
         Update: {
+          cep?: string | null
+          cidade?: string | null
           created_at?: string
+          email?: string | null
           endereco?: string | null
+          estado?: string | null
           faturamento?: number | null
           id?: string
           instagram?: string | null
@@ -854,10 +872,13 @@ export type Database = {
           nome?: string
           notas?: string | null
           num_colaboradores?: number | null
+          pais?: string | null
           pipedrive_org_id?: number | null
           porte?: string | null
+          raw_payload?: Json | null
           segmento?: string | null
           site?: string | null
+          telefone?: string | null
           updated_at?: string
           whatsapp?: string | null
         }
@@ -868,6 +889,7 @@ export type Database = {
           cargo: string | null
           created_at: string
           email: string | null
+          emails: Json | null
           first_name: string | null
           id: string
           last_name: string | null
@@ -875,13 +897,16 @@ export type Database = {
           nome: string
           organization_id: string | null
           pipedrive_person_id: number | null
+          raw_payload: Json | null
           telefone: string | null
+          telefones: Json | null
           updated_at: string
         }
         Insert: {
           cargo?: string | null
           created_at?: string
           email?: string | null
+          emails?: Json | null
           first_name?: string | null
           id?: string
           last_name?: string | null
@@ -889,13 +914,16 @@ export type Database = {
           nome: string
           organization_id?: string | null
           pipedrive_person_id?: number | null
+          raw_payload?: Json | null
           telefone?: string | null
+          telefones?: Json | null
           updated_at?: string
         }
         Update: {
           cargo?: string | null
           created_at?: string
           email?: string | null
+          emails?: Json | null
           first_name?: string | null
           id?: string
           last_name?: string | null
@@ -903,7 +931,9 @@ export type Database = {
           nome?: string
           organization_id?: string | null
           pipedrive_person_id?: number | null
+          raw_payload?: Json | null
           telefone?: string | null
+          telefones?: Json | null
           updated_at?: string
         }
         Relationships: [
@@ -2457,6 +2487,36 @@ export type Database = {
           tags?: string[] | null
           updated_at?: string
           webhook_url?: string | null
+        }
+        Relationships: []
+      }
+      pipedrive_import_runs: {
+        Row: {
+          error: string | null
+          finished_at: string | null
+          id: string
+          phase: string
+          started_at: string
+          success: boolean | null
+          summary: Json | null
+        }
+        Insert: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          phase: string
+          started_at?: string
+          success?: boolean | null
+          summary?: Json | null
+        }
+        Update: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          phase?: string
+          started_at?: string
+          success?: boolean | null
+          summary?: Json | null
         }
         Relationships: []
       }

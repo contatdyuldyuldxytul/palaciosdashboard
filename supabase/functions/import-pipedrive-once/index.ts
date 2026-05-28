@@ -65,6 +65,14 @@ Deno.serve(async (req) => {
     const summary: Record<string, any> = { phase };
     const t0 = Date.now();
 
+    // log: cria registro de run
+    const { data: runRow } = await sb
+      .from("pipedrive_import_runs")
+      .insert({ phase })
+      .select("id")
+      .single();
+    const runId = runRow?.id;
+
     // helper: maps from DB
     async function buildMap(table: string, key: string): Promise<Map<number, string>> {
       const m = new Map<number, string>();
@@ -144,12 +152,22 @@ Deno.serve(async (req) => {
     if (phase === "all" || phase === "orgs") {
       const orgs = await pdPaginated("/organizations", API_KEY);
       const rows = orgs.map((o: any) => ({
-        nome: o.name || "Sem nome", pipedrive_org_id: o.id,
+        nome: o.name || "Sem nome",
+        pipedrive_org_id: o.id,
+        endereco: o.address || null,
+        cidade: o.address_locality || null,
+        estado: o.address_admin_area_level_1 || null,
+        pais: o.address_country || null,
+        cep: o.address_postal_code || null,
+        site: o.web || null,
+        num_colaboradores: typeof o.people_count === "number" ? o.people_count : null,
+        raw_payload: o,
       }));
       let imported = 0;
-      for (const batch of chunks(rows, 500)) {
+      for (const batch of chunks(rows, 300)) {
         const { error } = await sb.from("crm_organizations").upsert(batch, { onConflict: "pipedrive_org_id" });
         if (!error) imported += batch.length;
+        else console.warn("orgs batch err:", error.message);
       }
       summary.orgs = imported;
     }
@@ -159,18 +177,30 @@ Deno.serve(async (req) => {
       const orgMap = await buildMap("crm_organizations", "pipedrive_org_id");
       const persons = await pdPaginated("/persons", API_KEY);
       const rows = persons.map((p: any) => {
-        const email = Array.isArray(p.email) && p.email.length ? p.email[0].value : null;
-        const phone = Array.isArray(p.phone) && p.phone.length ? p.phone[0].value : null;
+        const emails = Array.isArray(p.email) ? p.email : [];
+        const phones = Array.isArray(p.phone) ? p.phone : [];
+        const email = emails.length ? emails[0].value : null;
+        const phone = phones.length ? phones[0].value : null;
         const orgUuid = p.org_id?.value ? orgMap.get(p.org_id.value) : null;
         return {
-          nome: p.name || "Sem nome", email, telefone: phone,
-          organization_id: orgUuid ?? null, pipedrive_person_id: p.id,
+          nome: p.name || "Sem nome",
+          first_name: p.first_name || null,
+          last_name: p.last_name || null,
+          email,
+          telefone: phone,
+          emails,
+          telefones: phones,
+          cargo: p.job_title || null,
+          organization_id: orgUuid ?? null,
+          pipedrive_person_id: p.id,
+          raw_payload: p,
         };
       });
       let imported = 0;
-      for (const batch of chunks(rows, 500)) {
+      for (const batch of chunks(rows, 300)) {
         const { error } = await sb.from("crm_persons").upsert(batch, { onConflict: "pipedrive_person_id" });
         if (!error) imported += batch.length;
+        else console.warn("persons batch err:", error.message);
       }
       summary.persons = imported;
     }
@@ -395,13 +425,28 @@ Deno.serve(async (req) => {
     }
 
     summary.elapsed_ms = Date.now() - t0;
+    if (runId) {
+      await sb.from("pipedrive_import_runs")
+        .update({ finished_at: new Date().toISOString(), success: true, summary })
+        .eq("id", runId);
+    }
     return new Response(JSON.stringify({ success: true, summary }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("import-pipedrive-once error:", e);
+    const errMsg = e instanceof Error ? e.message : "Unknown";
+    try {
+      const sb2 = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      await sb2.from("pipedrive_import_runs").insert({
+        phase: new URL(req.url).searchParams.get("phase") || "all",
+        finished_at: new Date().toISOString(),
+        success: false,
+        error: errMsg,
+      });
+    } catch {}
     return new Response(
-      JSON.stringify({ success: false, error: e instanceof Error ? e.message : "Unknown" }),
+      JSON.stringify({ success: false, error: errMsg }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
