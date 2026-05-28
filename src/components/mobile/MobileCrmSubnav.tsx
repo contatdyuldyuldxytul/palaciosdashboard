@@ -2,10 +2,11 @@ import { Link, useLocation } from "react-router-dom";
 import {
   DollarSign, ClipboardList, Calendar, Mail, Radar, Users, TrendingUp, Sparkles,
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const items = [
   { title: "Deals", url: "/crm", icon: DollarSign, exact: true },
-  { title: "Projects", url: "/crm/projects", icon: ClipboardList },
+  { title: "Projects", url: "/crm/projects", icon: ClipboardList, requireRole: "fundador" as const },
   { title: "Atividades", url: "/crm/atividades", icon: Calendar },
   { title: "E-mail", url: "/crm/email", icon: Mail },
   { title: "Geração", url: "/crm/geracao-leads", icon: Radar },
@@ -16,7 +17,9 @@ const items = [
 
 export function MobileCrmSubnav() {
   const { pathname } = useLocation();
+  const { hasRole } = useAuth();
   if (!pathname.startsWith("/crm")) return null;
+  const visible = items.filter((it) => !(it as any).requireRole || hasRole((it as any).requireRole));
 
   const isActive = (url: string, exact?: boolean) =>
     exact ? pathname === url : pathname === url || pathname.startsWith(url + "/");
