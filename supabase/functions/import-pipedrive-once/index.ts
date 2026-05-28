@@ -425,13 +425,28 @@ Deno.serve(async (req) => {
     }
 
     summary.elapsed_ms = Date.now() - t0;
+    if (runId) {
+      await sb.from("pipedrive_import_runs")
+        .update({ finished_at: new Date().toISOString(), success: true, summary })
+        .eq("id", runId);
+    }
     return new Response(JSON.stringify({ success: true, summary }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("import-pipedrive-once error:", e);
+    const errMsg = e instanceof Error ? e.message : "Unknown";
+    try {
+      const sb2 = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      await sb2.from("pipedrive_import_runs").insert({
+        phase: new URL(req.url).searchParams.get("phase") || "all",
+        finished_at: new Date().toISOString(),
+        success: false,
+        error: errMsg,
+      });
+    } catch {}
     return new Response(
-      JSON.stringify({ success: false, error: e instanceof Error ? e.message : "Unknown" }),
+      JSON.stringify({ success: false, error: errMsg }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
