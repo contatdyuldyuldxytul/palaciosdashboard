@@ -286,6 +286,7 @@ export function KanbanBoard({ stages, deals }: { stages: CrmStage[]; deals: CrmD
                 stage={s}
                 deals={dealsByStage.get(s.id) || []}
                 onOpen={(id) => navigate(`/crm/deal/${id}`)}
+                labelMap={labelMap}
               />
             );
           }}
@@ -298,6 +299,7 @@ export function KanbanBoard({ stages, deals }: { stages: CrmStage[]; deals: CrmD
               stage={s}
               deals={dealsByStage.get(s.id) || []}
               onOpen={(id) => navigate(`/crm/deal/${id}`)}
+              labelMap={labelMap}
             />
           ))}
         </div>
@@ -322,7 +324,7 @@ export function KanbanBoard({ stages, deals }: { stages: CrmStage[]; deals: CrmD
       </div>
 
       <DragOverlay>
-        {activeDeal ? <DealCard deal={activeDeal} isDragging /> : null}
+        {activeDeal ? <DealCard deal={activeDeal} isDragging labelMap={labelMap} /> : null}
       </DragOverlay>
 
       {/* Move to: pipeline picker */}
