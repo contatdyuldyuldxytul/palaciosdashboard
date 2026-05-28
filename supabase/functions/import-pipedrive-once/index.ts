@@ -65,6 +65,14 @@ Deno.serve(async (req) => {
     const summary: Record<string, any> = { phase };
     const t0 = Date.now();
 
+    // log: cria registro de run
+    const { data: runRow } = await sb
+      .from("pipedrive_import_runs")
+      .insert({ phase })
+      .select("id")
+      .single();
+    const runId = runRow?.id;
+
     // helper: maps from DB
     async function buildMap(table: string, key: string): Promise<Map<number, string>> {
       const m = new Map<number, string>();
