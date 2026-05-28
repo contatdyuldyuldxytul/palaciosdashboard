@@ -15,7 +15,7 @@ import logoPalaciosIcon from "@/assets/logo-palacios-icon.png";
 const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Deals", url: "/crm", icon: DollarSign, exact: true },
-  { title: "Projects", url: "/crm/projects", icon: ClipboardList },
+  { title: "Projects", url: "/crm/projects", icon: ClipboardList, requireRole: "fundador" as const },
   { title: "Atividades", url: "/crm/atividades", icon: Calendar },
   { title: "E-mail", url: "/crm/email", icon: Mail },
   { title: "Geração de Leads", url: "/crm/geracao-leads", icon: Radar },

@@ -139,7 +139,7 @@ const App = () => (
               {/* CRM Integrado */}
               <Route path="/crm" element={<Crm />} />
               <Route path="/crm/deal/:id" element={<CrmDealDetail />} />
-              <Route path="/crm/projects" element={<Projects />} />
+              <Route path="/crm/projects" element={<ProtectedRoute requireRole="fundador"><Projects /></ProtectedRoute>} />
               <Route path="/crm/atividades" element={<Atividades />}>
                 <Route path="nucleo" element={<NucleoOperacional />} />
                 <Route path="inteligencia" element={<InteligenciaComercial />} />
