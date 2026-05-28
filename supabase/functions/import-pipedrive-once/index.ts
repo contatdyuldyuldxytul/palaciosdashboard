@@ -94,10 +94,8 @@ Deno.serve(async (req) => {
     // ─── STAGES ───
     if (phase === "all" || phase === "stages") {
       const j = await pdGet("/stages", API_KEY);
-      // need pipeline uuid map
       const { data: pipes } = await sb.from("crm_pipelines").select("id, nome");
       const pipeByName = new Map<string, string>();
-      // also fetch pipedrive pipelines to map id→name
       const pj = await pdGet("/pipelines", API_KEY);
       const pdPipeName = new Map<number, string>();
       for (const p of pj.data || []) pdPipeName.set(p.id, p.name);
@@ -112,9 +110,34 @@ Deno.serve(async (req) => {
             pipedrive_stage_id: s.id,
           };
         })
-        .filter(Boolean);
-      await sb.from("crm_stages").upsert(rows as any[], { onConflict: "pipedrive_stage_id" });
+        .filter(Boolean) as any[];
+
+      // Backfill: stages que já existem com mesmo (pipeline_id, nome) e pipedrive_stage_id=NULL
+      const { data: existingStages } = await sb
+        .from("crm_stages")
+        .select("id, pipeline_id, nome, pipedrive_stage_id");
+      const existingByKey = new Map<string, any>();
+      for (const e of existingStages || []) {
+        existingByKey.set(`${(e as any).pipeline_id}|${(e as any).nome}`, e);
+      }
+      let backfilled = 0;
+      for (const r of rows) {
+        const ex = existingByKey.get(`${r.pipeline_id}|${r.nome}`);
+        if (ex && ex.pipedrive_stage_id == null) {
+          const { error } = await sb
+            .from("crm_stages")
+            .update({ pipedrive_stage_id: r.pipedrive_stage_id, ordem: r.ordem })
+            .eq("id", ex.id);
+          if (!error) backfilled++;
+        }
+      }
+      // Upsert para novos (e atualizar ordem dos já mapeados)
+      const { error: upErr } = await sb
+        .from("crm_stages")
+        .upsert(rows, { onConflict: "pipedrive_stage_id" });
+      if (upErr) console.warn("stages upsert err:", upErr.message);
       summary.stages = rows.length;
+      summary.stages_backfilled = backfilled;
     }
 
     // ─── ORGANIZATIONS ───
