@@ -61,6 +61,24 @@ function DealCard({ deal, isDragging = false, onOpen }: { deal: CrmDeal; isDragg
           {deal.titulo}
         </div>
 
+        {(deal.person?.nome || deal.owner_label) && (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {deal.person?.nome && (
+              <span className="text-[10.5px] text-muted-foreground">
+                {deal.person.nome.split(" ")[0]}
+              </span>
+            )}
+            {deal.owner_label && (
+              <span
+                className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full text-white"
+                style={{ background: ownerColor(deal.owner_label) }}
+              >
+                {deal.owner_label}
+              </span>
+            )}
+          </div>
+        )}
+
         {deal.organization?.nome && (
           <div className="flex items-center gap-1 text-[10.5px] text-muted-foreground truncate">
             <Building2 className="w-3 h-3 flex-shrink-0" />
