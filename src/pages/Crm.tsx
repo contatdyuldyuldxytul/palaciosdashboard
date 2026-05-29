@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { LayoutGrid, List, Plus, Download, TrendingUp, Target, CheckCircle2, Search, Upload, FileSpreadsheet, ChevronDown, Workflow } from "lucide-react";
+import { LayoutGrid, List, Plus, Download, TrendingUp, Target, CheckCircle2, Search, Upload, FileSpreadsheet, ChevronDown, Workflow, Mail } from "lucide-react";
+import { CampanhasView } from "@/components/crm/CampanhasView";
 import { FlowsList } from "@/components/crm/projects/FlowsList";
 import { N8nAutomations } from "@/components/crm/projects/N8nAutomations";
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,7 @@ export default function Crm() {
     setPipelineIdState(id);
     try { sessionStorage.setItem("crm:lastPipelineId", id); } catch {}
   };
-  const [tab, setTab] = useState<"deals" | "fluxos">("deals");
+  const [tab, setTab] = useState<"deals" | "fluxos" | "campanhas">("deals");
   const [view, setView] = useState<"kanban" | "list">("kanban");
   const [newOpen, setNewOpen] = useState(false);
   const [editor, setEditor] = useState<{ mode: "new" | "edit"; pipelineId?: string } | null>(null);
@@ -205,6 +206,14 @@ export default function Crm() {
           >
             <Workflow className="w-3 h-3" /> Automações N8N
           </button>
+          <button
+            onClick={() => setTab("campanhas")}
+            className={`px-3.5 py-1.5 rounded-full text-xs flex items-center gap-1.5 transition-colors ${
+              tab === "campanhas" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Mail className="w-3 h-3" /> Campanhas
+          </button>
         </div>
 
         {tab === "deals" && (
@@ -251,8 +260,10 @@ export default function Crm() {
             <DealListView stages={stages} deals={filteredDeals} />
           )}
         </>
-      ) : (
+      ) : tab === "fluxos" ? (
         <N8nAutomations />
+      ) : (
+        <CampanhasView />
       )}
 
 

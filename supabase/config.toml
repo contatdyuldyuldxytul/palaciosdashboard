@@ -38,3 +38,12 @@ verify_jwt = false
 
 [functions.flow-task-callback]
 verify_jwt = false
+
+[functions.resend-webhook]
+verify_jwt = false
+
+[functions.resend-send-campaign]
+verify_jwt = false
+
+[functions.resend-send-single]
+verify_jwt = false
