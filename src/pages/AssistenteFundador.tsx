@@ -1,11 +1,11 @@
 import { AIChatPage } from "@/components/AIChatPage";
 
 const quickPrompts = [
-  "Analise meu faturamento vs meta este mês",
-  "Devo contratar um 3º SDR agora?",
-  "Como chego a R$50.000/mês?",
-  "Meu fluxo de caixa está saudável?",
-  "Quais métricas focar esta semana?",
+  "Visão geral do funil de vendas agora",
+  "Quais deals quentes acima de R$30k devem ser priorizados?",
+  "Quantos deals estão parados há mais de 30 dias por owner?",
+  "Reatribua todos os deals do estágio X do Felipe para a Aline",
+  "Exporte em CSV o pipeline completo deste mês",
 ];
 
 export default function AssistenteFundador() {
