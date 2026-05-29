@@ -206,6 +206,14 @@ export default function Crm() {
           >
             <Workflow className="w-3 h-3" /> Automações N8N
           </button>
+          <button
+            onClick={() => setTab("campanhas")}
+            className={`px-3.5 py-1.5 rounded-full text-xs flex items-center gap-1.5 transition-colors ${
+              tab === "campanhas" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Mail className="w-3 h-3" /> Campanhas
+          </button>
         </div>
 
         {tab === "deals" && (
