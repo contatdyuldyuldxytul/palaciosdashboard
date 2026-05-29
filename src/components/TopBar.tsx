@@ -58,6 +58,10 @@ export function TopBar() {
               <DropdownMenuSeparator />
             </>
           )}
+          <DropdownMenuItem onClick={() => navigate("/crm/configuracoes")}>
+            <Settings className="w-4 h-4 mr-2" /> Configurações
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={signOut} className="text-destructive focus:text-destructive">
             <LogOut className="w-4 h-4 mr-2" /> Sair
           </DropdownMenuItem>
