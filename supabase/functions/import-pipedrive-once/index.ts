@@ -99,7 +99,9 @@ Deno.serve(async (req) => {
         if (d.field_type === "enum" || d.field_type === "set" || d.field_type === "visible_to") {
           val = resolveOptionLabel(raw, d.options);
         } else if (typeof raw === "object") {
-          val = raw.value ?? raw.name ?? JSON.stringify(raw);
+          // For people/org-typed custom fields: { value: id, name: "Readable name" }
+          val = (raw.name && String(raw.name).trim() && isNaN(Number(raw.name))) ? String(raw.name)
+              : (raw.value != null ? String(raw.value) : JSON.stringify(raw));
         } else {
           val = String(raw);
         }
