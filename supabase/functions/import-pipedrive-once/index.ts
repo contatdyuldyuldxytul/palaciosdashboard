@@ -281,6 +281,7 @@ Deno.serve(async (req) => {
 
     // ─── PERSONS ───
     if (phase === "all" || phase === "persons") {
+      const defs = await loadFieldDefs("person");
       const orgMap = await buildMap("crm_organizations", "pipedrive_org_id");
       const persons = await pdPaginated("/persons", API_KEY);
       const rows = persons.map((p: any) => {
@@ -289,6 +290,7 @@ Deno.serve(async (req) => {
         const email = emails.length ? emails[0].value : null;
         const phone = phones.length ? phones[0].value : null;
         const orgUuid = p.org_id?.value ? orgMap.get(p.org_id.value) : null;
+        const custom = extractCustomFields(p, defs);
         return {
           nome: p.name || "Sem nome",
           first_name: p.first_name || null,
@@ -297,9 +299,11 @@ Deno.serve(async (req) => {
           telefone: phone,
           emails,
           telefones: phones,
-          cargo: p.job_title || null,
+          cargo: p.job_title || findCustomByName(custom, "Cargo", "Job title"),
+          linkedin: findCustomByName(custom, "LinkedIn", "LinkedIn profile"),
           organization_id: orgUuid ?? null,
           pipedrive_person_id: p.id,
+          custom_fields: custom,
           raw_payload: p,
         };
       });
@@ -311,6 +315,7 @@ Deno.serve(async (req) => {
       }
       summary.persons = imported;
     }
+
 
     // ─── DEALS (open/won/lost + deleted) ───
     if (phase === "all" || phase === "deals") {
