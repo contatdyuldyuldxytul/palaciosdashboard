@@ -1,10 +1,11 @@
 import { AIChatPage } from "@/components/AIChatPage";
 
 const quickPrompts = [
-  "Como funciona o mercado de lançamentos imobiliários no Brasil?",
-  "Qual a melhor estratégia de precificação para serviços de renderização 3D?",
-  "Me explique como montar uma equipe comercial para venda B2B",
-  "Quais são as tendências de visualização 3D no mercado imobiliário?",
+  "Quantos deals abertos temos por pipeline?",
+  "Top 10 leads com maior probabilidade de fechar reunião",
+  "Liste deals parados há mais de 30 dias e exporte em CSV",
+  "Quais atividades estão pendentes esta semana?",
+  "Resuma o funil de vendas hoje",
 ];
 
 export default function AssistenteGeral() {

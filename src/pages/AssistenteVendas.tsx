@@ -1,11 +1,11 @@
 import { AIChatPage } from "@/components/AIChatPage";
 
 const quickPrompts = [
+  "Quais meus deals têm maior probabilidade de fechar reunião?",
+  "Liste meus deals parados há mais de 15 dias",
+  "Exporte em CSV todos os leads prospectados parados",
+  "Resuma meu pipeline hoje",
   "Como abordar construtora sem lançamento agora?",
-  "Gere 5 perguntas SPIN para incorporadora",
-  "Me ajude com WhatsApp de follow-up",
-  "Como responder já temos empresa de renders?",
-  "Script de cold call para gerente de marketing",
 ];
 
 export default function AssistenteVendas() {
