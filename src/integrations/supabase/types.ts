@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_assistant_actions: {
+        Row: {
+          affected_count: number | null
+          assistant: string
+          created_at: string
+          error_message: string | null
+          id: string
+          input: Json | null
+          output: Json | null
+          success: boolean
+          tool_name: string
+          user_id: string
+        }
+        Insert: {
+          affected_count?: number | null
+          assistant: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          input?: Json | null
+          output?: Json | null
+          success?: boolean
+          tool_name: string
+          user_id: string
+        }
+        Update: {
+          affected_count?: number | null
+          assistant?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          input?: Json | null
+          output?: Json | null
+          success?: boolean
+          tool_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       balanco: {
         Row: {
           aluguel_pagar: number | null
@@ -234,6 +273,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          parts: Json | null
           role: string
           user_id: string
         }
@@ -242,6 +282,7 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          parts?: Json | null
           role: string
           user_id: string
         }
@@ -250,6 +291,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          parts?: Json | null
           role?: string
           user_id?: string
         }
