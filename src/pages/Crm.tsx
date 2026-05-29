@@ -260,8 +260,10 @@ export default function Crm() {
             <DealListView stages={stages} deals={filteredDeals} />
           )}
         </>
-      ) : (
+      ) : tab === "fluxos" ? (
         <N8nAutomations />
+      ) : (
+        <CampanhasView />
       )}
 
 
