@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { LayoutGrid, List, Plus, Download, TrendingUp, Target, CheckCircle2, Search, Upload, FileSpreadsheet, ChevronDown, Workflow } from "lucide-react";
+import { LayoutGrid, List, Plus, Download, TrendingUp, Target, CheckCircle2, Search, Upload, FileSpreadsheet, ChevronDown, Workflow, Mail } from "lucide-react";
+import { CampanhasView } from "@/components/crm/CampanhasView";
 import { FlowsList } from "@/components/crm/projects/FlowsList";
 import { N8nAutomations } from "@/components/crm/projects/N8nAutomations";
 import { Button } from "@/components/ui/button";
