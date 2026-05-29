@@ -972,6 +972,23 @@ function HistoryList({
 }
 
 /* ============ E-mail Panel ============ */
+function CustomFieldsList({ custom, skip = [] }: { custom?: Record<string, string> | null; skip?: string[] }) {
+  if (!custom || typeof custom !== "object") return null;
+  const skipLower = new Set(skip.map((s) => s.toLowerCase()));
+  const entries = Object.entries(custom).filter(([k, v]) => v && !skipLower.has(k.toLowerCase()));
+  if (entries.length === 0) return null;
+  return (
+    <div className="pt-2 mt-2 border-t border-white/5 space-y-1.5">
+      {entries.map(([k, v]) => (
+        <div key={k} className="flex items-start justify-between gap-3 text-xs">
+          <span className="text-muted-foreground flex-shrink-0">{k}</span>
+          <span className="text-foreground text-right break-words">{v}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function EmailPanel({ dealId, personEmail, personName }: { dealId: string; personEmail: string; personName: string }) {
   const [open, setOpen] = useState(false);
   const { data: messages = [] } = useQuery({
