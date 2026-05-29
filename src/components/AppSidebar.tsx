@@ -24,7 +24,7 @@ const navItems = [
   { title: "Automações I.A", url: "/crm/automacoes", icon: Sparkles },
   { title: "CEO", url: "/ceo", icon: Crown, requireRole: "fundador" as const, isCeo: true },
   { title: "Assistente IA", url: "/assistente", icon: MessageSquare },
-  { title: "Configurações", url: "/crm/configuracoes", icon: Settings },
+  
 ];
 
 type SubItem = {

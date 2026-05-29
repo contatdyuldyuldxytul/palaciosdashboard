@@ -1,4 +1,5 @@
-import { LogOut, Sun, Moon, User } from "lucide-react";
+import { LogOut, Sun, Moon, User, Settings } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
@@ -13,6 +14,8 @@ import {
 export function TopBar() {
   const { signOut, profile } = useAuth();
   const { theme, toggle } = useTheme();
+  const navigate = useNavigate();
+
 
   return (
     <div
@@ -55,6 +58,10 @@ export function TopBar() {
               <DropdownMenuSeparator />
             </>
           )}
+          <DropdownMenuItem onClick={() => navigate("/crm/configuracoes")}>
+            <Settings className="w-4 h-4 mr-2" /> Configurações
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={signOut} className="text-destructive focus:text-destructive">
             <LogOut className="w-4 h-4 mr-2" /> Sair
           </DropdownMenuItem>
