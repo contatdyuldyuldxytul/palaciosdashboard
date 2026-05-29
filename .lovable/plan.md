@@ -1,132 +1,97 @@
-# Upgrade da aba Campanhas
+# Plano: Assistente de I.A. com acesso total + ações executáveis
 
-Vou transformar o modal atual (simples textarea HTML + lista crua de leads) em um construtor de campanhas completo, com editor visual, biblioteca de templates, filtros e anexos.
+Hoje o `ai-chat` só recebe a conversa e responde texto — sem ler banco, sem agir. Vou transformá-lo num **agente com tools** (function calling) usando o AI SDK, com acesso de leitura ampla e ações controladas sobre leads/deals/pipelines.
 
-## 1. Editor visual de email (rich-text)
+## O que muda na experiência
 
-Substituir a `Textarea` HTML por um editor **Tiptap** (leve, React-native, ~50kb gz) com toolbar fixa:
+No `/assistente` (Assistente Geral, de Vendas e do Fundador) o usuário poderá pedir, em linguagem natural:
 
-- **Formatação**: negrito, itálico, sublinhado, riscado, cabeçalhos (H1/H2/H3), listas (•, 1.), citação, código
-- **Links**: inserir/editar URL com prompt
-- **Imagens inline**: upload para Supabase Storage → cola URL pública no email
-- **Alinhamento**: esquerda, centro, direita
-- **Cor de texto e destaque** (paleta limitada para não quebrar deliverability)
-- **Variáveis dinâmicas**: botão "Inserir variável" → menu com `{{nome}}`, `{{primeiro_nome}}`, `{{empresa}}`, `{{cargo}}`, `{{email}}` (chips visuais que viram texto no envio)
-- **Assinatura**: dropdown "Inserir assinatura" puxa assinaturas salvas (ver abaixo) e cola no final
-- **Preview ao vivo** lado-a-lado (toggle) renderizando com dados do primeiro destinatário selecionado
+- "Qual lead tem maior probabilidade de fechar uma reunião?" → IA consulta deals + notas + estágios e responde com ranking justificado.
+- "Me dê 400 leads prospectados parados há mais de X dias em uma planilha" → IA filtra e gera CSV em `/mnt/documents` com link de download na conversa.
+- "Mova todos os deals do estágio A para o estágio B no pipeline X" → IA mostra preview (quantos, quais), pede confirmação no chat, e executa.
+- "Resuma o pipeline Aline hoje", "Quais clientes não têm follow-up há 7 dias?", "Top 10 deals por valor", etc.
 
-## 2. Biblioteca de templates
+Cada ação aparece no chat como um "card de tool" (ícone + nome + status + resultado compacto), no padrão do contrato visual de chat já usado.
 
-Aba **"Templates"** dentro de Campanhas (tabs internas: Campanhas | Templates | Assinaturas):
+## Arquitetura
 
-- Grid de cards mostrando nome, assunto, preview e categoria
-- **Criar** template (mesmo editor da campanha) com nome, categoria (Outbound, Follow-up, Nutrição, Reativação), assunto e corpo
-- **Editar / duplicar / arquivar / deletar**
-- **Usar template**: ao criar campanha, dropdown "Carregar template" preenche assunto + corpo
-- **Salvar como template**: botão dentro do modal de nova campanha
-- Contador de uso ("usado 12x") por template
-- Tabela nova: `email_templates` já existe — só adicionar colunas `categoria`, `arquivado`, `vezes_usado`, `thumbnail_html`
+**1. Reescrever `supabase/functions/ai-chat/index.ts` usando AI SDK + tools**
 
-## 3. Assinaturas salvas
+- Trocar o fetch manual por `streamText` do `npm:ai` com provider Lovable AI Gateway (`@ai-sdk/openai-compatible`).
+- Manter `google/gemini-2.5-pro` para fundador e `google/gemini-2.5-flash` como default para vendas/geral (melhor custo em loops de tools).
+- `stopWhen: stepCountIs(50)` para permitir múltiplas chamadas de tool no mesmo turno.
+- Validar JWT do usuário (hoje a function não valida) para escopar permissões.
+- Passar `user.id` + `role` (fundador/vendedor) para o handler, e usar isso para gatear tools de escrita.
 
-Sub-aba **Assinaturas** (tabela nova `email_signatures`):
+**2. Catálogo de tools (todas Zod-schema, server-side)**
 
-- CRUD simples: nome ("Aline padrão", "Milena breve"), corpo HTML (com foto, telefone, link de agenda)
-- Marcar uma como **padrão** (auto-inserida em novas campanhas)
-- Reaproveitada também no envio 1-a-1 do `CrmDealDetail`
+Leitura (disponível para todos):
+- `query_deals` — filtros: pipeline, stage, owner, status, valor min/max, dias parados, tem nota?, texto livre. Retorna até 200 deals (paginação) com campos essenciais.
+- `get_deal_detail` — deal + person + org + última atividade + notas + histórico de estágio.
+- `query_leads` — equivalente para `leads` (tabela legada de prospecção).
+- `list_pipelines_and_stages` — estrutura completa do CRM.
+- `query_activities` — tarefas/atividades do CRM filtradas por owner/data/status.
+- `query_contacts` — busca contatos por nome/empresa/email/telefone.
+- `crm_metrics` — métricas agregadas (taxa de conversão por estágio, ticket médio, tempo médio em estágio, deals parados >N dias).
+- `rank_meeting_probability` — heurística servidor: combina estágio, dias desde último contato, presença de notas, valor → score 0–100 com explicação.
 
-## 4. Filtros avançados de destinatários
+Exportação:
+- `export_to_csv` — recebe resultado de uma query anterior (ou repete a query) e grava `/mnt/documents/<nome>.csv`. Retorna URL pública via Supabase Storage (bucket `email-attachments` já existe — ou criar `ai-exports` público). O chat mostra botão de download.
 
-Substituir o `<select>` único de pipeline por um painel de filtros combinados:
+Escrita (apenas `fundador`, ou `vendedor` no próprio escopo; sempre com `needsApproval`):
+- `move_deals_to_stage` — input: lista de deal_ids OU filtro, target_stage_id. Mostra preview, pede confirmação, executa em lote.
+- `update_deal_owner` — reatribuir responsável.
+- `add_deal_note` / `add_activity` — criar nota ou tarefa.
+- `bulk_update_deals` — campos genéricos (status, valor, tags). Sempre com preview e limite (ex: máx 500 por chamada).
 
-- **Pipeline** (múltipla escolha)
-- **Etapa** (multi-select baseado no pipeline escolhido)
-- **Status do deal**: aberto, ganho, perdido
-- **Responsável** (owner)
-- **Tag / origem** (Instagram, Pipedrive, Hunter, CSV…)
-- **Tem email válido** (default: sim — esconde quem não pode receber)
-- **Já recebeu campanha nos últimos N dias** (anti-spam interno; default: 7 dias de cooldown)
-- **Não está em lista de supressão** (bounces + descadastros — sempre on)
-- **Busca livre** por nome/empresa/email
-- **Contador dinâmico**: "247 leads correspondem · 12 excluídos por cooldown · 3 em supressão"
-- Botão **Salvar segmento** → vira lista nomeada reutilizável (tabela `email_audience_segments`)
+Todas as tools de escrita registram em `crm_deal_history` com `actor_user_id = user.id` e payload indicando "ação via assistente IA".
 
-## 5. Anexos
+**3. Atualizar System Prompts**
 
-- Botão "Anexar arquivo" no editor → upload para bucket `email-attachments` (novo, privado)
-- Limite: 10 MB por arquivo, 20 MB total por email (limites do Resend)
-- Lista visual dos anexos com nome + tamanho + remover
-- Edge function `resend-send-campaign` passa anexos como base64 no payload do Resend
+Reescrever os prompts em `SYSTEM_PROMPTS` para descrever:
+- As tools disponíveis e quando usá-las.
+- Regra: sempre consultar dados reais antes de responder perguntas quantitativas.
+- Regra: para ações de escrita, sempre apresentar preview com contagem + amostra antes de executar.
+- Manter a personalidade (consultor de vendas / fundador / geral).
 
-## 6. Outras funcionalidades úteis
+**4. Frontend — `AIChatPage.tsx` + `useAIChat.ts`**
 
-**Agendamento**
-- "Enviar agora" ou "Agendar para…" (date + hora)
-- Coluna `scheduled_for` na `email_campaigns`; cron a cada 5 min dispara campanhas vencidas
+- Migrar `useAIChat` para `useChat` do `@ai-sdk/react` com `DefaultChatTransport` apontando para `/functions/v1/ai-chat`.
+- Renderizar `message.parts` em vez de `content` string — para suportar `tool-call` e `tool-result` parts.
+- Adicionar componente `<ToolCallCard>` mostrando: ícone (DB/Download/Edit/Move), nome legível ("Consultando leads…", "Exportando CSV…", "Movendo 47 deals…"), status (running/success/error), e resultado compacto (tabela mini, contagem, link de download).
+- Para tools com `needsApproval`, mostrar botões "Confirmar / Cancelar" inline.
+- Manter persistência em `chat_messages` (já existe), salvando também as tool parts (coluna nova `parts jsonb` ou armazenar tudo em `content` como JSON serializado de UIMessage).
 
-**Teste antes de disparar**
-- Botão "Enviar teste para mim" envia 1 email com merge real (primeira pessoa da lista) só para o usuário logado — pega problemas de formatação antes do envio em massa
+**5. Banco**
 
-**Descadastro automático (LGPD)**
-- Rodapé com link `{{unsubscribe_url}}` injetado automaticamente
-- Edge function pública `email-unsubscribe` que marca email na tabela `email_suppressions` (já parte do plano de filtros)
-- Sem isso o Resend pode pausar a conta por reclamações
+- Adicionar coluna `parts jsonb` em `chat_messages` para persistir tool calls/results fielmente. Manter `content` como fallback texto.
+- (Opcional) tabela `ai_assistant_actions` para auditoria (user_id, tool_name, input, output, executed_at, deal_ids afetados).
 
-**Detalhe da campanha** (clicar no card)
-- Sheet/drawer lateral com:
-  - Métricas grandes em tempo real
-  - Tabela de cada destinatário: status, hora de abertura, número de aberturas, cliques (com URL clicada)
-  - Botão "Reenviar para quem não abriu" → cria campanha derivada com lista filtrada
-  - Export CSV dos resultados
+**6. Storage**
 
-**Duplicar campanha**
-- Botão "Duplicar" nos cards → abre modal pré-preenchido (rápido para A/B ou reenviar com ajuste)
+- Criar bucket `ai-exports` (público, com signed URL de 7 dias) para CSVs gerados.
 
-**Indicador de cota Resend**
-- Topo da aba mostra "1.247 / 3.000 emails este mês" (limite do plano grátis); avisa em laranja > 80%
+## Permissões & Segurança
 
-## Mudanças técnicas
+- Tools de leitura: respeitam RLS do usuário autenticado (uso de client com JWT do usuário, não service role) — vendedor vê só seus deals, fundador vê tudo.
+- Tools de escrita: validação extra no servidor por `has_role`. Vendedor só pode escrever em deals onde `owner_user_id = auth.uid()`.
+- Toda chamada de tool é logada.
 
-```text
-DB (migrations)
-├── email_templates: + categoria, arquivado, vezes_usado, thumbnail_html
-├── email_signatures (nova): nome, corpo_html, is_default, owner
-├── email_audience_segments (nova): nome, filtros (jsonb), created_by
-├── email_suppressions (nova): email, motivo (bounce/unsubscribe/manual), created_at
-├── email_campaigns: + scheduled_for, attachments (jsonb), segment_id, parent_campaign_id, test_sent_to
-└── email_campaign_recipients: + last_opened_at, click_count, clicked_urls (jsonb)
+## Detalhes técnicos relevantes
 
-Storage
-├── bucket "email-attachments" (privado, RLS por owner)
-└── bucket "email-inline-images" (público, para <img> no corpo)
+- `supabase/config.toml`: `ai-chat` precisa de `verify_jwt = true` (hoje provavelmente está `false`).
+- Edge function fica mais pesada — aumentar timeout se necessário.
+- Para CSV usar `npm:papaparse` ou string-building simples.
+- `rank_meeting_probability` será uma função SQL ou cálculo TS no servidor; fórmula simples: `score = 0.4*stage_weight + 0.3*recency + 0.2*has_recent_note + 0.1*valor_normalizado`.
 
-Edge functions
-├── resend-send-campaign: suportar anexos + injetar unsubscribe footer + respeitar supressão
-├── email-unsubscribe (nova, pública): GET ?token=xxx → marca supressão e mostra página de confirmação
-├── resend-webhook: registrar bounces na email_suppressions automaticamente
-└── campaign-scheduler (nova, cron 5min): dispara campanhas com scheduled_for vencido
+## Fora do escopo (pra confirmar se quer depois)
 
-Frontend
-├── npm: @tiptap/react @tiptap/starter-kit @tiptap/extension-link @tiptap/extension-image @tiptap/extension-underline @tiptap/extension-text-align @tiptap/extension-color
-├── src/components/crm/email/RichEditor.tsx (reutilizável aqui + em CrmDealDetail)
-├── src/components/crm/campanhas/
-│   ├── CampanhasView.tsx (refatorado: 3 tabs internas)
-│   ├── NewCampaignModal.tsx (editor + filtros + anexos + agendamento + teste)
-│   ├── TemplatesTab.tsx
-│   ├── SignaturesTab.tsx
-│   ├── RecipientFilters.tsx
-│   ├── CampaignDetailSheet.tsx (drawer com tabela de destinatários)
-│   └── QuotaIndicator.tsx
-└── src/hooks/useEmailTemplates.ts, useEmailSignatures.ts, useEmailSegments.ts
-```
+- Integração com Pipedrive direto (hoje sync é via job; mudanças via assistente afetam só Supabase).
+- Envio de e-mails/campanhas pelo assistente (já existe UI de campanhas).
+- Voice/áudio.
 
-## O que NÃO faço agora (posso fazer depois se quiser)
+## Perguntas antes de implementar
 
-- A/B testing automático de subject lines
-- Editor drag-and-drop estilo Mailchimp (blocos visuais) — fica no rich-text Tiptap por enquanto
-- Importação de listas CSV externas (só leads que já estão no CRM)
-- Cliques em links individuais com heatmap
-
----
-
-**Ao aprovar**, eu executo na ordem: migrations → bucket de anexos → edge functions atualizadas → editor Tiptap → filtros → templates/assinaturas → detalhe da campanha → agendamento e teste.
+1. **Escrita pelo assistente**: ok liberar movimentação em massa / reatribuição via chat (com confirmação), ou nesta primeira versão prefere **apenas leitura + export CSV**?
+2. **Quem pode usar tools de escrita**: só fundador, ou também vendedores no próprio escopo?
+3. **Score de "probabilidade de reunião"**: heurística simples no servidor (rápido, determinístico) ou deixar a IA inferir lendo as notas (mais lento, mais "inteligente")? Posso fazer híbrido: heurística filtra top 20, IA lê notas e re-ranqueia.
