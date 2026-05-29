@@ -234,19 +234,41 @@ Deno.serve(async (req) => {
 
     // ─── ORGANIZATIONS ───
     if (phase === "all" || phase === "orgs") {
+      const defs = await loadFieldDefs("organization");
       const orgs = await pdPaginated("/organizations", API_KEY);
-      const rows = orgs.map((o: any) => ({
-        nome: o.name || "Sem nome",
-        pipedrive_org_id: o.id,
-        endereco: o.address || null,
-        cidade: o.address_locality || null,
-        estado: o.address_admin_area_level_1 || null,
-        pais: o.address_country || null,
-        cep: o.address_postal_code || null,
-        site: o.web || null,
-        num_colaboradores: typeof o.people_count === "number" ? o.people_count : null,
-        raw_payload: o,
-      }));
+      const rows = orgs.map((o: any) => {
+        const custom = extractCustomFields(o, defs);
+        const enderecoCompleto = [
+          o.address, o.address_locality, o.address_admin_area_level_1,
+          o.address_country, o.address_postal_code,
+        ].filter(Boolean).join(", ") || null;
+        const numColabCustom = findCustomByName(custom, "Number of employees", "Nº de colaboradores", "Numero de colaboradores", "Número de Colaboradores");
+        const numColab = numColabCustom && !isNaN(parseInt(numColabCustom))
+          ? parseInt(numColabCustom)
+          : (typeof o.people_count === "number" ? o.people_count : null);
+        const faturamentoCustom = findCustomByName(custom, "Faturamento", "Annual revenue");
+        const fatNum = faturamentoCustom ? parseFloat(String(faturamentoCustom).replace(/[^\d.,-]/g, "").replace(",", ".")) : null;
+        return {
+          nome: o.name || "Sem nome",
+          pipedrive_org_id: o.id,
+          endereco: o.address || null,
+          endereco_completo: enderecoCompleto,
+          cidade: o.address_locality || null,
+          estado: o.address_admin_area_level_1 || null,
+          pais: o.address_country || null,
+          cep: o.address_postal_code || null,
+          site: o.website || o.web || findCustomByName(custom, "Website", "Site"),
+          linkedin: o.linkedin || findCustomByName(custom, "LinkedIn", "LinkedIn (Empresa)", "LinkedIn profile"),
+          instagram: findCustomByName(custom, "Instagram"),
+          whatsapp: findCustomByName(custom, "WhatsApp", "Whatsapp"),
+          industry: o.industry || findCustomByName(custom, "Industry", "Indústria", "Segmento"),
+          porte: findCustomByName(custom, "Porte"),
+          faturamento: fatNum && !isNaN(fatNum) ? fatNum : null,
+          num_colaboradores: numColab,
+          custom_fields: custom,
+          raw_payload: o,
+        };
+      });
       let imported = 0;
       for (const batch of chunks(rows, 300)) {
         const { error } = await sb.from("crm_organizations").upsert(batch, { onConflict: "pipedrive_org_id" });
@@ -255,6 +277,7 @@ Deno.serve(async (req) => {
       }
       summary.orgs = imported;
     }
+
 
     // ─── PERSONS ───
     if (phase === "all" || phase === "persons") {
