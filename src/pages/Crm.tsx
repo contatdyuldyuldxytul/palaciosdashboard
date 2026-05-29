@@ -22,7 +22,13 @@ const fmt = (v: number) =>
 export default function Crm() {
   const { isFundador } = useAuth();
   const { data: pipelines = [], isLoading: pLoading } = useCrmPipelines();
-  const [pipelineId, setPipelineId] = useState<string>("");
+  const [pipelineId, setPipelineIdState] = useState<string>(() => {
+    try { return sessionStorage.getItem("crm:lastPipelineId") || ""; } catch { return ""; }
+  });
+  const setPipelineId = (id: string) => {
+    setPipelineIdState(id);
+    try { sessionStorage.setItem("crm:lastPipelineId", id); } catch {}
+  };
   const [tab, setTab] = useState<"deals" | "fluxos">("deals");
   const [view, setView] = useState<"kanban" | "list">("kanban");
   const [newOpen, setNewOpen] = useState(false);
@@ -32,7 +38,9 @@ export default function Crm() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    if (!pipelineId && pipelines.length) setPipelineId(pipelines[0].id);
+    if (pipelines.length === 0) return;
+    const exists = pipelineId && pipelines.some((p) => p.id === pipelineId);
+    if (!exists) setPipelineId(pipelines[0].id);
   }, [pipelines, pipelineId]);
 
   const { data: stages = [] } = useCrmStages(pipelineId);
