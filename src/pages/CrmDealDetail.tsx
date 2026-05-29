@@ -378,6 +378,7 @@ export default function CrmDealDetail() {
             <Field label="LinkedIn">
               <InlineText value={person?.linkedin || ""} onSave={(v) => handlePatchPerson({ linkedin: v })} placeholder="—" />
             </Field>
+            <CustomFieldsList custom={person?.custom_fields} skip={["Cargo", "LinkedIn"]} />
           </SectionCard>
 
           {/* DADOS DA EMPRESA */}
@@ -386,10 +387,13 @@ export default function CrmDealDetail() {
               <InlineText value={org?.nome || ""} onSave={(v) => handlePatchOrg({ nome: v })} placeholder="—" />
             </Field>
             <Field label="Endereço">
-              <InlineText value={org?.endereco || ""} onSave={(v) => handlePatchOrg({ endereco: v })} placeholder="—" />
+              <InlineText value={org?.endereco_completo || org?.endereco || ""} onSave={(v) => handlePatchOrg({ endereco: v })} placeholder="—" />
             </Field>
             <Field label="Website">
               <InlineText value={org?.site || ""} onSave={(v) => handlePatchOrg({ site: v })} placeholder="—" />
+            </Field>
+            <Field label="Indústria">
+              <InlineText value={org?.industry || ""} onSave={(v) => handlePatchOrg({ industry: v })} placeholder="—" />
             </Field>
             <Field label="Nº Colaboradores">
               <InlineText value={org?.num_colaboradores ?? ""} onSave={(v) => handlePatchOrg({ num_colaboradores: v ? Number(v) : null })} placeholder="—" />
@@ -409,7 +413,12 @@ export default function CrmDealDetail() {
             <Field label="WhatsApp">
               <InlineText value={org?.whatsapp || ""} onSave={(v) => handlePatchOrg({ whatsapp: v })} placeholder="—" />
             </Field>
+            <CustomFieldsList
+              custom={org?.custom_fields}
+              skip={["Website", "Site", "LinkedIn", "LinkedIn profile", "LinkedIn (Empresa)", "Instagram", "WhatsApp", "Whatsapp", "Industry", "Indústria", "Segmento", "Porte", "Faturamento", "Annual revenue", "Number of employees", "Nº de colaboradores", "Numero de colaboradores", "Número de Colaboradores"]}
+            />
           </SectionCard>
+
 
           {/* RESPONSÁVEL */}
           <SectionCard title="Responsável">
