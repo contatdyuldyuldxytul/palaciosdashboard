@@ -14,6 +14,8 @@ import {
 export function TopBar() {
   const { signOut, profile } = useAuth();
   const { theme, toggle } = useTheme();
+  const navigate = useNavigate();
+
 
   return (
     <div
