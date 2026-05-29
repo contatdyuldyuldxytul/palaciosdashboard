@@ -1,71 +1,79 @@
-## Diagnóstico
+# Integração Resend — Envio em massa + tracking
 
-**1. Notas “em branco” no histórico**
-As notas estão no banco com conteúdo completo (`crm_notes.conteudo`), mas a aba **History** do deal apenas escreve “Nota adicionada” como título e o autor como subtítulo (`CrmDealDetail.tsx` linhas 932–933). O texto da nota nunca é exibido nesse timeline. A aba “Notas” já mostra o conteúdo — o problema é só no History.
+## O que você vai ter ao final
 
-**2. Campos faltando (ex.: Marcela Gomes / Habitat Incorporadora)**
-Os campos que faltam (Cargo, LinkedIn, Website, Nº de colaboradores=70, Indústria, Instagram, WhatsApp, Faturamento, etc.) são **custom fields do Pipedrive**, armazenados no `raw_payload` com chaves-hash (ex.: `3124b579caab...` = Cargo, `71e659ae2f94...` = LinkedIn).
-Hoje a importação só lê os campos *core* do Pipedrive — e nem todos corretamente:
-- `crm_organizations.site` busca `o.web`, mas o Pipedrive devolve `website`.
-- `num_colaboradores` usa `people_count` (= 4, contatos relacionados), e não o custom field “Number of employees” (= 70).
-- `cargo`, `linkedin` da pessoa nunca são extraídos dos custom fields.
-- Endereço da empresa hoje só salva `address_locality` no campo `endereco`, perdendo rua e número.
+- **Envio em massa** via Resend (3.000 emails/mês grátis) com domínio `palacios3dstudio.com` verificado (SPF/DKIM/DMARC) — não cai em spam
+- **Open tracking + click tracking** automáticos por email enviado
+- **Nova aba "Campanhas" no CRM**: selecionar leads → escolher template → disparar em lote
+- **Eventos visíveis no card do deal**: "📨 Enviado · 👁 Aberto 3x · 🔗 Clicou no link" em tempo real
+- **Sequências existentes** (`email_sequences`) ganham opção de disparar via Resend em vez de Gmail draft
 
-## Plano
+## Pré-requisitos (você precisa fazer)
 
-### 1. Capturar definições de custom fields do Pipedrive
+1. Criar conta grátis em **resend.com** (só email, 1 min)
+2. Ter acesso ao DNS do `palacios3dstudio.com` (Registro.br, Cloudflare, GoDaddy — onde estiver) para colar 3 registros TXT
+3. Conectar o Resend via connector do Lovable (eu abro o popup, você escolhe a conta)
 
-Nova tabela `crm_field_definitions`:
-- `entity_type` (`person` | `organization` | `deal`)
-- `field_key` (hash do Pipedrive)
-- `name`, `field_type`, `options` (jsonb para enums), `pipedrive_field_id`
-- Único por `(entity_type, field_key)`
+## Etapas de implementação
 
-Nova fase no `import-pipedrive-once`: `fields` → busca `/personFields`, `/organizationFields`, `/dealFields` e faz upsert nessa tabela. Roda antes de `persons`/`orgs`/`deals`.
+### 1. Conectar Resend e verificar domínio
+- Linkar connector `resend` ao projeto (cria `RESEND_API_KEY` automaticamente)
+- Te passar os registros DNS para colar no provedor do domínio
+- Aguardar verificação (~10 min após DNS propagar)
 
-Agendar `fields` no cron diário (6h UTC) antes das demais fases.
+### 2. Infra de banco (migration)
+Criar tabelas:
+- **`email_campaigns`**: id, nome, subject, body_html, from_email, criado_por, status (draft/sending/sent), total_enviados, total_abertos, total_clicados, created_at
+- **`email_campaign_recipients`**: id, campaign_id, deal_id, person_id, recipient_email, resend_message_id, status (queued/sent/delivered/opened/clicked/bounced/failed), sent_at, first_opened_at, open_count, first_clicked_at, click_count, bounce_reason
+- **`email_templates`**: id, nome, subject, body_html, variables (jsonb), created_at — para reaproveitar templates
 
-### 2. Enriquecer o import de pessoas e empresas
+RLS: fundador vê tudo, vendedor vê só campanhas que criou.
 
-No `import-pipedrive-once` (fases `persons` e `orgs`):
-- Carregar o mapa de field definitions do banco.
-- Para cada registro, percorrer as chaves-hash do `raw_payload` que existirem nas definitions e montar um `custom_fields` jsonb `{ "Cargo": "Analista de marketing sênior", "LinkedIn": "http://...", ... }` (resolvendo enums via `options`).
-- Persistir esse jsonb em novas colunas `crm_persons.custom_fields` e `crm_organizations.custom_fields`.
+### 3. Edge Functions
+- **`resend-send-campaign`**: recebe `campaign_id`, busca destinatários, dispara em lote (batch de 100, com rate limit), grava `resend_message_id` por destinatário
+- **`resend-webhook`**: endpoint público que recebe eventos do Resend (`email.sent`, `email.delivered`, `email.opened`, `email.clicked`, `email.bounced`) e atualiza `email_campaign_recipients` em tempo real
+- **`resend-send-single`**: envio 1-a-1 a partir do card do deal (substitui/complementa o draft do Gmail)
 
-Mapear também alguns custom fields “conhecidos” para colunas existentes/novas (heurística por nome, case-insensitive):
-- Pessoa: `cargo` ← campo “Cargo” (fallback `job_title`); `linkedin` (nova coluna) ← campo “LinkedIn”.
-- Organização: `site` ← `payload.website` (corrigir de `o.web`); `linkedin`, `instagram`, `whatsapp`, `industry`, `annual_revenue`, `num_colaboradores` (a partir do custom field “Number of employees” se existir, senão `people_count`) — adicionar colunas que faltarem.
-- Salvar endereço completo: novo campo `endereco_completo` montado a partir de `address` (rua) + `address_locality` + `address_admin_area_level_1` + `address_postal_code`.
+### 4. UI — Nova aba "Campanhas" em `/crm`
+- Lista de campanhas com métricas (enviados, taxa de abertura %, taxa de clique %)
+- Botão **"Nova Campanha"**:
+  - Seleção de leads (filtros por etapa, owner, tag)
+  - Escolha de template (ou compor do zero, editor simples HTML/markdown)
+  - Variáveis dinâmicas: `{{nome}}`, `{{empresa}}`, `{{cargo}}`
+  - Preview antes de disparar
+  - Botão "Enviar agora" ou "Agendar"
+- Detalhe da campanha: tabela com cada destinatário e seu status atualizado em tempo real (Supabase Realtime)
 
-### 3. Backfill dos registros já importados
+### 5. UI — Card do deal (`CrmDealDetail.tsx`)
+- Nova seção "Emails enviados" no histórico, em **azul claro** (distinto das notas amarelas):
+  - "Email enviado: [assunto] · há 2h"
+  - Badge ao lado: "👁 Aberto 3x · última às 14:32"
+  - Badge: "🔗 Clicou no link às 14:35"
+- Botão "Enviar email" abre composer rápido usando Resend
 
-Migration que percorre `crm_persons` e `crm_organizations`, lê `raw_payload`, e preenche `custom_fields` + colunas mapeadas usando as novas definitions. Sem precisar rebaixar nada do Pipedrive.
+### 6. Configuração webhook no Resend
+- Após deploy, copiar URL do `resend-webhook` e colar no painel do Resend (Webhooks → Add endpoint)
+- Eu te guio passo a passo
 
-### 4. UI do Deal Detail
+## Detalhes técnicos
 
-**Card “Dados do Lead” / “Dados da Empresa”** (componente que renderiza os blocos hoje incompletos):
-- Mostrar os campos fixos (nome, email, telefone, cargo, linkedin, website, endereço, nº colaboradores, etc.).
-- Abaixo, render genérico de `custom_fields`: iterar as chaves do jsonb e mostrar `Nome: Valor` para qualquer campo que tenha valor — assim qualquer custom field novo do Pipedrive aparece automaticamente sem código novo.
-- “—” somente quando o campo realmente está vazio.
+- **Gateway**: chamadas para `https://connector-gateway.lovable.dev/resend/emails` com header `X-Connection-Api-Key`
+- **From**: `aline@palacios3dstudio.com` ou `contato@palacios3dstudio.com` (configurável)
+- **Tracking pixel**: Resend injeta automaticamente, sem código adicional
+- **Realtime**: `ALTER PUBLICATION supabase_realtime ADD TABLE email_campaign_recipients` para atualizar UI sem refresh
+- **Rate limit**: Resend free permite 2 req/s — batch de 100 com `await sleep(500)` entre lotes
+- **Gmail permanece**: continua para conversas 1-a-1 reais (responder leads que responderam), Resend só para outbound em massa
 
-**Aba History** (`CrmDealDetail.tsx` ~ linha 932):
-- Para cada nota, renderizar um card amarelo (estilo Pipedrive da imagem anexada) com:
-  - cabeçalho: `<data> · <autor>`
-  - corpo: `note.conteudo` (preservando quebras de linha)
-- Tokens do design system: usar `bg-yellow-500/10 border-yellow-500/30 text-foreground` (ou variáveis equivalentes do tema dark) em vez de cores hardcoded.
-- Demais eventos (stage_changed, status_changed, atividade concluída, deal criado) continuam com o layout atual de ícone + título.
+## O que NÃO está no escopo (posso fazer depois)
 
-### 5. Validação
+- A/B testing de subject lines
+- Sequências automáticas via Resend (hoje as sequências geram drafts no Gmail — manter assim por enquanto)
+- Importação de listas externas (CSV) — só envio para leads já no CRM
+- Editor visual drag-and-drop de email (HTML simples no MVP)
 
-- Rodar `import-pipedrive-once?phase=fields` → conferir que `crm_field_definitions` ficou populada (~50 definições).
-- Rodar `phase=persons` e `phase=orgs` (ou o backfill da migration) → conferir que Marcela Gomes ganha cargo/linkedin e Habitat ganha website/employees=70/etc.
-- Abrir o deal `f09df467-aa54-4f16-826f-bc6ab19f9be1` no app:
-  - Bloco da empresa mostra Website, Nº colaboradores 70, e demais custom fields preenchidos.
-  - Aba History mostra as 9 notas com texto, em cards amarelos.
+---
 
-## Detalhe técnico
-
-- Sem alteração no Pipedrive; apenas leitura adicional de `/personFields`, `/organizationFields`, `/dealFields`.
-- Nenhum dado é apagado — colunas novas e jsonb `custom_fields` convivem com o que já existe.
-- Mapeamento por *nome do campo* (não por hash fixo) — funciona mesmo se outro Pipedrive tiver hashes diferentes.
-- Backfill é idempotente; pode ser re-executado.
+**Quando você aprovar este plano:**
+1. Confirma seu domínio (`palacios3dstudio.com` ou outro?)
+2. Eu abro o popup de connector do Resend
+3. Eu crio a infra (migration + edge functions + UI) e te passo os registros DNS para colar
