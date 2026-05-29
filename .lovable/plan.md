@@ -1,79 +1,132 @@
-# Integração Resend — Envio em massa + tracking
+# Upgrade da aba Campanhas
 
-## O que você vai ter ao final
+Vou transformar o modal atual (simples textarea HTML + lista crua de leads) em um construtor de campanhas completo, com editor visual, biblioteca de templates, filtros e anexos.
 
-- **Envio em massa** via Resend (3.000 emails/mês grátis) com domínio `palacios3dstudio.com` verificado (SPF/DKIM/DMARC) — não cai em spam
-- **Open tracking + click tracking** automáticos por email enviado
-- **Nova aba "Campanhas" no CRM**: selecionar leads → escolher template → disparar em lote
-- **Eventos visíveis no card do deal**: "📨 Enviado · 👁 Aberto 3x · 🔗 Clicou no link" em tempo real
-- **Sequências existentes** (`email_sequences`) ganham opção de disparar via Resend em vez de Gmail draft
+## 1. Editor visual de email (rich-text)
 
-## Pré-requisitos (você precisa fazer)
+Substituir a `Textarea` HTML por um editor **Tiptap** (leve, React-native, ~50kb gz) com toolbar fixa:
 
-1. Criar conta grátis em **resend.com** (só email, 1 min)
-2. Ter acesso ao DNS do `palacios3dstudio.com` (Registro.br, Cloudflare, GoDaddy — onde estiver) para colar 3 registros TXT
-3. Conectar o Resend via connector do Lovable (eu abro o popup, você escolhe a conta)
+- **Formatação**: negrito, itálico, sublinhado, riscado, cabeçalhos (H1/H2/H3), listas (•, 1.), citação, código
+- **Links**: inserir/editar URL com prompt
+- **Imagens inline**: upload para Supabase Storage → cola URL pública no email
+- **Alinhamento**: esquerda, centro, direita
+- **Cor de texto e destaque** (paleta limitada para não quebrar deliverability)
+- **Variáveis dinâmicas**: botão "Inserir variável" → menu com `{{nome}}`, `{{primeiro_nome}}`, `{{empresa}}`, `{{cargo}}`, `{{email}}` (chips visuais que viram texto no envio)
+- **Assinatura**: dropdown "Inserir assinatura" puxa assinaturas salvas (ver abaixo) e cola no final
+- **Preview ao vivo** lado-a-lado (toggle) renderizando com dados do primeiro destinatário selecionado
 
-## Etapas de implementação
+## 2. Biblioteca de templates
 
-### 1. Conectar Resend e verificar domínio
-- Linkar connector `resend` ao projeto (cria `RESEND_API_KEY` automaticamente)
-- Te passar os registros DNS para colar no provedor do domínio
-- Aguardar verificação (~10 min após DNS propagar)
+Aba **"Templates"** dentro de Campanhas (tabs internas: Campanhas | Templates | Assinaturas):
 
-### 2. Infra de banco (migration)
-Criar tabelas:
-- **`email_campaigns`**: id, nome, subject, body_html, from_email, criado_por, status (draft/sending/sent), total_enviados, total_abertos, total_clicados, created_at
-- **`email_campaign_recipients`**: id, campaign_id, deal_id, person_id, recipient_email, resend_message_id, status (queued/sent/delivered/opened/clicked/bounced/failed), sent_at, first_opened_at, open_count, first_clicked_at, click_count, bounce_reason
-- **`email_templates`**: id, nome, subject, body_html, variables (jsonb), created_at — para reaproveitar templates
+- Grid de cards mostrando nome, assunto, preview e categoria
+- **Criar** template (mesmo editor da campanha) com nome, categoria (Outbound, Follow-up, Nutrição, Reativação), assunto e corpo
+- **Editar / duplicar / arquivar / deletar**
+- **Usar template**: ao criar campanha, dropdown "Carregar template" preenche assunto + corpo
+- **Salvar como template**: botão dentro do modal de nova campanha
+- Contador de uso ("usado 12x") por template
+- Tabela nova: `email_templates` já existe — só adicionar colunas `categoria`, `arquivado`, `vezes_usado`, `thumbnail_html`
 
-RLS: fundador vê tudo, vendedor vê só campanhas que criou.
+## 3. Assinaturas salvas
 
-### 3. Edge Functions
-- **`resend-send-campaign`**: recebe `campaign_id`, busca destinatários, dispara em lote (batch de 100, com rate limit), grava `resend_message_id` por destinatário
-- **`resend-webhook`**: endpoint público que recebe eventos do Resend (`email.sent`, `email.delivered`, `email.opened`, `email.clicked`, `email.bounced`) e atualiza `email_campaign_recipients` em tempo real
-- **`resend-send-single`**: envio 1-a-1 a partir do card do deal (substitui/complementa o draft do Gmail)
+Sub-aba **Assinaturas** (tabela nova `email_signatures`):
 
-### 4. UI — Nova aba "Campanhas" em `/crm`
-- Lista de campanhas com métricas (enviados, taxa de abertura %, taxa de clique %)
-- Botão **"Nova Campanha"**:
-  - Seleção de leads (filtros por etapa, owner, tag)
-  - Escolha de template (ou compor do zero, editor simples HTML/markdown)
-  - Variáveis dinâmicas: `{{nome}}`, `{{empresa}}`, `{{cargo}}`
-  - Preview antes de disparar
-  - Botão "Enviar agora" ou "Agendar"
-- Detalhe da campanha: tabela com cada destinatário e seu status atualizado em tempo real (Supabase Realtime)
+- CRUD simples: nome ("Aline padrão", "Milena breve"), corpo HTML (com foto, telefone, link de agenda)
+- Marcar uma como **padrão** (auto-inserida em novas campanhas)
+- Reaproveitada também no envio 1-a-1 do `CrmDealDetail`
 
-### 5. UI — Card do deal (`CrmDealDetail.tsx`)
-- Nova seção "Emails enviados" no histórico, em **azul claro** (distinto das notas amarelas):
-  - "Email enviado: [assunto] · há 2h"
-  - Badge ao lado: "👁 Aberto 3x · última às 14:32"
-  - Badge: "🔗 Clicou no link às 14:35"
-- Botão "Enviar email" abre composer rápido usando Resend
+## 4. Filtros avançados de destinatários
 
-### 6. Configuração webhook no Resend
-- Após deploy, copiar URL do `resend-webhook` e colar no painel do Resend (Webhooks → Add endpoint)
-- Eu te guio passo a passo
+Substituir o `<select>` único de pipeline por um painel de filtros combinados:
 
-## Detalhes técnicos
+- **Pipeline** (múltipla escolha)
+- **Etapa** (multi-select baseado no pipeline escolhido)
+- **Status do deal**: aberto, ganho, perdido
+- **Responsável** (owner)
+- **Tag / origem** (Instagram, Pipedrive, Hunter, CSV…)
+- **Tem email válido** (default: sim — esconde quem não pode receber)
+- **Já recebeu campanha nos últimos N dias** (anti-spam interno; default: 7 dias de cooldown)
+- **Não está em lista de supressão** (bounces + descadastros — sempre on)
+- **Busca livre** por nome/empresa/email
+- **Contador dinâmico**: "247 leads correspondem · 12 excluídos por cooldown · 3 em supressão"
+- Botão **Salvar segmento** → vira lista nomeada reutilizável (tabela `email_audience_segments`)
 
-- **Gateway**: chamadas para `https://connector-gateway.lovable.dev/resend/emails` com header `X-Connection-Api-Key`
-- **From**: `aline@palacios3dstudio.com` ou `contato@palacios3dstudio.com` (configurável)
-- **Tracking pixel**: Resend injeta automaticamente, sem código adicional
-- **Realtime**: `ALTER PUBLICATION supabase_realtime ADD TABLE email_campaign_recipients` para atualizar UI sem refresh
-- **Rate limit**: Resend free permite 2 req/s — batch de 100 com `await sleep(500)` entre lotes
-- **Gmail permanece**: continua para conversas 1-a-1 reais (responder leads que responderam), Resend só para outbound em massa
+## 5. Anexos
 
-## O que NÃO está no escopo (posso fazer depois)
+- Botão "Anexar arquivo" no editor → upload para bucket `email-attachments` (novo, privado)
+- Limite: 10 MB por arquivo, 20 MB total por email (limites do Resend)
+- Lista visual dos anexos com nome + tamanho + remover
+- Edge function `resend-send-campaign` passa anexos como base64 no payload do Resend
 
-- A/B testing de subject lines
-- Sequências automáticas via Resend (hoje as sequências geram drafts no Gmail — manter assim por enquanto)
-- Importação de listas externas (CSV) — só envio para leads já no CRM
-- Editor visual drag-and-drop de email (HTML simples no MVP)
+## 6. Outras funcionalidades úteis
+
+**Agendamento**
+- "Enviar agora" ou "Agendar para…" (date + hora)
+- Coluna `scheduled_for` na `email_campaigns`; cron a cada 5 min dispara campanhas vencidas
+
+**Teste antes de disparar**
+- Botão "Enviar teste para mim" envia 1 email com merge real (primeira pessoa da lista) só para o usuário logado — pega problemas de formatação antes do envio em massa
+
+**Descadastro automático (LGPD)**
+- Rodapé com link `{{unsubscribe_url}}` injetado automaticamente
+- Edge function pública `email-unsubscribe` que marca email na tabela `email_suppressions` (já parte do plano de filtros)
+- Sem isso o Resend pode pausar a conta por reclamações
+
+**Detalhe da campanha** (clicar no card)
+- Sheet/drawer lateral com:
+  - Métricas grandes em tempo real
+  - Tabela de cada destinatário: status, hora de abertura, número de aberturas, cliques (com URL clicada)
+  - Botão "Reenviar para quem não abriu" → cria campanha derivada com lista filtrada
+  - Export CSV dos resultados
+
+**Duplicar campanha**
+- Botão "Duplicar" nos cards → abre modal pré-preenchido (rápido para A/B ou reenviar com ajuste)
+
+**Indicador de cota Resend**
+- Topo da aba mostra "1.247 / 3.000 emails este mês" (limite do plano grátis); avisa em laranja > 80%
+
+## Mudanças técnicas
+
+```text
+DB (migrations)
+├── email_templates: + categoria, arquivado, vezes_usado, thumbnail_html
+├── email_signatures (nova): nome, corpo_html, is_default, owner
+├── email_audience_segments (nova): nome, filtros (jsonb), created_by
+├── email_suppressions (nova): email, motivo (bounce/unsubscribe/manual), created_at
+├── email_campaigns: + scheduled_for, attachments (jsonb), segment_id, parent_campaign_id, test_sent_to
+└── email_campaign_recipients: + last_opened_at, click_count, clicked_urls (jsonb)
+
+Storage
+├── bucket "email-attachments" (privado, RLS por owner)
+└── bucket "email-inline-images" (público, para <img> no corpo)
+
+Edge functions
+├── resend-send-campaign: suportar anexos + injetar unsubscribe footer + respeitar supressão
+├── email-unsubscribe (nova, pública): GET ?token=xxx → marca supressão e mostra página de confirmação
+├── resend-webhook: registrar bounces na email_suppressions automaticamente
+└── campaign-scheduler (nova, cron 5min): dispara campanhas com scheduled_for vencido
+
+Frontend
+├── npm: @tiptap/react @tiptap/starter-kit @tiptap/extension-link @tiptap/extension-image @tiptap/extension-underline @tiptap/extension-text-align @tiptap/extension-color
+├── src/components/crm/email/RichEditor.tsx (reutilizável aqui + em CrmDealDetail)
+├── src/components/crm/campanhas/
+│   ├── CampanhasView.tsx (refatorado: 3 tabs internas)
+│   ├── NewCampaignModal.tsx (editor + filtros + anexos + agendamento + teste)
+│   ├── TemplatesTab.tsx
+│   ├── SignaturesTab.tsx
+│   ├── RecipientFilters.tsx
+│   ├── CampaignDetailSheet.tsx (drawer com tabela de destinatários)
+│   └── QuotaIndicator.tsx
+└── src/hooks/useEmailTemplates.ts, useEmailSignatures.ts, useEmailSegments.ts
+```
+
+## O que NÃO faço agora (posso fazer depois se quiser)
+
+- A/B testing automático de subject lines
+- Editor drag-and-drop estilo Mailchimp (blocos visuais) — fica no rich-text Tiptap por enquanto
+- Importação de listas CSV externas (só leads que já estão no CRM)
+- Cliques em links individuais com heatmap
 
 ---
 
-**Quando você aprovar este plano:**
-1. Confirma seu domínio (`palacios3dstudio.com` ou outro?)
-2. Eu abro o popup de connector do Resend
-3. Eu crio a infra (migration + edge functions + UI) e te passo os registros DNS para colar
+**Ao aprovar**, eu executo na ordem: migrations → bucket de anexos → edge functions atualizadas → editor Tiptap → filtros → templates/assinaturas → detalhe da campanha → agendamento e teste.
