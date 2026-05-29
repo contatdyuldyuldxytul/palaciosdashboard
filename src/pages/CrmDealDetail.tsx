@@ -207,32 +207,27 @@ export default function CrmDealDetail() {
           </div>
         </div>
 
-        {/* Clickable stage bar */}
-        <div className="space-y-2 pt-2">
-          <div className="flex items-center gap-1.5">
-            {allStages.map((s, idx) => (
+        {/* Stage selector */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-2">
+          {allStages.map((s, idx) => {
+            const active = idx === currentStageIdx;
+            return (
               <button
                 key={s.id}
                 onClick={() => handleStageChange(s.id)}
-                className="flex-1 group relative cursor-pointer"
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-[11px] border transition-all",
+                  active
+                    ? "text-foreground font-semibold border-transparent shadow-sm"
+                    : "text-muted-foreground border-white/10 bg-white/[0.03] hover:text-foreground hover:bg-white/[0.06]"
+                )}
+                style={active ? { background: (s.cor || "hsl(var(--primary))") + "25", borderColor: (s.cor || "hsl(var(--primary))") + "60" } : undefined}
                 title={`Mover para ${s.nome}`}
               >
-                <div
-                  className={cn(
-                    "h-4 rounded-full transition-all group-hover:h-5 shadow-sm",
-                    idx <= currentStageIdx ? "" : "bg-white/5"
-                  )}
-                  style={idx <= currentStageIdx ? { background: s.cor || "hsl(var(--primary))" } : undefined}
-                />
-                <div className={cn(
-                  "text-[10px] mt-2 text-center truncate transition-colors",
-                  idx === currentStageIdx ? "text-foreground font-semibold" : "text-muted-foreground group-hover:text-foreground"
-                )}>
-                  {s.nome}
-                </div>
+                {idx + 1}. {s.nome}
               </button>
-            ))}
-          </div>
+            );
+          })}
         </div>
 
         <div className="flex flex-wrap gap-2 pt-2">
