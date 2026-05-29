@@ -1268,6 +1268,152 @@ export type Database = {
           },
         ]
       }
+      email_campaign_recipients: {
+        Row: {
+          bounce_reason: string | null
+          campaign_id: string
+          click_count: number
+          created_at: string
+          deal_id: string | null
+          delivered_at: string | null
+          error_message: string | null
+          first_clicked_at: string | null
+          first_opened_at: string | null
+          id: string
+          last_clicked_at: string | null
+          last_opened_at: string | null
+          open_count: number
+          person_id: string | null
+          recipient_email: string
+          recipient_name: string | null
+          resend_message_id: string | null
+          sent_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          bounce_reason?: string | null
+          campaign_id: string
+          click_count?: number
+          created_at?: string
+          deal_id?: string | null
+          delivered_at?: string | null
+          error_message?: string | null
+          first_clicked_at?: string | null
+          first_opened_at?: string | null
+          id?: string
+          last_clicked_at?: string | null
+          last_opened_at?: string | null
+          open_count?: number
+          person_id?: string | null
+          recipient_email: string
+          recipient_name?: string | null
+          resend_message_id?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          bounce_reason?: string | null
+          campaign_id?: string
+          click_count?: number
+          created_at?: string
+          deal_id?: string | null
+          delivered_at?: string | null
+          error_message?: string | null
+          first_clicked_at?: string | null
+          first_opened_at?: string | null
+          id?: string
+          last_clicked_at?: string | null
+          last_opened_at?: string | null
+          open_count?: number
+          person_id?: string | null
+          recipient_email?: string
+          recipient_name?: string | null
+          resend_message_id?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_campaign_recipients_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "email_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_campaigns: {
+        Row: {
+          body_html: string
+          created_at: string
+          criado_por: string | null
+          from_email: string
+          from_name: string
+          id: string
+          nome: string
+          reply_to: string | null
+          scheduled_at: string | null
+          sent_at: string | null
+          status: string
+          subject: string
+          total_bounced: number
+          total_clicked: number
+          total_delivered: number
+          total_failed: number
+          total_opened: number
+          total_recipients: number
+          total_sent: number
+          updated_at: string
+        }
+        Insert: {
+          body_html: string
+          created_at?: string
+          criado_por?: string | null
+          from_email?: string
+          from_name?: string
+          id?: string
+          nome: string
+          reply_to?: string | null
+          scheduled_at?: string | null
+          sent_at?: string | null
+          status?: string
+          subject: string
+          total_bounced?: number
+          total_clicked?: number
+          total_delivered?: number
+          total_failed?: number
+          total_opened?: number
+          total_recipients?: number
+          total_sent?: number
+          updated_at?: string
+        }
+        Update: {
+          body_html?: string
+          created_at?: string
+          criado_por?: string | null
+          from_email?: string
+          from_name?: string
+          id?: string
+          nome?: string
+          reply_to?: string | null
+          scheduled_at?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          total_bounced?: number
+          total_clicked?: number
+          total_delivered?: number
+          total_failed?: number
+          total_opened?: number
+          total_recipients?: number
+          total_sent?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_messages: {
         Row: {
           body_html: string | null
@@ -1548,6 +1694,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      email_templates: {
+        Row: {
+          body_html: string
+          created_at: string
+          criado_por: string | null
+          id: string
+          nome: string
+          subject: string
+          updated_at: string
+          variables: Json
+        }
+        Insert: {
+          body_html: string
+          created_at?: string
+          criado_por?: string | null
+          id?: string
+          nome: string
+          subject: string
+          updated_at?: string
+          variables?: Json
+        }
+        Update: {
+          body_html?: string
+          created_at?: string
+          criado_por?: string | null
+          id?: string
+          nome?: string
+          subject?: string
+          updated_at?: string
+          variables?: Json
+        }
+        Relationships: []
       }
       financeiro_clientes: {
         Row: {
