@@ -140,6 +140,38 @@ Deno.serve(async (req) => {
       return m;
     }
 
+    // ─── FIELDS (definições de custom fields) ───
+    if (phase === "all" || phase === "fields") {
+      const targets: Array<[string, string]> = [
+        ["person", "/personFields"],
+        ["organization", "/organizationFields"],
+        ["deal", "/dealFields"],
+      ];
+      let total = 0;
+      for (const [entity_type, path] of targets) {
+        try {
+          const items = await pdPaginated(path, API_KEY);
+          const rows = items.map((f: any) => ({
+            entity_type,
+            field_key: f.key,
+            name: f.name,
+            field_type: f.field_type || null,
+            options: Array.isArray(f.options) ? f.options : null,
+            pipedrive_field_id: f.id,
+            is_custom: !!f.add_visible_flag || /^[a-f0-9]{40}$/.test(f.key || ""),
+            updated_at: new Date().toISOString(),
+          }));
+          for (const batch of chunks(rows, 500)) {
+            const { error } = await sb.from("crm_field_definitions")
+              .upsert(batch, { onConflict: "entity_type,field_key" });
+            if (!error) total += batch.length;
+            else console.warn(`fields ${entity_type}:`, error.message);
+          }
+        } catch (e) { console.warn(`field fetch ${entity_type}:`, e); }
+      }
+      summary.field_definitions = total;
+    }
+
     // ─── PIPELINES ───
     if (phase === "all" || phase === "pipelines") {
       const j = await pdGet("/pipelines", API_KEY);
