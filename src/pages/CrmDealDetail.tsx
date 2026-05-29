@@ -932,6 +932,9 @@ function HistoryList({
       items.push({ date: h.created_at, kind: "event", icon: Edit, title: "Etapa alterada", sub: `${from} → ${to}` });
     } else if (h.evento === "status_changed") {
       items.push({ date: h.created_at, kind: "event", icon: Edit, title: "Status alterado", sub: `${h.payload?.from} → ${h.payload?.to}` });
+    } else if (h.evento === "note_added" || h.evento === "note_created") {
+      // Skip — actual note content is rendered separately as a yellow card
+      return;
     } else {
       items.push({ date: h.created_at, kind: "event", icon: Edit, title: h.evento });
     }
