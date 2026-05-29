@@ -30,7 +30,7 @@ export default function Crm() {
     setPipelineIdState(id);
     try { sessionStorage.setItem("crm:lastPipelineId", id); } catch {}
   };
-  const [tab, setTab] = useState<"deals" | "fluxos">("deals");
+  const [tab, setTab] = useState<"deals" | "fluxos" | "campanhas">("deals");
   const [view, setView] = useState<"kanban" | "list">("kanban");
   const [newOpen, setNewOpen] = useState(false);
   const [editor, setEditor] = useState<{ mode: "new" | "edit"; pipelineId?: string } | null>(null);
