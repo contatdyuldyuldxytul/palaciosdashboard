@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
           campaignBump.total_opened = 1;
         }
         break;
-      case 'email.clicked':
+      case 'email.clicked': {
         updates.status = 'clicked';
         updates.last_clicked_at = now;
         updates.click_count = (rec.click_count ?? 0) + 1;
@@ -57,15 +57,42 @@ Deno.serve(async (req) => {
           updates.first_clicked_at = now;
           campaignBump.total_clicked = 1;
         }
+        // Captura URL clicada
+        const url = data.click?.link || data.link;
+        if (url) {
+          const { data: rec2 } = await supabase
+            .from('email_campaign_recipients').select('urls_clicadas').eq('id', rec.id).single();
+          const arr = Array.isArray(rec2?.urls_clicadas) ? rec2.urls_clicadas : [];
+          arr.push({ url, at: now });
+          updates.urls_clicadas = arr;
+        }
         break;
-      case 'email.bounced':
+      }
+      case 'email.bounced': {
         updates.status = 'bounced';
         updates.bounce_reason = data.bounce?.message ?? data.reason ?? null;
         campaignBump.total_bounced = 1;
+        // Adiciona à supressão
+        const { data: rec2 } = await supabase
+          .from('email_campaign_recipients').select('recipient_email').eq('id', rec.id).single();
+        if (rec2?.recipient_email) {
+          await supabase.from('email_suppressions').upsert({
+            email: rec2.recipient_email, motivo: 'bounce', detalhe: updates.bounce_reason as string,
+          }, { onConflict: 'email' });
+        }
         break;
-      case 'email.complained':
+      }
+      case 'email.complained': {
         updates.status = 'complained';
+        const { data: rec2 } = await supabase
+          .from('email_campaign_recipients').select('recipient_email').eq('id', rec.id).single();
+        if (rec2?.recipient_email) {
+          await supabase.from('email_suppressions').upsert({
+            email: rec2.recipient_email, motivo: 'complaint',
+          }, { onConflict: 'email' });
+        }
         break;
+      }
     }
 
     if (Object.keys(updates).length > 0) {

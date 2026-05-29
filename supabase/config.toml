@@ -47,3 +47,9 @@ verify_jwt = false
 
 [functions.resend-send-single]
 verify_jwt = false
+
+[functions.email-unsubscribe]
+verify_jwt = false
+
+[functions.campaign-scheduler]
+verify_jwt = false
