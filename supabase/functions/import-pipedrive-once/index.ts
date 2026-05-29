@@ -214,6 +214,18 @@ Deno.serve(async (req) => {
       const { data: stagesData } = await sb.from("crm_stages").select("id, pipeline_id");
       const stageToPipeline = new Map<string, string>();
       for (const s of stagesData || []) stageToPipeline.set((s as any).id, (s as any).pipeline_id);
+      // person uuid → organization uuid (para fallback quando deal não tem org)
+      const personOrgMap = new Map<string, string>();
+      {
+        let from = 0; const PAGE = 1000;
+        while (true) {
+          const { data, error } = await sb.from("crm_persons").select("id, organization_id").not("organization_id", "is", null).range(from, from + PAGE - 1);
+          if (error || !data || data.length === 0) break;
+          for (const r of data as any[]) personOrgMap.set(r.id, r.organization_id);
+          if (data.length < PAGE) break;
+          from += PAGE;
+        }
+      }
 
       const open = await pdPaginated("/deals?status=all_not_deleted", API_KEY);
       let deleted: any[] = [];
@@ -227,8 +239,13 @@ Deno.serve(async (req) => {
         if (!stageUuid) return null;
         const pipelineUuid = stageToPipeline.get(stageUuid);
         if (!pipelineUuid) return null;
-        const orgUuid = d.org_id?.value ? orgMap.get(d.org_id.value) : null;
+        let orgUuid = d.org_id?.value ? orgMap.get(d.org_id.value) : null;
         const personUuid = d.person_id?.value ? personMap.get(d.person_id.value) : null;
+        // Fallback: usar org da pessoa vinculada se o deal não trouxer org
+        if (!orgUuid && personUuid) {
+          const personOrg = personOrgMap.get(personUuid);
+          if (personOrg) orgUuid = personOrg;
+        }
         const ownerName = d.user_id?.name || d.owner_name || null;
         let status: string = d.status === "won" ? "won" : d.status === "lost" ? "lost" : "open";
         if (d._deleted) status = "lost";
