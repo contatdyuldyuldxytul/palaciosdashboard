@@ -63,6 +63,58 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const phase = url.searchParams.get("phase") || "all";
     const summary: Record<string, any> = { phase };
+
+    // ── Helpers for custom fields ──
+    type FieldDef = { key: string; name: string; field_type: string | null; options: any[] | null };
+    async function loadFieldDefs(entity_type: string): Promise<FieldDef[]> {
+      const { data } = await sb
+        .from("crm_field_definitions")
+        .select("field_key, name, field_type, options")
+        .eq("entity_type", entity_type);
+      return (data || []).map((r: any) => ({
+        key: r.field_key, name: r.name, field_type: r.field_type, options: r.options,
+      }));
+    }
+    function resolveOptionLabel(raw: any, options: any[] | null): string {
+      if (raw == null || raw === "") return "";
+      if (!Array.isArray(options) || options.length === 0) return String(raw);
+      // options: [{id, label}]; raw may be id, "id1,id2" csv, or already a label
+      const ids = String(raw).split(",").map((s) => s.trim());
+      const labels = ids.map((id) => {
+        const opt = options.find((o: any) => String(o.id) === id || String(o.value) === id);
+        return opt ? (opt.label ?? opt.name ?? String(raw)) : id;
+      });
+      return labels.join(", ");
+    }
+    function extractCustomFields(payload: any, defs: FieldDef[]): Record<string, string> {
+      const out: Record<string, string> = {};
+      if (!payload || typeof payload !== "object") return out;
+      for (const d of defs) {
+        if (!(d.key in payload)) continue;
+        const raw = payload[d.key];
+        if (raw == null || raw === "") continue;
+        // skip core fields: only include "custom" hash-style keys (40-char hex)
+        if (!/^[a-f0-9]{40}$/.test(d.key)) continue;
+        let val: string;
+        if (d.field_type === "enum" || d.field_type === "set" || d.field_type === "visible_to") {
+          val = resolveOptionLabel(raw, d.options);
+        } else if (typeof raw === "object") {
+          val = raw.value ?? raw.name ?? JSON.stringify(raw);
+        } else {
+          val = String(raw);
+        }
+        if (val) out[d.name] = val;
+      }
+      return out;
+    }
+    function findCustomByName(custom: Record<string, string>, ...names: string[]): string | null {
+      const lower = Object.fromEntries(Object.entries(custom).map(([k, v]) => [k.toLowerCase(), v]));
+      for (const n of names) {
+        const v = lower[n.toLowerCase()];
+        if (v) return v;
+      }
+      return null;
+    }
     const t0 = Date.now();
 
     // log: cria registro de run
