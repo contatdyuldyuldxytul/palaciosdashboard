@@ -227,8 +227,13 @@ Deno.serve(async (req) => {
         if (!stageUuid) return null;
         const pipelineUuid = stageToPipeline.get(stageUuid);
         if (!pipelineUuid) return null;
-        const orgUuid = d.org_id?.value ? orgMap.get(d.org_id.value) : null;
+        let orgUuid = d.org_id?.value ? orgMap.get(d.org_id.value) : null;
         const personUuid = d.person_id?.value ? personMap.get(d.person_id.value) : null;
+        // Fallback: usar org da pessoa vinculada se o deal não trouxer org
+        if (!orgUuid && personUuid) {
+          const personOrg = personOrgMap.get(personUuid);
+          if (personOrg) orgUuid = personOrg;
+        }
         const ownerName = d.user_id?.name || d.owner_name || null;
         let status: string = d.status === "won" ? "won" : d.status === "lost" ? "lost" : "open";
         if (d._deleted) status = "lost";
