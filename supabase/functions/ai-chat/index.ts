@@ -1,104 +1,535 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// AI Assistant with full data access + executable actions
+// Uses AI SDK with tools (function calling) over Lovable AI Gateway
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { createOpenAICompatible } from "npm:@ai-sdk/openai-compatible@2.0.48";
+import { streamText, tool, stepCountIs, convertToModelMessages, type UIMessage } from "npm:ai@6.0.193";
+import { z } from "npm:zod@4.4.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Expose-Headers": "X-Lovable-AIG-Run-ID",
 };
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
+
+const SYSTEM_BASE = `Você é o assistente de I.A. da Palacios 3D Studio, integrado direto ao CRM/Dashboard da empresa. Você tem acesso AO VIVO a TODOS os dados da plataforma através de ferramentas (tools).
+
+REGRAS FUNDAMENTAIS:
+1. Sempre que o usuário fizer uma pergunta que dependa de dados reais (números de leads, deals, métricas, status de pipeline, datas, valores), USE AS TOOLS — nunca invente números.
+2. Antes de executar qualquer AÇÃO DE ESCRITA (move_deals_to_stage, update_deal_owner, add_deal_note, add_activity, bulk_update_deals), primeiro CONSULTE os dados afetados, apresente um PREVIEW claro ao usuário (quantos registros, exemplos, qual será a mudança) e aguarde confirmação. A própria tool tem mecanismo de aprovação humana.
+3. Para perguntas como "qual lead tem mais probabilidade de fechar reunião", use a tool rank_meeting_probability que combina heurística + análise das notas.
+4. Para exportar planilhas, use export_to_csv que gera link público de download.
+5. Responda sempre em português brasileiro, em formato Markdown, com tabelas quando útil. Use R$, datas DD/MM/YYYY, fuso America/Sao_Paulo.
+6. Seja proativo: se a pergunta admite uma análise mais profunda, faça-a (ex: ao listar deals parados, sugira ação).
+
+EMPRESA: renderização 3D B2B para construtoras/incorporadoras. Ticket R$20k. Time: Aline (SDR) + Milena (LDR) + Felipe + Thiago (fundador). Metodologia SPIN Selling. Pipeline principal: "ALINE'S PIPELINE - ALFA".`;
 
 const SYSTEM_PROMPTS: Record<string, string> = {
-  vendas: `Você é o consultor de vendas da Palacios 3D Studio, empresa brasileira especializada em renderização 3D estratégica para construtoras e incorporadoras. Seu papel é ajudar os vendedores (SDRs e LDR) a prospectar melhor, contornar objeções e fechar mais negócios.
-
-SOBRE A EMPRESA:
-- Vendemos materiais visuais estratégicos para lançamentos imobiliários — não apenas renders bonitos, mas imagens que aumentam a taxa de conversão na planta
-- Ticket médio: R$20.000
-- Preço: R$800/imagem + R$4.000 modelagem + R$120/segundo animação
-- Ciclo de vendas: 20 dias
-- Metodologia: SPIN Selling
-- Clientes ideais: Gerentes de Marketing e Gerentes de Projetos de construtoras e incorporadoras
-
-FUNIL DE VENDAS:
-- 1.000 leads → 230 contatos (23%) → 115 reuniões agendadas (50%) → 35 propostas (30%) → 3-4 contratos fechados (10%)
-
-PRINCIPAIS OBJEÇÕES E COMO CONTORNAR:
-1. Não temos lançamento agora:
-   Resposta: Exatamente por isso faz sentido conversar agora — material visual de qualidade leva tempo para produzir. Se o lançamento for daqui 3 meses, o material precisa estar pronto antes. Você quer chegar no lançamento com o material certo ou correndo?
-
-2. Preciso falar com meu diretor:
-   Resposta: Claro, faz todo sentido. Me ajuda a preparar melhor a conversa com ele — o que ele normalmente prioriza mais: velocidade de venda, custo do material ou diferenciação visual do concorrente?
-
-3. Já temos uma empresa de renders:
-   Resposta: Ótimo, significa que vocês já reconhecem o valor disso. Minha pergunta é: o material que vocês têm hoje foi pensado como estratégia de vendas ou como entrega visual? O que a gente faz é diferente — posso mostrar em 15 minutos?
-
-PERGUNTAS SPIN SELLING:
-- Situação: Como tem sido o processo de venda na planta? Quantos leads precisam para fechar uma unidade?
-- Problema: O material visual atual está ajudando a converter ou os clientes precisam muito da própria imaginação?
-- Implicação: Quando o material não convence na visita, como isso afeta o ritmo do seu lançamento?
-- Necessidade: Se o material já chegasse pronto para converter, com ângulos estratégicos e lifestyle, quanto facilitaria o trabalho da sua equipe?
-
-REMUNERAÇÃO DO TIME:
-- SDR: R$2.000 fixo + R$30/reunião + 4% contratos indicados
-- LDR: R$1/lead + 1% contratos fechados
-
-Seja direto, prático e sempre dê exemplos concretos de scripts. Responda sempre em português brasileiro.`,
-
-  fundador: `Você é o consultor estratégico pessoal do fundador da Palacios 3D Studio, empresa brasileira de renderização 3D que fatura R$20.000/mês e quer escalar. Time: 1 LDR + 2 SDRs. Ticket médio R$20.000. Conversão 0,4%. Mercado: construtoras e incorporadoras. Analise dados financeiros e métricas de vendas. Ajude com decisões: contratar pessoas, ajustar metas, reduzir custos, mudar estratégia. Seja analítico, baseado em dados, sempre apontando trade-offs.`,
-
-  geral: `Você é assistente especializado da Palacios 3D Studio para o mercado imobiliário brasileiro. Responde sobre: mercado imobiliário, vendas B2B, renderização 3D, precificação de serviços criativos, gestão de equipes comerciais, SPIN Selling e estratégia de negócios. Seja prático e direto.`,
+  vendas: `${SYSTEM_BASE}\n\nPAPEL: Consultor de vendas. Foque em ajudar a prospectar melhor, contornar objeções, priorizar deals quentes e acelerar fechamentos. Sempre traga sugestões práticas e scripts quando relevante.`,
+  fundador: `${SYSTEM_BASE}\n\nPAPEL: Consultor estratégico do fundador. Foque em métricas agregadas, decisões de alocação, performance do time, gargalos no funil. Seja analítico e aponte trade-offs com dados.`,
+  geral: `${SYSTEM_BASE}\n\nPAPEL: Assistente geral. Responda perguntas sobre operações, mercado e processos da empresa, sempre baseado nos dados reais quando aplicável.`,
 };
 
-serve(async (req) => {
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+function makeUserClient(authHeader: string) {
+  return createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    global: { headers: { Authorization: authHeader } },
+  });
+}
+
+const adminClient = createClient(SUPABASE_URL, SERVICE_KEY);
+
+async function logAction(params: {
+  userId: string;
+  assistant: string;
+  toolName: string;
+  input: unknown;
+  output: unknown;
+  affectedCount?: number;
+  success: boolean;
+  errorMessage?: string;
+}) {
+  await adminClient.from("ai_assistant_actions").insert({
+    user_id: params.userId,
+    assistant: params.assistant,
+    tool_name: params.toolName,
+    input: params.input as any,
+    output: params.output as any,
+    affected_count: params.affectedCount ?? 0,
+    success: params.success,
+    error_message: params.errorMessage,
+  });
+}
+
+async function isFundador(userId: string): Promise<boolean> {
+  const { data } = await adminClient
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "fundador")
+    .maybeSingle();
+  return !!data;
+}
+
+function toCsv(rows: Record<string, any>[]): string {
+  if (rows.length === 0) return "";
+  const headers = Object.keys(rows[0]);
+  const escape = (v: any) => {
+    if (v === null || v === undefined) return "";
+    const s = String(v).replace(/"/g, '""');
+    return /[",\n;]/.test(s) ? `"${s}"` : s;
+  };
+  return [
+    headers.join(","),
+    ...rows.map((r) => headers.map((h) => escape(r[h])).join(",")),
+  ].join("\n");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tools factory (closures over user context)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function buildTools(ctx: {
+  userId: string;
+  assistant: string;
+  fundador: boolean;
+  userClient: ReturnType<typeof createClient>;
+}) {
+  const { userId, assistant, fundador, userClient } = ctx;
+  // Tools de escrita aplicam scope: vendedor só pode mexer no que é dele.
+  // Tools de leitura usam userClient (RLS-aware).
+
+  return {
+    // ===================== LEITURA =====================
+
+    list_pipelines_and_stages: tool({
+      description: "Lista todos os pipelines do CRM e seus estágios, com cor e ordem. Use para entender a estrutura antes de filtrar deals.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        const { data: pipelines } = await userClient
+          .from("crm_pipelines").select("id, nome, ordem, ativo, owner_label").eq("ativo", true).order("ordem");
+        const { data: stages } = await userClient
+          .from("crm_stages").select("id, pipeline_id, nome, ordem, cor, is_won, is_lost").order("ordem");
+        return { pipelines: pipelines ?? [], stages: stages ?? [] };
+      },
+    }),
+
+    query_deals: tool({
+      description: "Consulta deals do CRM com filtros. Retorna até 200 por chamada. Use para responder perguntas sobre deals abertos, parados, por estágio, por owner, etc.",
+      inputSchema: z.object({
+        pipeline_id: z.string().uuid().optional().describe("Filtra por pipeline"),
+        stage_id: z.string().uuid().optional().describe("Filtra por estágio específico"),
+        owner_user_id: z.string().uuid().optional().describe("Filtra por responsável"),
+        status: z.enum(["open", "won", "lost"]).optional(),
+        min_valor: z.number().optional(),
+        max_valor: z.number().optional(),
+        stale_days: z.number().int().min(1).optional().describe("Apenas deals parados há N+ dias (sem mudança de estágio)"),
+        search: z.string().optional().describe("Busca texto livre em titulo/notas"),
+        limit: z.number().int().min(1).max(500).default(100),
+        order_by: z.enum(["valor", "stage_entered_at", "updated_at"]).default("updated_at"),
+        order_dir: z.enum(["asc", "desc"]).default("desc"),
+      }),
+      execute: async (args) => {
+        let q = userClient.from("crm_deals").select(
+          "id, titulo, valor, status, stage_id, pipeline_id, owner_user_id, owner_label, stage_entered_at, updated_at, notas, temperatura, probabilidade, expected_close_date"
+        );
+        if (args.pipeline_id) q = q.eq("pipeline_id", args.pipeline_id);
+        if (args.stage_id) q = q.eq("stage_id", args.stage_id);
+        if (args.owner_user_id) q = q.eq("owner_user_id", args.owner_user_id);
+        if (args.status) q = q.eq("status", args.status);
+        if (args.min_valor !== undefined) q = q.gte("valor", args.min_valor);
+        if (args.max_valor !== undefined) q = q.lte("valor", args.max_valor);
+        if (args.stale_days) {
+          const cutoff = new Date(Date.now() - args.stale_days * 86400000).toISOString();
+          q = q.lte("stage_entered_at", cutoff);
+        }
+        if (args.search) q = q.or(`titulo.ilike.%${args.search}%,notas.ilike.%${args.search}%`);
+        q = q.order(args.order_by, { ascending: args.order_dir === "asc" }).limit(args.limit);
+        const { data, error } = await q;
+        if (error) return { error: error.message, deals: [] };
+        return { count: data?.length ?? 0, deals: data ?? [] };
+      },
+    }),
+
+    get_deal_detail: tool({
+      description: "Retorna detalhe completo de um deal: dados, pessoa, organização, notas, últimas atividades e histórico de estágio.",
+      inputSchema: z.object({ deal_id: z.string().uuid() }),
+      execute: async ({ deal_id }) => {
+        const { data: deal } = await userClient.from("crm_deals").select("*").eq("id", deal_id).maybeSingle();
+        if (!deal) return { error: "Deal não encontrado" };
+        const [person, org, notes, activities, history] = await Promise.all([
+          deal.person_id ? userClient.from("crm_persons").select("*").eq("id", deal.person_id).maybeSingle().then((r: any) => r.data) : null,
+          deal.organization_id ? userClient.from("crm_organizations").select("*").eq("id", deal.organization_id).maybeSingle().then((r: any) => r.data) : null,
+          userClient.from("crm_notes").select("conteudo, author_label, created_at").eq("deal_id", deal_id).order("created_at", { ascending: false }).limit(20).then((r: any) => r.data),
+          userClient.from("crm_activities").select("titulo, tipo, scheduled_at, concluida, resultado").eq("deal_id", deal_id).order("scheduled_at", { ascending: false }).limit(20).then((r: any) => r.data),
+          userClient.from("crm_deal_history").select("evento, payload, created_at").eq("deal_id", deal_id).order("created_at", { ascending: false }).limit(20).then((r: any) => r.data),
+        ]);
+        return { deal, person, organization: org, notes, activities, history };
+      },
+    }),
+
+    query_leads: tool({
+      description: "Consulta a tabela legada de leads (prospecção). Use quando o usuário falar em 'leads' (não 'deals').",
+      inputSchema: z.object({
+        status: z.enum(["lead", "contatado", "reuniao_agendada", "reuniao_realizada", "proposta", "fechado", "perdido"]).optional(),
+        responsavel_id: z.string().uuid().optional(),
+        stale_days: z.number().int().min(1).optional(),
+        search: z.string().optional(),
+        limit: z.number().int().min(1).max(500).default(100),
+      }),
+      execute: async (args) => {
+        let q = userClient.from("leads").select("id, empresa, contato, cargo, email, telefone, status, responsavel_nome, origem, valor_estimado, data_criacao, data_atualizacao, notas");
+        if (args.status) q = q.eq("status", args.status);
+        if (args.responsavel_id) q = q.eq("responsavel_id", args.responsavel_id);
+        if (args.stale_days) {
+          const cutoff = new Date(Date.now() - args.stale_days * 86400000).toISOString();
+          q = q.lte("data_atualizacao", cutoff);
+        }
+        if (args.search) q = q.or(`empresa.ilike.%${args.search}%,contato.ilike.%${args.search}%,notas.ilike.%${args.search}%`);
+        q = q.order("data_atualizacao", { ascending: false }).limit(args.limit);
+        const { data, error } = await q;
+        if (error) return { error: error.message, leads: [] };
+        return { count: data?.length ?? 0, leads: data ?? [] };
+      },
+    }),
+
+    query_activities: tool({
+      description: "Lista atividades/tarefas do CRM. Use para responder sobre follow-ups, reuniões pendentes, etc.",
+      inputSchema: z.object({
+        owner_user_id: z.string().uuid().optional(),
+        deal_id: z.string().uuid().optional(),
+        concluida: z.boolean().optional(),
+        from_date: z.string().optional().describe("ISO date inicial"),
+        to_date: z.string().optional().describe("ISO date final"),
+        limit: z.number().int().min(1).max(300).default(100),
+      }),
+      execute: async (args) => {
+        let q = userClient.from("crm_activities").select("id, deal_id, titulo, tipo, scheduled_at, concluida, owner_label, resultado");
+        if (args.owner_user_id) q = q.eq("owner_user_id", args.owner_user_id);
+        if (args.deal_id) q = q.eq("deal_id", args.deal_id);
+        if (args.concluida !== undefined) q = q.eq("concluida", args.concluida);
+        if (args.from_date) q = q.gte("scheduled_at", args.from_date);
+        if (args.to_date) q = q.lte("scheduled_at", args.to_date);
+        q = q.order("scheduled_at", { ascending: true }).limit(args.limit);
+        const { data, error } = await q;
+        if (error) return { error: error.message, activities: [] };
+        return { count: data?.length ?? 0, activities: data ?? [] };
+      },
+    }),
+
+    query_contacts: tool({
+      description: "Busca pessoas (contatos) e organizações do CRM por nome/email/telefone.",
+      inputSchema: z.object({ search: z.string().min(1), limit: z.number().int().min(1).max(100).default(30) }),
+      execute: async ({ search, limit }) => {
+        const [persons, orgs] = await Promise.all([
+          userClient.from("crm_persons").select("id, nome, email, telefone, cargo, organization_id")
+            .or(`nome.ilike.%${search}%,email.ilike.%${search}%,telefone.ilike.%${search}%`).limit(limit),
+          userClient.from("crm_organizations").select("id, nome, site, segmento")
+            .or(`nome.ilike.%${search}%,site.ilike.%${search}%`).limit(limit),
+        ]);
+        return { persons: persons.data ?? [], organizations: orgs.data ?? [] };
+      },
+    }),
+
+    crm_metrics: tool({
+      description: "Métricas agregadas do CRM: contagem por estágio, valor total por pipeline, deals parados, taxa de conversão. Opcionalmente filtrado por pipeline ou owner.",
+      inputSchema: z.object({
+        pipeline_id: z.string().uuid().optional(),
+        owner_user_id: z.string().uuid().optional(),
+      }),
+      execute: async (args) => {
+        let q = userClient.from("crm_deals").select("status, stage_id, valor, stage_entered_at, owner_label");
+        if (args.pipeline_id) q = q.eq("pipeline_id", args.pipeline_id);
+        if (args.owner_user_id) q = q.eq("owner_user_id", args.owner_user_id);
+        const { data } = await q.limit(5000);
+        const rows = data ?? [];
+        const total = rows.length;
+        const by_status = rows.reduce((acc: any, r: any) => { acc[r.status] = (acc[r.status] ?? 0) + 1; return acc; }, {});
+        const by_stage: any = {};
+        for (const r of rows) {
+          if (!by_stage[r.stage_id]) by_stage[r.stage_id] = { count: 0, valor: 0 };
+          by_stage[r.stage_id].count += 1;
+          by_stage[r.stage_id].valor += Number(r.valor) || 0;
+        }
+        const stale_30 = rows.filter((r: any) => r.status === "open" && (Date.now() - new Date(r.stage_entered_at).getTime()) > 30 * 86400000).length;
+        const stale_7 = rows.filter((r: any) => r.status === "open" && (Date.now() - new Date(r.stage_entered_at).getTime()) > 7 * 86400000).length;
+        const valor_total_open = rows.filter((r: any) => r.status === "open").reduce((s: number, r: any) => s + (Number(r.valor) || 0), 0);
+        return { total, by_status, by_stage, stale_7_days: stale_7, stale_30_days: stale_30, valor_total_open };
+      },
+    }),
+
+    rank_meeting_probability: tool({
+      description: "Ranking dos deals com maior probabilidade de fechar uma REUNIÃO. Usa heurística (estágio, recência, valor, presença de notas) e re-ranqueia analisando as notas. Devolve top N com score 0-100 e justificativa.",
+      inputSchema: z.object({
+        pipeline_id: z.string().uuid().optional(),
+        owner_user_id: z.string().uuid().optional(),
+        top_n: z.number().int().min(1).max(50).default(10),
+      }),
+      execute: async (args) => {
+        let q = userClient.from("crm_deals")
+          .select("id, titulo, valor, stage_id, stage_entered_at, notas, owner_label, temperatura, probabilidade, updated_at")
+          .eq("status", "open");
+        if (args.pipeline_id) q = q.eq("pipeline_id", args.pipeline_id);
+        if (args.owner_user_id) q = q.eq("owner_user_id", args.owner_user_id);
+        const { data } = await q.limit(500);
+        const rows = data ?? [];
+        if (rows.length === 0) return { ranked: [] };
+
+        // Stages: heurística simples - estágios mais avançados = maior peso
+        const { data: stagesData } = await userClient.from("crm_stages").select("id, ordem, nome, is_won, is_lost");
+        const stageMap = new Map((stagesData ?? []).map((s: any) => [s.id, s]));
+        const maxOrdem = Math.max(...(stagesData ?? []).map((s: any) => s.ordem ?? 0), 1);
+        const valores = rows.map((r: any) => Number(r.valor) || 0);
+        const maxValor = Math.max(...valores, 1);
+
+        const heuristics = rows.map((r: any) => {
+          const stage: any = stageMap.get(r.stage_id);
+          const stageW = stage ? (stage.ordem ?? 0) / maxOrdem : 0;
+          const daysSince = (Date.now() - new Date(r.stage_entered_at).getTime()) / 86400000;
+          const recency = Math.max(0, 1 - daysSince / 30); // recente = bom
+          const hasNotes = r.notas && r.notas.length > 20 ? 1 : 0;
+          const tempScore = r.temperatura === "quente" ? 1 : r.temperatura === "morno" ? 0.6 : r.temperatura === "frio" ? 0.2 : 0.5;
+          const valorN = (Number(r.valor) || 0) / maxValor;
+          const score = Math.round(100 * (0.30 * stageW + 0.25 * recency + 0.15 * hasNotes + 0.20 * tempScore + 0.10 * valorN));
+          return { ...r, _score: score, _stageNome: stage?.nome ?? "?" };
+        }).sort((a: any, b: any) => b._score - a._score).slice(0, args.top_n * 2);
+
+        return {
+          ranked: heuristics.slice(0, args.top_n).map((d: any) => ({
+            id: d.id, titulo: d.titulo, valor: d.valor, estagio: d._stageNome,
+            owner: d.owner_label, score: d._score, temperatura: d.temperatura,
+            dias_no_estagio: Math.round((Date.now() - new Date(d.stage_entered_at).getTime()) / 86400000),
+            notas_preview: d.notas ? d.notas.slice(0, 300) : null,
+          })),
+          instruction_to_model: "Analise as notas dos top candidatos e re-ranqueie se houver sinais fortes (interesse explícito, orçamento, urgência, decisor envolvido). Justifique a escolha final ao usuário.",
+        };
+      },
+    }),
+
+    // ===================== EXPORT =====================
+
+    export_to_csv: tool({
+      description: "Exporta os resultados de uma consulta para um CSV em storage público e retorna URL de download. Passe os dados já filtrados (use query_deals/query_leads antes e cole os arrays aqui).",
+      inputSchema: z.object({
+        filename: z.string().describe("Nome do arquivo, sem extensão. Ex: 'leads_parados_30d'"),
+        rows: z.array(z.record(z.string(), z.any())).describe("Linhas a exportar (array de objetos)"),
+      }),
+      execute: async ({ filename, rows }) => {
+        if (rows.length === 0) return { error: "Nenhum dado para exportar" };
+        const csv = toCsv(rows);
+        const safe = filename.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 60);
+        const path = `${userId}/${Date.now()}_${safe}.csv`;
+        const { error } = await adminClient.storage.from("ai-exports").upload(path, new Blob([csv], { type: "text/csv" }), {
+          contentType: "text/csv", upsert: false,
+        });
+        if (error) return { error: error.message };
+        const { data: pub } = adminClient.storage.from("ai-exports").getPublicUrl(path);
+        await logAction({ userId, assistant, toolName: "export_to_csv", input: { filename, count: rows.length }, output: { path }, affectedCount: rows.length, success: true });
+        return { url: pub.publicUrl, filename: `${safe}.csv`, rows_exported: rows.length };
+      },
+    }),
+
+    // ===================== ESCRITA (needsApproval) =====================
+
+    move_deals_to_stage: tool({
+      description: "Move uma lista de deals para um estágio destino. SEMPRE pede confirmação humana antes de executar. Vendedores só conseguem mover deals onde são owner; fundador move qualquer um.",
+      inputSchema: z.object({
+        deal_ids: z.array(z.string().uuid()).min(1).max(500),
+        target_stage_id: z.string().uuid(),
+      }),
+      needsApproval: true,
+      execute: async ({ deal_ids, target_stage_id }) => {
+        // Confere stage existe
+        const { data: stage } = await adminClient.from("crm_stages").select("id, nome, pipeline_id").eq("id", target_stage_id).maybeSingle();
+        if (!stage) return { error: "Estágio destino não encontrado" };
+
+        // Scope: vendedor só mexe nos seus
+        let q = adminClient.from("crm_deals").update({ stage_id: target_stage_id }).in("id", deal_ids);
+        if (!fundador) q = q.eq("owner_user_id", userId);
+        const { data, error } = await q.select("id");
+        if (error) {
+          await logAction({ userId, assistant, toolName: "move_deals_to_stage", input: { deal_ids, target_stage_id }, output: null, success: false, errorMessage: error.message });
+          return { error: error.message };
+        }
+        const affected = data?.length ?? 0;
+        await logAction({ userId, assistant, toolName: "move_deals_to_stage", input: { deal_ids, target_stage_id }, output: { affected }, affectedCount: affected, success: true });
+        return { moved: affected, requested: deal_ids.length, target_stage: stage.nome, scope_note: fundador ? "Acesso total" : "Apenas deals do vendedor" };
+      },
+    }),
+
+    update_deal_owner: tool({
+      description: "Reatribui o responsável (owner) de deals. Apenas fundador pode reatribuir entre owners diferentes.",
+      inputSchema: z.object({
+        deal_ids: z.array(z.string().uuid()).min(1).max(500),
+        new_owner_user_id: z.string().uuid(),
+        new_owner_label: z.string().optional(),
+      }),
+      needsApproval: true,
+      execute: async ({ deal_ids, new_owner_user_id, new_owner_label }) => {
+        if (!fundador) return { error: "Apenas fundador pode reatribuir owner." };
+        const { data, error } = await adminClient.from("crm_deals")
+          .update({ owner_user_id: new_owner_user_id, owner_label: new_owner_label ?? null })
+          .in("id", deal_ids).select("id");
+        if (error) {
+          await logAction({ userId, assistant, toolName: "update_deal_owner", input: { deal_ids, new_owner_user_id }, output: null, success: false, errorMessage: error.message });
+          return { error: error.message };
+        }
+        const affected = data?.length ?? 0;
+        await logAction({ userId, assistant, toolName: "update_deal_owner", input: { deal_ids, new_owner_user_id }, output: { affected }, affectedCount: affected, success: true });
+        return { updated: affected };
+      },
+    }),
+
+    add_deal_note: tool({
+      description: "Adiciona uma nota a um deal. Requer confirmação.",
+      inputSchema: z.object({
+        deal_id: z.string().uuid(),
+        conteudo: z.string().min(3).max(5000),
+      }),
+      needsApproval: true,
+      execute: async ({ deal_id, conteudo }) => {
+        // Scope check para vendedor
+        if (!fundador) {
+          const { data: d } = await adminClient.from("crm_deals").select("owner_user_id").eq("id", deal_id).maybeSingle();
+          if (!d || d.owner_user_id !== userId) return { error: "Sem permissão para este deal" };
+        }
+        const { data, error } = await adminClient.from("crm_notes").insert({
+          deal_id, conteudo, author_user_id: userId, author_label: "Assistente IA",
+        }).select().single();
+        if (error) {
+          await logAction({ userId, assistant, toolName: "add_deal_note", input: { deal_id }, output: null, success: false, errorMessage: error.message });
+          return { error: error.message };
+        }
+        await logAction({ userId, assistant, toolName: "add_deal_note", input: { deal_id }, output: { id: data.id }, affectedCount: 1, success: true });
+        return { created: true, note_id: data.id };
+      },
+    }),
+
+    add_activity: tool({
+      description: "Cria uma atividade/tarefa para um deal (ligação, reunião, email, follow-up). Requer confirmação.",
+      inputSchema: z.object({
+        deal_id: z.string().uuid(),
+        titulo: z.string().min(3).max(200),
+        tipo: z.enum(["ligacao", "reuniao", "email", "tarefa", "whatsapp"]).default("tarefa"),
+        scheduled_at: z.string().optional().describe("ISO datetime"),
+        descricao: z.string().optional(),
+      }),
+      needsApproval: true,
+      execute: async ({ deal_id, titulo, tipo, scheduled_at, descricao }) => {
+        if (!fundador) {
+          const { data: d } = await adminClient.from("crm_deals").select("owner_user_id, owner_label").eq("id", deal_id).maybeSingle();
+          if (!d || d.owner_user_id !== userId) return { error: "Sem permissão para este deal" };
+        }
+        const { data: deal } = await adminClient.from("crm_deals").select("owner_user_id, owner_label").eq("id", deal_id).maybeSingle();
+        const { data, error } = await adminClient.from("crm_activities").insert({
+          deal_id, titulo, tipo: tipo as any, scheduled_at: scheduled_at ?? null, descricao: descricao ?? null,
+          owner_user_id: deal?.owner_user_id ?? userId, owner_label: deal?.owner_label ?? "IA",
+        }).select().single();
+        if (error) {
+          await logAction({ userId, assistant, toolName: "add_activity", input: { deal_id, titulo }, output: null, success: false, errorMessage: error.message });
+          return { error: error.message };
+        }
+        await logAction({ userId, assistant, toolName: "add_activity", input: { deal_id, titulo }, output: { id: data.id }, affectedCount: 1, success: true });
+        return { created: true, activity_id: data.id };
+      },
+    }),
+
+    bulk_update_deals: tool({
+      description: "Atualiza campos genéricos (status, valor, probabilidade, temperatura, expected_close_date) em uma lista de deals. Requer confirmação. Vendedor só mexe nos próprios.",
+      inputSchema: z.object({
+        deal_ids: z.array(z.string().uuid()).min(1).max(500),
+        updates: z.object({
+          status: z.enum(["open", "won", "lost"]).optional(),
+          valor: z.number().optional(),
+          probabilidade: z.number().min(0).max(100).optional(),
+          temperatura: z.enum(["quente", "morno", "frio"]).optional(),
+          expected_close_date: z.string().optional(),
+          motivo_perda: z.string().optional(),
+        }),
+      }),
+      needsApproval: true,
+      execute: async ({ deal_ids, updates }) => {
+        let q = adminClient.from("crm_deals").update(updates as any).in("id", deal_ids);
+        if (!fundador) q = q.eq("owner_user_id", userId);
+        const { data, error } = await q.select("id");
+        if (error) {
+          await logAction({ userId, assistant, toolName: "bulk_update_deals", input: { deal_ids, updates }, output: null, success: false, errorMessage: error.message });
+          return { error: error.message };
+        }
+        const affected = data?.length ?? 0;
+        await logAction({ userId, assistant, toolName: "bulk_update_deals", input: { deal_ids, updates }, output: { affected }, affectedCount: affected, success: true });
+        return { updated: affected, requested: deal_ids.length };
+      },
+    }),
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Handler
+// ─────────────────────────────────────────────────────────────────────────────
+
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, assistant } = await req.json();
-
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
-
-    const systemPrompt = SYSTEM_PROMPTS[assistant] || SYSTEM_PROMPTS.geral;
-
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...messages,
-        ],
-        stream: true,
-      }),
-    });
-
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns segundos." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos de IA esgotados. Adicione créditos nas configurações." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
-      return new Response(JSON.stringify({ error: "Erro no gateway de IA" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const authHeader = req.headers.get("Authorization") ?? "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const userClient = makeUserClient(authHeader);
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claims, error: claimsErr } = await userClient.auth.getClaims(token);
+    if (claimsErr || !claims?.claims?.sub) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const userId = claims.claims.sub as string;
 
-    return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+    const body = await req.json();
+    const messages: UIMessage[] = body.messages ?? [];
+    const assistant: string = body.assistant ?? "geral";
+
+    const fundador = await isFundador(userId);
+    const systemPrompt = SYSTEM_PROMPTS[assistant] || SYSTEM_PROMPTS.geral;
+    const tools = buildTools({ userId, assistant, fundador, userClient });
+
+    const provider = createOpenAICompatible({
+      name: "lovable",
+      baseURL: "https://ai.gateway.lovable.dev/v1",
+      headers: {
+        "Lovable-API-Key": LOVABLE_API_KEY,
+        "X-Lovable-AIG-SDK": "vercel-ai-sdk",
+      },
+    });
+    const model = provider(assistant === "fundador" ? "google/gemini-2.5-pro" : "google/gemini-2.5-flash");
+
+    const result = streamText({
+      model,
+      system: systemPrompt + `\n\nContexto do usuário: role=${fundador ? "fundador" : "vendedor"} user_id=${userId}`,
+      messages: convertToModelMessages(messages),
+      tools,
+      stopWhen: stepCountIs(50),
+      onError: (err) => console.error("streamText error:", err),
+    });
+
+    return result.toUIMessageStreamResponse({
+      headers: corsHeaders,
+      originalMessages: messages,
     });
   } catch (e) {
-    console.error("chat error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
+    console.error("ai-chat error:", e);
+    const msg = e instanceof Error ? e.message : String(e);
+    return new Response(JSON.stringify({ error: msg }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

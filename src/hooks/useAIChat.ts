@@ -1,156 +1,102 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport, type UIMessage } from "ai";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-type Msg = { role: "user" | "assistant"; content: string };
+export type Assistant = "vendas" | "fundador" | "geral";
 
-export function useAIChat(assistant: "vendas" | "fundador" | "geral") {
-  const [messages, setMessages] = useState<Msg[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+export function useAIChat(assistant: Assistant) {
+  const [initialMessages, setInitialMessages] = useState<UIMessage[]>([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
-  const pendingSaveRef = useRef<Msg | null>(null);
 
-  // Load history on mount
+  // Load persisted history
   useEffect(() => {
-    const loadHistory = async () => {
+    let cancelled = false;
+    (async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setHistoryLoaded(true); return; }
-
+      if (!user) { if (!cancelled) setHistoryLoaded(true); return; }
       const { data } = await supabase
         .from("chat_messages")
-        .select("role, content")
+        .select("id, role, content, parts, created_at")
         .eq("user_id", user.id)
         .eq("assistant", assistant)
         .order("created_at", { ascending: true });
 
-      if (data && data.length > 0) {
-        setMessages(data.map(m => ({ role: m.role as Msg["role"], content: m.content })));
-      }
+      if (cancelled) return;
+      const msgs: UIMessage[] = (data ?? []).map((m: any) => {
+        if (m.parts && Array.isArray(m.parts) && m.parts.length > 0) {
+          return { id: m.id, role: m.role, parts: m.parts } as UIMessage;
+        }
+        return { id: m.id, role: m.role, parts: [{ type: "text", text: m.content ?? "" }] } as UIMessage;
+      });
+      setInitialMessages(msgs);
       setHistoryLoaded(true);
-    };
-    loadHistory();
+    })();
+    return () => { cancelled = true; };
   }, [assistant]);
 
-  const saveMessage = useCallback(async (msg: Msg) => {
+  const transport = useMemo(() => new DefaultChatTransport({
+    api: `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`,
+    headers: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      return {
+        Authorization: `Bearer ${session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        "Content-Type": "application/json",
+      };
+    },
+    body: { assistant },
+  }), [assistant]);
+
+  const chat = useChat({
+    transport,
+    messages: initialMessages,
+    id: `${assistant}-${historyLoaded ? "loaded" : "loading"}`,
+    onFinish: async ({ message }) => {
+      // Persist the completed assistant message + ensure last user message persisted
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      // Persist assistant
+      const textContent = (message.parts ?? []).filter((p: any) => p.type === "text").map((p: any) => p.text).join("");
+      await supabase.from("chat_messages").insert({
+        user_id: user.id,
+        assistant,
+        role: "assistant",
+        content: textContent,
+        parts: message.parts as any,
+      });
+    },
+  });
+
+  // Persist user message on send
+  const sendMessage = useCallback(async (text: string) => {
+    if (!text.trim()) return;
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    await supabase.from("chat_messages").insert({
-      user_id: user.id,
-      assistant,
-      role: msg.role,
-      content: msg.content,
-    });
-  }, [assistant]);
-
-  const send = useCallback(async (input: string) => {
-    if (!input.trim() || isLoading) return;
-    const userMsg: Msg = { role: "user", content: input.trim() };
-    setMessages((prev) => [...prev, userMsg]);
-    setIsLoading(true);
-
-    // Save user message
-    saveMessage(userMsg);
-
-    let assistantSoFar = "";
-
-    const upsert = (chunk: string) => {
-      assistantSoFar += chunk;
-      setMessages((prev) => {
-        const last = prev[prev.length - 1];
-        if (last?.role === "assistant") {
-          return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar } : m));
-        }
-        return [...prev, { role: "assistant", content: assistantSoFar }];
+    if (user) {
+      await supabase.from("chat_messages").insert({
+        user_id: user.id,
+        assistant,
+        role: "user",
+        content: text.trim(),
+        parts: [{ type: "text", text: text.trim() }] as any,
       });
-    };
-
-    try {
-      const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
-      const resp = await fetch(CHAT_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          messages: [...messages, userMsg],
-          assistant,
-        }),
-      });
-
-      if (!resp.ok || !resp.body) {
-        const err = await resp.json().catch(() => ({ error: "Erro desconhecido" }));
-        upsert(`⚠️ ${err.error || "Erro ao conectar com a IA"}`);
-        setIsLoading(false);
-        return;
-      }
-
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let textBuffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        textBuffer += decoder.decode(value, { stream: true });
-
-        let newlineIndex: number;
-        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
-          let line = textBuffer.slice(0, newlineIndex);
-          textBuffer = textBuffer.slice(newlineIndex + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (line.startsWith(":") || line.trim() === "") continue;
-          if (!line.startsWith("data: ")) continue;
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") break;
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) upsert(content);
-          } catch {
-            textBuffer = line + "\n" + textBuffer;
-            break;
-          }
-        }
-      }
-
-      // Flush remaining
-      if (textBuffer.trim()) {
-        for (let raw of textBuffer.split("\n")) {
-          if (!raw) continue;
-          if (raw.endsWith("\r")) raw = raw.slice(0, -1);
-          if (!raw.startsWith("data: ")) continue;
-          const jsonStr = raw.slice(6).trim();
-          if (jsonStr === "[DONE]") continue;
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) upsert(content);
-          } catch { /* ignore */ }
-        }
-      }
-
-      // Save complete assistant message
-      if (assistantSoFar) {
-        saveMessage({ role: "assistant", content: assistantSoFar });
-      }
-    } catch (err) {
-      console.error("AI chat error:", err);
-      upsert("⚠️ Erro ao conectar com a IA. Tente novamente.");
-    } finally {
-      setIsLoading(false);
     }
-  }, [messages, isLoading, assistant, saveMessage]);
+    await chat.sendMessage({ text: text.trim() });
+  }, [chat, assistant]);
 
   const clearMessages = useCallback(async () => {
-    setMessages([]);
+    chat.setMessages([]);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    await supabase
-      .from("chat_messages")
-      .delete()
-      .eq("user_id", user.id)
-      .eq("assistant", assistant);
-  }, [assistant]);
+    await supabase.from("chat_messages").delete().eq("user_id", user.id).eq("assistant", assistant);
+  }, [chat, assistant]);
 
-  return { messages, isLoading, send, clearMessages, historyLoaded };
+  return {
+    messages: chat.messages,
+    status: chat.status,
+    isLoading: chat.status === "submitted" || chat.status === "streaming",
+    send: sendMessage,
+    clearMessages,
+    historyLoaded,
+    addToolResult: chat.addToolResult,
+  };
 }
