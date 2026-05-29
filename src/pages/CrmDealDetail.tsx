@@ -925,6 +925,19 @@ function HistoryList({
   type Item = { date: string; kind: "event" | "note"; icon?: any; title?: string; sub?: string; note?: any };
   const items: Item[] = [];
   items.push({ date: dealCreatedAt, kind: "event", icon: CalendarIcon, title: "Deal criado" });
+
+  const fieldLabels: Record<string, string> = {
+    stage_id: "Etapa", status: "Status", value: "Valor", title: "Título",
+    owner_id: "Responsável", expected_close_date: "Previsão de fechamento",
+    person_id: "Contato", org_id: "Organização", probability: "Probabilidade",
+    label: "Label", lost_reason: "Motivo de perda",
+  };
+  const humanizeValue = (v: any) => {
+    if (v == null || v === "") return "—";
+    if (typeof v === "object") return JSON.stringify(v);
+    return String(v);
+  };
+
   history.forEach((h: any) => {
     if (h.evento === "stage_changed") {
       const from = stageMap.get(h.payload?.from) || "?";
@@ -935,12 +948,21 @@ function HistoryList({
     } else if (h.evento === "note_added" || h.evento === "note_created") {
       // Skip — yellow note cards come from the `notes` array below
       return;
+    } else if (h.evento === "pipedrive_change") {
+      const field = h.payload?.field || "campo";
+      const label = fieldLabels[field] || field;
+      const oldV = humanizeValue(h.payload?.old_value);
+      const newV = humanizeValue(h.payload?.new_value);
+      items.push({ date: h.created_at, kind: "event", icon: Edit, title: `${label} alterado`, sub: `${oldV} → ${newV}` });
     } else {
       items.push({ date: h.created_at, kind: "event", icon: Edit, title: h.evento });
     }
   });
-  activities.filter((a: any) => a.concluida_em).forEach((a: any) => {
-    items.push({ date: a.concluida_em, kind: "event", icon: Check, title: `Atividade concluída`, sub: a.titulo });
+  activities.forEach((a: any) => {
+    const date = a.concluida_em || a.scheduled_at || a.created_at;
+    if (!date) return;
+    const prefix = a.concluida_em ? "Atividade concluída" : "Atividade agendada";
+    items.push({ date, kind: "event", icon: a.concluida_em ? Check : CalendarIcon, title: `${prefix}: ${a.titulo || a.tipo}`, sub: a.descricao || undefined });
   });
   notes.forEach((n: any) => {
     items.push({ date: n.created_at, kind: "note", note: n });
