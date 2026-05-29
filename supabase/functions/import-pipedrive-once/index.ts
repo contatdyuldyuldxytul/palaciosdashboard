@@ -63,6 +63,60 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const phase = url.searchParams.get("phase") || "all";
     const summary: Record<string, any> = { phase };
+
+    // ── Helpers for custom fields ──
+    type FieldDef = { key: string; name: string; field_type: string | null; options: any[] | null };
+    async function loadFieldDefs(entity_type: string): Promise<FieldDef[]> {
+      const { data } = await sb
+        .from("crm_field_definitions")
+        .select("field_key, name, field_type, options")
+        .eq("entity_type", entity_type);
+      return (data || []).map((r: any) => ({
+        key: r.field_key, name: r.name, field_type: r.field_type, options: r.options,
+      }));
+    }
+    function resolveOptionLabel(raw: any, options: any[] | null): string {
+      if (raw == null || raw === "") return "";
+      if (!Array.isArray(options) || options.length === 0) return String(raw);
+      // options: [{id, label}]; raw may be id, "id1,id2" csv, or already a label
+      const ids = String(raw).split(",").map((s) => s.trim());
+      const labels = ids.map((id) => {
+        const opt = options.find((o: any) => String(o.id) === id || String(o.value) === id);
+        return opt ? (opt.label ?? opt.name ?? String(raw)) : id;
+      });
+      return labels.join(", ");
+    }
+    function extractCustomFields(payload: any, defs: FieldDef[]): Record<string, string> {
+      const out: Record<string, string> = {};
+      if (!payload || typeof payload !== "object") return out;
+      for (const d of defs) {
+        if (!(d.key in payload)) continue;
+        const raw = payload[d.key];
+        if (raw == null || raw === "") continue;
+        // skip core fields: only include "custom" hash-style keys (40-char hex)
+        if (!/^[a-f0-9]{40}$/.test(d.key)) continue;
+        let val: string;
+        if (d.field_type === "enum" || d.field_type === "set" || d.field_type === "visible_to") {
+          val = resolveOptionLabel(raw, d.options);
+        } else if (typeof raw === "object") {
+          // For people/org-typed custom fields: { value: id, name: "Readable name" }
+          val = (raw.name && String(raw.name).trim() && isNaN(Number(raw.name))) ? String(raw.name)
+              : (raw.value != null ? String(raw.value) : JSON.stringify(raw));
+        } else {
+          val = String(raw);
+        }
+        if (val) out[d.name] = val;
+      }
+      return out;
+    }
+    function findCustomByName(custom: Record<string, string>, ...names: string[]): string | null {
+      const lower = Object.fromEntries(Object.entries(custom).map(([k, v]) => [k.toLowerCase(), v]));
+      for (const n of names) {
+        const v = lower[n.toLowerCase()];
+        if (v) return v;
+      }
+      return null;
+    }
     const t0 = Date.now();
 
     // log: cria registro de run
@@ -86,6 +140,38 @@ Deno.serve(async (req) => {
         from += PAGE;
       }
       return m;
+    }
+
+    // ─── FIELDS (definições de custom fields) ───
+    if (phase === "all" || phase === "fields") {
+      const targets: Array<[string, string]> = [
+        ["person", "/personFields"],
+        ["organization", "/organizationFields"],
+        ["deal", "/dealFields"],
+      ];
+      let total = 0;
+      for (const [entity_type, path] of targets) {
+        try {
+          const items = await pdPaginated(path, API_KEY);
+          const rows = items.map((f: any) => ({
+            entity_type,
+            field_key: f.key,
+            name: f.name,
+            field_type: f.field_type || null,
+            options: Array.isArray(f.options) ? f.options : null,
+            pipedrive_field_id: f.id,
+            is_custom: !!f.add_visible_flag || /^[a-f0-9]{40}$/.test(f.key || ""),
+            updated_at: new Date().toISOString(),
+          }));
+          for (const batch of chunks(rows, 500)) {
+            const { error } = await sb.from("crm_field_definitions")
+              .upsert(batch, { onConflict: "entity_type,field_key" });
+            if (!error) total += batch.length;
+            else console.warn(`fields ${entity_type}:`, error.message);
+          }
+        } catch (e) { console.warn(`field fetch ${entity_type}:`, e); }
+      }
+      summary.field_definitions = total;
     }
 
     // ─── PIPELINES ───
@@ -150,19 +236,41 @@ Deno.serve(async (req) => {
 
     // ─── ORGANIZATIONS ───
     if (phase === "all" || phase === "orgs") {
+      const defs = await loadFieldDefs("organization");
       const orgs = await pdPaginated("/organizations", API_KEY);
-      const rows = orgs.map((o: any) => ({
-        nome: o.name || "Sem nome",
-        pipedrive_org_id: o.id,
-        endereco: o.address || null,
-        cidade: o.address_locality || null,
-        estado: o.address_admin_area_level_1 || null,
-        pais: o.address_country || null,
-        cep: o.address_postal_code || null,
-        site: o.web || null,
-        num_colaboradores: typeof o.people_count === "number" ? o.people_count : null,
-        raw_payload: o,
-      }));
+      const rows = orgs.map((o: any) => {
+        const custom = extractCustomFields(o, defs);
+        const enderecoCompleto = [
+          o.address, o.address_locality, o.address_admin_area_level_1,
+          o.address_country, o.address_postal_code,
+        ].filter(Boolean).join(", ") || null;
+        const numColabCustom = findCustomByName(custom, "Number of employees", "Nº de colaboradores", "Numero de colaboradores", "Número de Colaboradores");
+        const numColab = numColabCustom && !isNaN(parseInt(numColabCustom))
+          ? parseInt(numColabCustom)
+          : (typeof o.people_count === "number" ? o.people_count : null);
+        const faturamentoCustom = findCustomByName(custom, "Faturamento", "Annual revenue");
+        const fatNum = faturamentoCustom ? parseFloat(String(faturamentoCustom).replace(/[^\d.,-]/g, "").replace(",", ".")) : null;
+        return {
+          nome: o.name || "Sem nome",
+          pipedrive_org_id: o.id,
+          endereco: o.address || null,
+          endereco_completo: enderecoCompleto,
+          cidade: o.address_locality || null,
+          estado: o.address_admin_area_level_1 || null,
+          pais: o.address_country || null,
+          cep: o.address_postal_code || null,
+          site: o.website || o.web || findCustomByName(custom, "Website", "Site"),
+          linkedin: o.linkedin || findCustomByName(custom, "LinkedIn", "LinkedIn (Empresa)", "LinkedIn profile"),
+          instagram: findCustomByName(custom, "Instagram"),
+          whatsapp: findCustomByName(custom, "WhatsApp", "Whatsapp"),
+          industry: o.industry || findCustomByName(custom, "Industry", "Indústria", "Segmento"),
+          porte: findCustomByName(custom, "Porte"),
+          faturamento: fatNum && !isNaN(fatNum) ? fatNum : null,
+          num_colaboradores: numColab,
+          custom_fields: custom,
+          raw_payload: o,
+        };
+      });
       let imported = 0;
       for (const batch of chunks(rows, 300)) {
         const { error } = await sb.from("crm_organizations").upsert(batch, { onConflict: "pipedrive_org_id" });
@@ -172,8 +280,10 @@ Deno.serve(async (req) => {
       summary.orgs = imported;
     }
 
+
     // ─── PERSONS ───
     if (phase === "all" || phase === "persons") {
+      const defs = await loadFieldDefs("person");
       const orgMap = await buildMap("crm_organizations", "pipedrive_org_id");
       const persons = await pdPaginated("/persons", API_KEY);
       const rows = persons.map((p: any) => {
@@ -182,6 +292,7 @@ Deno.serve(async (req) => {
         const email = emails.length ? emails[0].value : null;
         const phone = phones.length ? phones[0].value : null;
         const orgUuid = p.org_id?.value ? orgMap.get(p.org_id.value) : null;
+        const custom = extractCustomFields(p, defs);
         return {
           nome: p.name || "Sem nome",
           first_name: p.first_name || null,
@@ -190,9 +301,11 @@ Deno.serve(async (req) => {
           telefone: phone,
           emails,
           telefones: phones,
-          cargo: p.job_title || null,
+          cargo: p.job_title || findCustomByName(custom, "Cargo", "Job title"),
+          linkedin: findCustomByName(custom, "LinkedIn", "LinkedIn profile"),
           organization_id: orgUuid ?? null,
           pipedrive_person_id: p.id,
+          custom_fields: custom,
           raw_payload: p,
         };
       });
@@ -204,6 +317,7 @@ Deno.serve(async (req) => {
       }
       summary.persons = imported;
     }
+
 
     // ─── DEALS (open/won/lost + deleted) ───
     if (phase === "all" || phase === "deals") {

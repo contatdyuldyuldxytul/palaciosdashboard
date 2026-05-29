@@ -378,6 +378,7 @@ export default function CrmDealDetail() {
             <Field label="LinkedIn">
               <InlineText value={person?.linkedin || ""} onSave={(v) => handlePatchPerson({ linkedin: v })} placeholder="—" />
             </Field>
+            <CustomFieldsList custom={person?.custom_fields} skip={["Cargo", "LinkedIn"]} />
           </SectionCard>
 
           {/* DADOS DA EMPRESA */}
@@ -386,10 +387,13 @@ export default function CrmDealDetail() {
               <InlineText value={org?.nome || ""} onSave={(v) => handlePatchOrg({ nome: v })} placeholder="—" />
             </Field>
             <Field label="Endereço">
-              <InlineText value={org?.endereco || ""} onSave={(v) => handlePatchOrg({ endereco: v })} placeholder="—" />
+              <InlineText value={org?.endereco_completo || org?.endereco || ""} onSave={(v) => handlePatchOrg({ endereco: v })} placeholder="—" />
             </Field>
             <Field label="Website">
               <InlineText value={org?.site || ""} onSave={(v) => handlePatchOrg({ site: v })} placeholder="—" />
+            </Field>
+            <Field label="Indústria">
+              <InlineText value={org?.industry || ""} onSave={(v) => handlePatchOrg({ industry: v })} placeholder="—" />
             </Field>
             <Field label="Nº Colaboradores">
               <InlineText value={org?.num_colaboradores ?? ""} onSave={(v) => handlePatchOrg({ num_colaboradores: v ? Number(v) : null })} placeholder="—" />
@@ -409,7 +413,12 @@ export default function CrmDealDetail() {
             <Field label="WhatsApp">
               <InlineText value={org?.whatsapp || ""} onSave={(v) => handlePatchOrg({ whatsapp: v })} placeholder="—" />
             </Field>
+            <CustomFieldsList
+              custom={org?.custom_fields}
+              skip={["Website", "Site", "LinkedIn", "LinkedIn profile", "LinkedIn (Empresa)", "Instagram", "WhatsApp", "Whatsapp", "Industry", "Indústria", "Segmento", "Porte", "Faturamento", "Annual revenue", "Number of employees", "Nº de colaboradores", "Numero de colaboradores", "Número de Colaboradores"]}
+            />
           </SectionCard>
+
 
           {/* RESPONSÁVEL */}
           <SectionCard title="Responsável">
@@ -913,24 +922,25 @@ function HistoryList({
 }) {
   const stageMap = new Map(stages.map((s: any) => [s.id, s.nome]));
 
-  const items: Array<{ date: string; icon: any; title: string; sub?: string }> = [];
-  items.push({ date: dealCreatedAt, icon: CalendarIcon, title: "Deal criado" });
+  type Item = { date: string; kind: "event" | "note"; icon?: any; title?: string; sub?: string; note?: any };
+  const items: Item[] = [];
+  items.push({ date: dealCreatedAt, kind: "event", icon: CalendarIcon, title: "Deal criado" });
   history.forEach((h: any) => {
     if (h.evento === "stage_changed") {
       const from = stageMap.get(h.payload?.from) || "?";
       const to = stageMap.get(h.payload?.to) || "?";
-      items.push({ date: h.created_at, icon: Edit, title: "Etapa alterada", sub: `${from} → ${to}` });
+      items.push({ date: h.created_at, kind: "event", icon: Edit, title: "Etapa alterada", sub: `${from} → ${to}` });
     } else if (h.evento === "status_changed") {
-      items.push({ date: h.created_at, icon: Edit, title: "Status alterado", sub: `${h.payload?.from} → ${h.payload?.to}` });
+      items.push({ date: h.created_at, kind: "event", icon: Edit, title: "Status alterado", sub: `${h.payload?.from} → ${h.payload?.to}` });
     } else {
-      items.push({ date: h.created_at, icon: Edit, title: h.evento });
+      items.push({ date: h.created_at, kind: "event", icon: Edit, title: h.evento });
     }
   });
   activities.filter((a: any) => a.concluida_em).forEach((a: any) => {
-    items.push({ date: a.concluida_em, icon: Check, title: `Atividade concluída`, sub: a.titulo });
+    items.push({ date: a.concluida_em, kind: "event", icon: Check, title: `Atividade concluída`, sub: a.titulo });
   });
   notes.forEach((n: any) => {
-    items.push({ date: n.created_at, icon: MessageSquare, title: `Nota adicionada`, sub: (n.author_label || "") });
+    items.push({ date: n.created_at, kind: "note", note: n });
   });
 
   items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -942,7 +952,26 @@ function HistoryList({
   return (
     <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
       {items.map((it, idx) => {
-        const Icon = it.icon;
+        if (it.kind === "note") {
+          const n = it.note;
+          return (
+            <div key={idx} className="flex items-start gap-3">
+              <div className="w-7 h-7 rounded-full bg-yellow-400/15 text-yellow-300 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <MessageSquare className="w-3.5 h-3.5" />
+              </div>
+              <div className="flex-1 min-w-0 rounded-lg bg-yellow-400/10 border border-yellow-400/30 p-3">
+                <div className="flex items-center justify-between text-[10px] text-yellow-200/80 mb-1">
+                  <span>{n.author_label || "—"}</span>
+                  <span>{new Date(n.created_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</span>
+                </div>
+                <div className="text-sm text-foreground whitespace-pre-wrap break-words">
+                  {(n.conteudo || "").replace(/&nbsp;/g, " ")}
+                </div>
+              </div>
+            </div>
+          );
+        }
+        const Icon = it.icon!;
         return (
           <div key={idx} className="flex items-start gap-3">
             <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -962,7 +991,25 @@ function HistoryList({
   );
 }
 
+
 /* ============ E-mail Panel ============ */
+function CustomFieldsList({ custom, skip = [] }: { custom?: Record<string, string> | null; skip?: string[] }) {
+  if (!custom || typeof custom !== "object") return null;
+  const skipLower = new Set(skip.map((s) => s.toLowerCase()));
+  const entries = Object.entries(custom).filter(([k, v]) => v && !skipLower.has(k.toLowerCase()));
+  if (entries.length === 0) return null;
+  return (
+    <div className="pt-2 mt-2 border-t border-white/5 space-y-1.5">
+      {entries.map(([k, v]) => (
+        <div key={k} className="flex items-start justify-between gap-3 text-xs">
+          <span className="text-muted-foreground flex-shrink-0">{k}</span>
+          <span className="text-foreground text-right break-words">{v}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function EmailPanel({ dealId, personEmail, personName }: { dealId: string; personEmail: string; personName: string }) {
   const [open, setOpen] = useState(false);
   const { data: messages = [] } = useQuery({

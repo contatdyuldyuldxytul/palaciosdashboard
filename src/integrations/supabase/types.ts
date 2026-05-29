@@ -753,6 +753,42 @@ export type Database = {
           },
         ]
       }
+      crm_field_definitions: {
+        Row: {
+          entity_type: string
+          field_key: string
+          field_type: string | null
+          id: string
+          is_custom: boolean
+          name: string
+          options: Json | null
+          pipedrive_field_id: number | null
+          updated_at: string
+        }
+        Insert: {
+          entity_type: string
+          field_key: string
+          field_type?: string | null
+          id?: string
+          is_custom?: boolean
+          name: string
+          options?: Json | null
+          pipedrive_field_id?: number | null
+          updated_at?: string
+        }
+        Update: {
+          entity_type?: string
+          field_key?: string
+          field_type?: string | null
+          id?: string
+          is_custom?: boolean
+          name?: string
+          options?: Json | null
+          pipedrive_field_id?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       crm_labels: {
         Row: {
           cor: string
@@ -814,11 +850,14 @@ export type Database = {
           cep: string | null
           cidade: string | null
           created_at: string
+          custom_fields: Json | null
           email: string | null
           endereco: string | null
+          endereco_completo: string | null
           estado: string | null
           faturamento: number | null
           id: string
+          industry: string | null
           instagram: string | null
           linkedin: string | null
           nome: string
@@ -838,11 +877,14 @@ export type Database = {
           cep?: string | null
           cidade?: string | null
           created_at?: string
+          custom_fields?: Json | null
           email?: string | null
           endereco?: string | null
+          endereco_completo?: string | null
           estado?: string | null
           faturamento?: number | null
           id?: string
+          industry?: string | null
           instagram?: string | null
           linkedin?: string | null
           nome: string
@@ -862,11 +904,14 @@ export type Database = {
           cep?: string | null
           cidade?: string | null
           created_at?: string
+          custom_fields?: Json | null
           email?: string | null
           endereco?: string | null
+          endereco_completo?: string | null
           estado?: string | null
           faturamento?: number | null
           id?: string
+          industry?: string | null
           instagram?: string | null
           linkedin?: string | null
           nome?: string
@@ -888,6 +933,7 @@ export type Database = {
         Row: {
           cargo: string | null
           created_at: string
+          custom_fields: Json | null
           email: string | null
           emails: Json | null
           first_name: string | null
@@ -905,6 +951,7 @@ export type Database = {
         Insert: {
           cargo?: string | null
           created_at?: string
+          custom_fields?: Json | null
           email?: string | null
           emails?: Json | null
           first_name?: string | null
@@ -922,6 +969,7 @@ export type Database = {
         Update: {
           cargo?: string | null
           created_at?: string
+          custom_fields?: Json | null
           email?: string | null
           emails?: Json | null
           first_name?: string | null
