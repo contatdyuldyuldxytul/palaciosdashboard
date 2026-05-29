@@ -61,7 +61,7 @@ export function RichEditor({ value, onChange, signatures = [], placeholder, minH
   const lastValueRef = useRef(value);
   useEffect(() => {
     if (editor && value !== lastValueRef.current && value !== editor.getHTML()) {
-      editor.commands.setContent(value || "", false);
+      editor.commands.setContent(value || "");
       lastValueRef.current = value;
     }
   }, [value, editor]);
