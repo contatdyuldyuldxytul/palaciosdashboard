@@ -14,7 +14,7 @@ const mainItems = [
   { title: "Hunter de Negócios", url: "/hunter", icon: Target },
   { title: "CEO", url: "/ceo", icon: Crown, requireRole: "fundador" as const },
   { title: "Assistente IA", url: "/assistente", icon: MessageSquare },
-  { title: "Configurações", url: "/crm/configuracoes", icon: Settings },
+  
 ];
 
 const crmSubItems = [
