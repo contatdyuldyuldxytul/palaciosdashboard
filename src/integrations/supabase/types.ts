@@ -1268,6 +1268,33 @@ export type Database = {
           },
         ]
       }
+      email_audience_segments: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          filtros: Json
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          filtros?: Json
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          filtros?: Json
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_campaign_recipients: {
         Row: {
           bounce_reason: string | null
@@ -1290,6 +1317,7 @@ export type Database = {
           sent_at: string | null
           status: string
           updated_at: string
+          urls_clicadas: Json
         }
         Insert: {
           bounce_reason?: string | null
@@ -1312,6 +1340,7 @@ export type Database = {
           sent_at?: string | null
           status?: string
           updated_at?: string
+          urls_clicadas?: Json
         }
         Update: {
           bounce_reason?: string | null
@@ -1334,6 +1363,7 @@ export type Database = {
           sent_at?: string | null
           status?: string
           updated_at?: string
+          urls_clicadas?: Json
         }
         Relationships: [
           {
@@ -1347,6 +1377,7 @@ export type Database = {
       }
       email_campaigns: {
         Row: {
+          anexos: Json
           body_html: string
           created_at: string
           criado_por: string | null
@@ -1354,11 +1385,14 @@ export type Database = {
           from_name: string
           id: string
           nome: string
+          parent_campaign_id: string | null
           reply_to: string | null
           scheduled_at: string | null
+          segment_id: string | null
           sent_at: string | null
           status: string
           subject: string
+          teste_enviado_para: string | null
           total_bounced: number
           total_clicked: number
           total_delivered: number
@@ -1369,6 +1403,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          anexos?: Json
           body_html: string
           created_at?: string
           criado_por?: string | null
@@ -1376,11 +1411,14 @@ export type Database = {
           from_name?: string
           id?: string
           nome: string
+          parent_campaign_id?: string | null
           reply_to?: string | null
           scheduled_at?: string | null
+          segment_id?: string | null
           sent_at?: string | null
           status?: string
           subject: string
+          teste_enviado_para?: string | null
           total_bounced?: number
           total_clicked?: number
           total_delivered?: number
@@ -1391,6 +1429,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          anexos?: Json
           body_html?: string
           created_at?: string
           criado_por?: string | null
@@ -1398,11 +1437,14 @@ export type Database = {
           from_name?: string
           id?: string
           nome?: string
+          parent_campaign_id?: string | null
           reply_to?: string | null
           scheduled_at?: string | null
+          segment_id?: string | null
           sent_at?: string | null
           status?: string
           subject?: string
+          teste_enviado_para?: string | null
           total_bounced?: number
           total_clicked?: number
           total_delivered?: number
@@ -1695,36 +1737,123 @@ export type Database = {
           },
         ]
       }
+      email_signatures: {
+        Row: {
+          corpo_html: string
+          created_at: string
+          id: string
+          is_default: boolean
+          nome: string
+          owner_user_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          corpo_html: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          nome: string
+          owner_user_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          corpo_html?: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          nome?: string
+          owner_user_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      email_suppressions: {
+        Row: {
+          created_at: string
+          detalhe: string | null
+          email: string
+          id: string
+          motivo: string
+        }
+        Insert: {
+          created_at?: string
+          detalhe?: string | null
+          email: string
+          id?: string
+          motivo?: string
+        }
+        Update: {
+          created_at?: string
+          detalhe?: string | null
+          email?: string
+          id?: string
+          motivo?: string
+        }
+        Relationships: []
+      }
       email_templates: {
         Row: {
+          arquivado: boolean
           body_html: string
+          categoria: string | null
           created_at: string
           criado_por: string | null
           id: string
           nome: string
           subject: string
+          thumbnail_html: string | null
           updated_at: string
           variables: Json
+          vezes_usado: number
         }
         Insert: {
+          arquivado?: boolean
           body_html: string
+          categoria?: string | null
           created_at?: string
           criado_por?: string | null
           id?: string
           nome: string
           subject: string
+          thumbnail_html?: string | null
           updated_at?: string
           variables?: Json
+          vezes_usado?: number
         }
         Update: {
+          arquivado?: boolean
           body_html?: string
+          categoria?: string | null
           created_at?: string
           criado_por?: string | null
           id?: string
           nome?: string
           subject?: string
+          thumbnail_html?: string | null
           updated_at?: string
           variables?: Json
+          vezes_usado?: number
+        }
+        Relationships: []
+      }
+      email_unsubscribe_tokens: {
+        Row: {
+          created_at: string
+          email: string
+          token: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          token: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          token?: string
+          used_at?: string | null
         }
         Relationships: []
       }
