@@ -922,24 +922,25 @@ function HistoryList({
 }) {
   const stageMap = new Map(stages.map((s: any) => [s.id, s.nome]));
 
-  const items: Array<{ date: string; icon: any; title: string; sub?: string }> = [];
-  items.push({ date: dealCreatedAt, icon: CalendarIcon, title: "Deal criado" });
+  type Item = { date: string; kind: "event" | "note"; icon?: any; title?: string; sub?: string; note?: any };
+  const items: Item[] = [];
+  items.push({ date: dealCreatedAt, kind: "event", icon: CalendarIcon, title: "Deal criado" });
   history.forEach((h: any) => {
     if (h.evento === "stage_changed") {
       const from = stageMap.get(h.payload?.from) || "?";
       const to = stageMap.get(h.payload?.to) || "?";
-      items.push({ date: h.created_at, icon: Edit, title: "Etapa alterada", sub: `${from} → ${to}` });
+      items.push({ date: h.created_at, kind: "event", icon: Edit, title: "Etapa alterada", sub: `${from} → ${to}` });
     } else if (h.evento === "status_changed") {
-      items.push({ date: h.created_at, icon: Edit, title: "Status alterado", sub: `${h.payload?.from} → ${h.payload?.to}` });
+      items.push({ date: h.created_at, kind: "event", icon: Edit, title: "Status alterado", sub: `${h.payload?.from} → ${h.payload?.to}` });
     } else {
-      items.push({ date: h.created_at, icon: Edit, title: h.evento });
+      items.push({ date: h.created_at, kind: "event", icon: Edit, title: h.evento });
     }
   });
   activities.filter((a: any) => a.concluida_em).forEach((a: any) => {
-    items.push({ date: a.concluida_em, icon: Check, title: `Atividade concluída`, sub: a.titulo });
+    items.push({ date: a.concluida_em, kind: "event", icon: Check, title: `Atividade concluída`, sub: a.titulo });
   });
   notes.forEach((n: any) => {
-    items.push({ date: n.created_at, icon: MessageSquare, title: `Nota adicionada`, sub: (n.author_label || "") });
+    items.push({ date: n.created_at, kind: "note", note: n });
   });
 
   items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -951,7 +952,26 @@ function HistoryList({
   return (
     <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
       {items.map((it, idx) => {
-        const Icon = it.icon;
+        if (it.kind === "note") {
+          const n = it.note;
+          return (
+            <div key={idx} className="flex items-start gap-3">
+              <div className="w-7 h-7 rounded-full bg-yellow-400/15 text-yellow-300 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <MessageSquare className="w-3.5 h-3.5" />
+              </div>
+              <div className="flex-1 min-w-0 rounded-lg bg-yellow-400/10 border border-yellow-400/30 p-3">
+                <div className="flex items-center justify-between text-[10px] text-yellow-200/80 mb-1">
+                  <span>{n.author_label || "—"}</span>
+                  <span>{new Date(n.created_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</span>
+                </div>
+                <div className="text-sm text-foreground whitespace-pre-wrap break-words">
+                  {(n.conteudo || "").replace(/&nbsp;/g, " ")}
+                </div>
+              </div>
+            </div>
+          );
+        }
+        const Icon = it.icon!;
         return (
           <div key={idx} className="flex items-start gap-3">
             <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -970,6 +990,7 @@ function HistoryList({
     </div>
   );
 }
+
 
 /* ============ E-mail Panel ============ */
 function CustomFieldsList({ custom, skip = [] }: { custom?: Record<string, string> | null; skip?: string[] }) {
