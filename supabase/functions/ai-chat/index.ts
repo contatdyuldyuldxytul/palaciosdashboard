@@ -515,7 +515,7 @@ Deno.serve(async (req) => {
     const result = streamText({
       model,
       system: systemPrompt + `\n\nContexto do usuário: role=${fundador ? "fundador" : "vendedor"} user_id=${userId}`,
-      messages: convertToModelMessages(messages),
+      messages: await convertToModelMessages(messages),
       tools,
       stopWhen: stepCountIs(50),
       onError: (err) => console.error("streamText error:", err),
