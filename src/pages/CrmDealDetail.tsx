@@ -313,7 +313,6 @@ export default function CrmDealDetail() {
               stageEnteredAt={deal.stage_entered_at}
               history={history}
               activities={activities}
-              notes={notes}
               stages={allStages}
             />
           </div>
