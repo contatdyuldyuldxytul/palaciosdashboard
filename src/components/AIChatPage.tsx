@@ -1,7 +1,29 @@
 import { useState, useRef, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Send, Bot, User, Trash2, Database, Download, Edit3, MoveRight, CheckCircle2, XCircle, Loader2, ChevronDown, ChevronRight, AlertTriangle } from "lucide-react";
 import { useAIChat, type Assistant } from "@/hooks/useAIChat";
 import ReactMarkdown from "react-markdown";
+
+const markdownComponents = {
+  a: ({ href, children, ...props }: any) => {
+    if (href && href.startsWith("/")) {
+      return (
+        <Link
+          to={href}
+          className="inline-flex items-center bg-primary/10 text-primary hover:bg-primary/20 px-2 py-0.5 rounded-md font-medium no-underline transition-colors"
+          {...props}
+        >
+          {children}
+        </Link>
+      );
+    }
+    return (
+      <a href={href} target="_blank" rel="noreferrer" className="text-primary underline" {...props}>
+        {children}
+      </a>
+    );
+  },
+};
 
 interface AIChatPageProps {
   assistant: Assistant;
