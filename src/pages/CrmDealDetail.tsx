@@ -916,18 +916,17 @@ function NotesPanel({
 /* ============ History ============ */
 
 function HistoryList({
-  dealCreatedAt, stageEnteredAt, history, activities, notes, stages,
+  dealCreatedAt, stageEnteredAt, history, activities, stages,
 }: {
   dealCreatedAt: string;
   stageEnteredAt: string;
   history: any[];
   activities: any[];
-  notes: any[];
   stages: any[];
 }) {
   const stageMap = new Map(stages.map((s: any) => [s.id, s.nome]));
 
-  type Item = { date: string; kind: "event" | "note"; icon?: any; title?: string; sub?: string; note?: any };
+  type Item = { date: string; kind: "event"; icon?: any; title?: string; sub?: string };
   const items: Item[] = [];
   items.push({ date: dealCreatedAt, kind: "event", icon: CalendarIcon, title: "Deal criado" });
 
@@ -951,7 +950,7 @@ function HistoryList({
     } else if (h.evento === "status_changed") {
       items.push({ date: h.created_at, kind: "event", icon: Edit, title: "Status alterado", sub: `${h.payload?.from} → ${h.payload?.to}` });
     } else if (h.evento === "note_added" || h.evento === "note_created") {
-      // Skip — yellow note cards come from the `notes` array below
+      // Skip — notes are shown only in the Notas tab
       return;
     } else if (h.evento === "pipedrive_change") {
       const field = h.payload?.field || "campo";
@@ -968,9 +967,6 @@ function HistoryList({
     if (!date) return;
     const prefix = a.concluida_em ? "Atividade concluída" : "Atividade agendada";
     items.push({ date, kind: "event", icon: a.concluida_em ? Check : CalendarIcon, title: `${prefix}: ${a.titulo || a.tipo}`, sub: a.descricao || undefined });
-  });
-  notes.forEach((n: any) => {
-    items.push({ date: n.created_at, kind: "note", note: n });
   });
 
   items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
