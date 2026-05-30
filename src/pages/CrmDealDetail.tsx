@@ -207,24 +207,35 @@ export default function CrmDealDetail() {
           </div>
         </div>
 
-        {/* Stage selector */}
-        <div className="flex flex-wrap items-center gap-1.5 pt-2">
+        {/* Stage progress bar */}
+        <div className="flex items-end gap-1 pt-2">
           {allStages.map((s, idx) => {
+            const reached = idx <= currentStageIdx;
             const active = idx === currentStageIdx;
+            const cor = s.cor || "hsl(var(--primary))";
             return (
               <button
                 key={s.id}
                 onClick={() => handleStageChange(s.id)}
-                className={cn(
-                  "px-3 py-1.5 rounded-full text-[11px] border transition-all",
-                  active
-                    ? "text-foreground font-semibold border-transparent shadow-sm"
-                    : "text-muted-foreground border-white/10 bg-white/[0.03] hover:text-foreground hover:bg-white/[0.06]"
-                )}
-                style={active ? { background: (s.cor || "hsl(var(--primary))") + "25", borderColor: (s.cor || "hsl(var(--primary))") + "60" } : undefined}
+                className="flex-1 group text-left"
                 title={`Mover para ${s.nome}`}
               >
-                {idx + 1}. {s.nome}
+                <div
+                  className={cn(
+                    "h-1.5 rounded-full transition-all",
+                    !reached && "bg-white/5 group-hover:bg-white/10",
+                    active && "shadow-[0_0_10px_currentColor]"
+                  )}
+                  style={reached ? { background: cor, color: cor } : undefined}
+                />
+                <div
+                  className={cn(
+                    "text-[10px] mt-1.5 text-center truncate px-1 transition-colors",
+                    active ? "text-foreground font-semibold" : "text-muted-foreground group-hover:text-foreground"
+                  )}
+                >
+                  {s.nome}
+                </div>
               </button>
             );
           })}
@@ -302,7 +313,6 @@ export default function CrmDealDetail() {
               stageEnteredAt={deal.stage_entered_at}
               history={history}
               activities={activities}
-              notes={notes}
               stages={allStages}
             />
           </div>
@@ -906,18 +916,17 @@ function NotesPanel({
 /* ============ History ============ */
 
 function HistoryList({
-  dealCreatedAt, stageEnteredAt, history, activities, notes, stages,
+  dealCreatedAt, stageEnteredAt, history, activities, stages,
 }: {
   dealCreatedAt: string;
   stageEnteredAt: string;
   history: any[];
   activities: any[];
-  notes: any[];
   stages: any[];
 }) {
   const stageMap = new Map(stages.map((s: any) => [s.id, s.nome]));
 
-  type Item = { date: string; kind: "event" | "note"; icon?: any; title?: string; sub?: string; note?: any };
+  type Item = { date: string; kind: "event"; icon?: any; title?: string; sub?: string };
   const items: Item[] = [];
   items.push({ date: dealCreatedAt, kind: "event", icon: CalendarIcon, title: "Deal criado" });
 
@@ -941,7 +950,7 @@ function HistoryList({
     } else if (h.evento === "status_changed") {
       items.push({ date: h.created_at, kind: "event", icon: Edit, title: "Status alterado", sub: `${h.payload?.from} → ${h.payload?.to}` });
     } else if (h.evento === "note_added" || h.evento === "note_created") {
-      // Skip — yellow note cards come from the `notes` array below
+      // Skip — notes are shown only in the Notas tab
       return;
     } else if (h.evento === "pipedrive_change") {
       const field = h.payload?.field || "campo";
@@ -959,9 +968,6 @@ function HistoryList({
     const prefix = a.concluida_em ? "Atividade concluída" : "Atividade agendada";
     items.push({ date, kind: "event", icon: a.concluida_em ? Check : CalendarIcon, title: `${prefix}: ${a.titulo || a.tipo}`, sub: a.descricao || undefined });
   });
-  notes.forEach((n: any) => {
-    items.push({ date: n.created_at, kind: "note", note: n });
-  });
 
   items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
@@ -972,25 +978,6 @@ function HistoryList({
   return (
     <div className="space-y-3">
       {items.map((it, idx) => {
-        if (it.kind === "note") {
-          const n = it.note;
-          return (
-            <div key={idx} className="flex items-start gap-3">
-              <div className="w-7 h-7 rounded-full bg-yellow-400/15 text-yellow-300 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <MessageSquare className="w-3.5 h-3.5" />
-              </div>
-              <div className="flex-1 min-w-0 rounded-lg bg-yellow-400/10 border border-yellow-400/30 p-3">
-                <div className="flex items-center justify-between text-[10px] text-yellow-200/80 mb-1">
-                  <span>{n.author_label || "—"}</span>
-                  <span>{new Date(n.created_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</span>
-                </div>
-                <div className="text-sm text-foreground whitespace-pre-wrap break-words">
-                  {(n.conteudo || "").replace(/&nbsp;/g, " ")}
-                </div>
-              </div>
-            </div>
-          );
-        }
         const Icon = it.icon!;
         return (
           <div key={idx} className="flex items-start gap-3">
