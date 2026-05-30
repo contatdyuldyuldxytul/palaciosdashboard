@@ -218,7 +218,7 @@ export function AIChatPage({ assistant, title, subtitle, quickPrompts }: AIChatP
                 if (part.type === "text") {
                   return msg.role === "assistant" ? (
                     <div key={i} className="prose prose-invert prose-sm max-w-none [&>p]:mb-2 [&>ul]:mb-2 [&>ol]:mb-2 [&_table]:text-xs">
-                      <ReactMarkdown>{part.text}</ReactMarkdown>
+                      <ReactMarkdown components={markdownComponents}>{part.text}</ReactMarkdown>
                     </div>
                   ) : (
                     <p key={i} className="whitespace-pre-wrap">{part.text}</p>
