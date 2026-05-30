@@ -156,8 +156,9 @@ function ToolCard({ part, onApprove, onDeny }: { part: any; onApprove: () => voi
   );
 }
 
-export function AIChatPage({ assistant, title, subtitle, quickPrompts }: AIChatPageProps) {
-  const { messages, isLoading, send, clearMessages, addToolResult } = useAIChat(assistant);
+export function AIChatPage({ assistant, threadId, title, subtitle, quickPrompts, onFirstUserMessage }: AIChatPageProps) {
+  const { messages, isLoading, send, clearMessages, addToolResult } = useAIChat(assistant, threadId, { onFirstUserMessage });
+
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
 
