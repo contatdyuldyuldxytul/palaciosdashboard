@@ -1,4 +1,4 @@
-import { AIChatPage } from "@/components/AIChatPage";
+import { AssistantWithHistory } from "@/components/ai/AssistantWithHistory";
 
 const quickPrompts = [
   "Quais meus deals têm maior probabilidade de fechar reunião?",
@@ -10,8 +10,9 @@ const quickPrompts = [
 
 export default function AssistenteVendas() {
   return (
-    <AIChatPage
+    <AssistantWithHistory
       assistant="vendas"
+      basePath="/assistente-vendas"
       title="Assistente de Vendas"
       subtitle="IA especializada em vendas B2B com SPIN Selling para renderização 3D"
       quickPrompts={quickPrompts}
