@@ -978,25 +978,6 @@ function HistoryList({
   return (
     <div className="space-y-3">
       {items.map((it, idx) => {
-        if (it.kind === "note") {
-          const n = it.note;
-          return (
-            <div key={idx} className="flex items-start gap-3">
-              <div className="w-7 h-7 rounded-full bg-yellow-400/15 text-yellow-300 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <MessageSquare className="w-3.5 h-3.5" />
-              </div>
-              <div className="flex-1 min-w-0 rounded-lg bg-yellow-400/10 border border-yellow-400/30 p-3">
-                <div className="flex items-center justify-between text-[10px] text-yellow-200/80 mb-1">
-                  <span>{n.author_label || "—"}</span>
-                  <span>{new Date(n.created_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</span>
-                </div>
-                <div className="text-sm text-foreground whitespace-pre-wrap break-words">
-                  {(n.conteudo || "").replace(/&nbsp;/g, " ")}
-                </div>
-              </div>
-            </div>
-          );
-        }
         const Icon = it.icon!;
         return (
           <div key={idx} className="flex items-start gap-3">
