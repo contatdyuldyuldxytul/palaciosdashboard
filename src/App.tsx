@@ -132,6 +132,8 @@ const App = () => (
 
               {/* Assistente IA */}
               <Route path="/assistente" element={<AssistenteGeral />} />
+              <Route path="/assistente/:threadId" element={<AssistenteGeral />} />
+
 
               {/* Hunter de Negócios — redirect para nova localização */}
               <Route path="/hunter" element={<Navigate to="/crm/geracao-leads/hunter" replace />} />

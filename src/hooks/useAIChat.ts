@@ -1,25 +1,33 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export type Assistant = "vendas" | "fundador" | "geral";
 
-export function useAIChat(assistant: Assistant) {
+interface UseAIChatOptions {
+  onFirstUserMessage?: (text: string) => void;
+}
+
+export function useAIChat(assistant: Assistant, threadId: string | null, options?: UseAIChatOptions) {
   const [initialMessages, setInitialMessages] = useState<UIMessage[]>([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
+  const onFirstUserMessageRef = useRef(options?.onFirstUserMessage);
+  onFirstUserMessageRef.current = options?.onFirstUserMessage;
 
-  // Load persisted history
+  // Load persisted history for this thread
   useEffect(() => {
     let cancelled = false;
+    setHistoryLoaded(false);
+    setInitialMessages([]);
+    if (!threadId) { setHistoryLoaded(true); return; }
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { if (!cancelled) setHistoryLoaded(true); return; }
       const { data } = await supabase
         .from("chat_messages")
         .select("id, role, content, parts, created_at")
-        .eq("user_id", user.id)
-        .eq("assistant", assistant)
+        .eq("conversation_id", threadId)
         .order("created_at", { ascending: true });
 
       if (cancelled) return;
@@ -33,7 +41,7 @@ export function useAIChat(assistant: Assistant) {
       setHistoryLoaded(true);
     })();
     return () => { cancelled = true; };
-  }, [assistant]);
+  }, [threadId]);
 
   const transport = useMemo(() => new DefaultChatTransport({
     api: `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`,
@@ -50,45 +58,49 @@ export function useAIChat(assistant: Assistant) {
   const chat = useChat({
     transport,
     messages: initialMessages,
-    id: `${assistant}-${historyLoaded ? "loaded" : "loading"}`,
+    id: `${assistant}-${threadId ?? "none"}-${historyLoaded ? "loaded" : "loading"}`,
     onFinish: async ({ message }) => {
-      // Persist the completed assistant message + ensure last user message persisted
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      // Persist assistant
+      if (!user || !threadId) return;
       const textContent = (message.parts ?? []).filter((p: any) => p.type === "text").map((p: any) => p.text).join("");
-      await supabase.from("chat_messages").insert({
+      await (supabase.from("chat_messages") as any).insert({
         user_id: user.id,
         assistant,
         role: "assistant",
         content: textContent,
         parts: message.parts as any,
+        conversation_id: threadId,
       });
+      await supabase.from("chat_conversations").update({ updated_at: new Date().toISOString() }).eq("id", threadId);
     },
   });
 
   // Persist user message on send
   const sendMessage = useCallback(async (text: string) => {
-    if (!text.trim()) return;
+    if (!text.trim() || !threadId) return;
+    const trimmed = text.trim();
+    const isFirst = chat.messages.length === 0;
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      await supabase.from("chat_messages").insert({
+      await (supabase.from("chat_messages") as any).insert({
         user_id: user.id,
         assistant,
         role: "user",
-        content: text.trim(),
-        parts: [{ type: "text", text: text.trim() }] as any,
+        content: trimmed,
+        parts: [{ type: "text", text: trimmed }] as any,
+        conversation_id: threadId,
       });
+      await supabase.from("chat_conversations").update({ updated_at: new Date().toISOString() }).eq("id", threadId);
     }
-    await chat.sendMessage({ text: text.trim() });
-  }, [chat, assistant]);
+    if (isFirst) onFirstUserMessageRef.current?.(trimmed);
+    await chat.sendMessage({ text: trimmed });
+  }, [chat, assistant, threadId]);
 
   const clearMessages = useCallback(async () => {
     chat.setMessages([]);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    await supabase.from("chat_messages").delete().eq("user_id", user.id).eq("assistant", assistant);
-  }, [chat, assistant]);
+    if (!threadId) return;
+    await supabase.from("chat_messages").delete().eq("conversation_id", threadId);
+  }, [chat, threadId]);
 
   return {
     messages: chat.messages,

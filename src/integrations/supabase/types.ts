@@ -267,10 +267,38 @@ export type Database = {
           },
         ]
       }
+      chat_conversations: {
+        Row: {
+          assistant: string
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assistant: string
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assistant?: string
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           assistant: string
           content: string
+          conversation_id: string
           created_at: string
           id: string
           parts: Json | null
@@ -280,6 +308,7 @@ export type Database = {
         Insert: {
           assistant: string
           content: string
+          conversation_id: string
           created_at?: string
           id?: string
           parts?: Json | null
@@ -289,13 +318,22 @@ export type Database = {
         Update: {
           assistant?: string
           content?: string
+          conversation_id?: string
           created_at?: string
           id?: string
           parts?: Json | null
           role?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       checklist_checks: {
         Row: {

@@ -27,10 +27,13 @@ const markdownComponents = {
 
 interface AIChatPageProps {
   assistant: Assistant;
+  threadId: string;
   title: string;
   subtitle: string;
   quickPrompts: string[];
+  onFirstUserMessage?: (text: string) => void;
 }
+
 
 const WRITE_TOOLS = new Set([
   "move_deals_to_stage", "update_deal_owner", "add_deal_note", "add_activity", "bulk_update_deals",
@@ -153,8 +156,9 @@ function ToolCard({ part, onApprove, onDeny }: { part: any; onApprove: () => voi
   );
 }
 
-export function AIChatPage({ assistant, title, subtitle, quickPrompts }: AIChatPageProps) {
-  const { messages, isLoading, send, clearMessages, addToolResult } = useAIChat(assistant);
+export function AIChatPage({ assistant, threadId, title, subtitle, quickPrompts, onFirstUserMessage }: AIChatPageProps) {
+  const { messages, isLoading, send, clearMessages, addToolResult } = useAIChat(assistant, threadId, { onFirstUserMessage });
+
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
 
