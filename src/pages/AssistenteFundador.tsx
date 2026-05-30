@@ -1,4 +1,4 @@
-import { AIChatPage } from "@/components/AIChatPage";
+import { AssistantWithHistory } from "@/components/ai/AssistantWithHistory";
 
 const quickPrompts = [
   "Visão geral do funil de vendas agora",
@@ -10,8 +10,9 @@ const quickPrompts = [
 
 export default function AssistenteFundador() {
   return (
-    <AIChatPage
+    <AssistantWithHistory
       assistant="fundador"
+      basePath="/assistente-fundador"
       title="Assistente do Fundador"
       subtitle="Consultor estratégico com análise financeira e de métricas de vendas"
       quickPrompts={quickPrompts}
