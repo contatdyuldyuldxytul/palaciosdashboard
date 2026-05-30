@@ -1,58 +1,119 @@
 ## Objetivo
 
-Adaptar o system prompt do assistente de I.A. (`supabase/functions/ai-chat/index.ts`) para incorporar a identidade **Nexus** — consultor comercial estratégico do Palacios OS — preservando todas as tools e regras técnicas já existentes (links de deal, formatação BR, aprovação de ações destrutivas, etc.).
+Adicionar duas funcionalidades ao assistente Nexus:
 
-## Escopo
+1. **Desambiguação de funil/etapa** — quando o usuário mencionar pipeline/etapa de forma informal, o agente deve listar opções reais e confirmar antes de executar qualquer ação.
+2. **Histórico de conversas estilo Claude/ChatGPT** — múltiplas threads por assistente, com sidebar, título automático, rename e delete.
 
-Apenas edição de strings (`SYSTEM_BASE` e `SYSTEM_PROMPTS`) em **um único arquivo**: `supabase/functions/ai-chat/index.ts`. Nenhuma alteração em tools, schema, banco ou UI.
+---
 
-## Mudanças
+## Parte 1 — Desambiguação (system prompt)
 
-### `SYSTEM_BASE` — reescrito como persona Nexus
+Editar `supabase/functions/ai-chat/index.ts`, adicionando ao `SYSTEM_BASE` um bloco "Desambiguação de funil e etapa":
 
-Novo conteúdo cobrirá, em PT-BR, blocos compactos:
+- Sempre que o usuário mencionar funil/pipeline/etapa de forma vaga ou informal ("reciclagem", "aquecimento", "funil da Aline", "lista fria"), o agente DEVE primeiro chamar `list_pipelines_and_stages`.
+- Se houver match claro (1 candidato razoável), confirmar em uma frase curta antes de agir: *"Entendi como 'SDR — Aline'. Confirmo?"*
+- Se houver ambiguidade (>1 candidato ou nenhum óbvio), responder com lista numerada dos pipelines/etapas reais e pedir seleção. Modelo:
+  ```
+  Não identifiquei exatamente qual funil/etapa. Qual desses?
+  1. [nome real]
+  2. [nome real]
+  ```
+- Mesmo fluxo se a etapa dentro do funil for ambígua: listar etapas reais do funil escolhido.
+- **Nunca** executar `move_deals_to_stage`, `bulk_update_deals`, `update_deal_owner` etc. com funil/etapa ambíguo — confirmação primeiro.
 
-1. **Identidade**: "Você é o Nexus, agente de inteligência comercial do Palacios OS…" — estúdio B2B de visualização 3D premium, ticket alto, SPIN Selling, ICP = incorporadoras em pré-lançamento/lançamento.
-2. **Capacidades** (referenciando tools existentes):
-   - Leitura de leads/deals → `query_deals`, `query_leads`, `get_deal_detail`, `query_contacts`
-   - Leitura de funis → `list_pipelines_and_stages`, `crm_metrics`
-   - Direcionamento estratégico → usar `rank_meeting_probability` + análise de gargalos
-   - Execução no CRM → `move_deals_to_stage`, `update_deal_owner`, `add_deal_note`, `add_activity`, `bulk_update_deals` (sempre com preview + confirmação, já garantido por `needsApproval`)
-   - Análise de performance → `crm_metrics` + `query_activities`
-   - Reativação inteligente → `query_deals` com `stale_days` + análise de notas
-   - ICP intelligence → cruzamento de dados via `query_deals` agrupado
-3. **Regras de comportamento**:
-   - Direto e estratégico (audiência principal: Thiago / CEO)
-   - Nunca inventar dados — sempre usar tools
-   - Toda resposta termina com próxima ação clara ou pergunta de follow-up
-   - Ações destrutivas em massa → sempre preview + confirmação explícita
-   - Adaptar tom: com fundador, estratégico; em análises operacionais, mais claro/direto
-4. **Etapas típicas do funil** (Entrada → Primeiro Contato → Qualificação SPIN → Proposta → Negociação → Won/Lost) com a ressalva de adaptar aos nomes reais retornados por `list_pipelines_and_stages`.
-5. **Regras técnicas preservadas** (do prompt atual, mantidas integralmente):
-   - Markdown, R$, DD/MM/YYYY, America/Sao_Paulo
-   - Links internos `[Título](/crm/deal/{id})` para deals (inclusive em tabelas)
-   - Contexto da empresa (ticket R$20k, time Aline/Milena/Felipe/Thiago, pipeline ALFA)
+Não tocar em tools nem schemas.
 
-### `SYSTEM_PROMPTS` — ajuste fino por papel
+---
 
-Manter os 3 papéis (`vendas`, `fundador`, `geral`) mas reescrever os complementos para alinhar com a persona Nexus:
+## Parte 2 — Histórico de conversas (threads)
 
-- `fundador`: foco em decisão estratégica, alocação de energia da semana, gargalos, ICP, reativação — tom direto sem formalidades.
-- `vendas`: foco em priorização de deals quentes, scripts SPIN, contornar objeções, próximos passos por lead.
-- `geral`: assistente operacional Nexus, mesmas capacidades mas tom neutro.
+### 2.1 Banco
+
+Nova migração:
+
+- Criar tabela `chat_conversations`:
+  - `id uuid pk default gen_random_uuid()`
+  - `user_id uuid not null`
+  - `assistant text not null` (vendas | fundador | geral)
+  - `title text not null default 'Nova conversa'`
+  - `created_at timestamptz default now()`
+  - `updated_at timestamptz default now()`
+- GRANTs (`authenticated`, `service_role`) + RLS (`auth.uid() = user_id` para SELECT/INSERT/UPDATE/DELETE).
+- Em `chat_messages`: adicionar coluna `conversation_id uuid` com FK para `chat_conversations(id) on delete cascade`, index `(conversation_id, created_at)`.
+- Backfill simples: para cada `(user_id, assistant)` existente, criar uma conversa "Histórico" e migrar as mensagens para ela; coluna fica `not null` após o backfill.
+
+### 2.2 Rota dedicada por thread (obrigatório pelo contrato de chat-agent)
+
+Em `src/App.tsx`:
+
+- Manter `/assistente` (lista/landing que cria/seleciona conversa e navega).
+- Adicionar `/assistente/:threadId` → renderiza `AssistenteGeral` com `threadId` lido por `useParams`.
+
+A página `/assistente` sem `:threadId`:
+- Se houver conversas, redireciona para a mais recente.
+- Se não houver, cria uma nova conversa e navega para ela (caminho idempotente, fora de `useEffect` para evitar duplicação em StrictMode).
+
+### 2.3 Hook `useAIChat`
+
+Refatorar para receber `threadId` (obrigatório) e:
+
+- Carregar mensagens **apenas dessa conversa** ordenadas por `created_at`.
+- Inserir user/assistant messages com `conversation_id = threadId`.
+- `id` do `useChat` keyado em `threadId` para remontar ao trocar de conversa (sem vazar mensagens).
+- `clearMessages` agora deleta mensagens *daquela* conversa (não de todo o assistente).
+- Atualizar `updated_at` da conversa a cada mensagem (via `onFinish` + envio do usuário).
+- Auto-título: ao receber a primeira resposta do assistente em uma conversa cujo title ainda é "Nova conversa", gerar título a partir do texto da primeira mensagem do usuário (truncar ~50 chars, prefixar/sufixar com data DD/MM — ex: *"Reativação de leads — 14/06"*). Implementação client-side simples; sem chamada extra ao modelo.
+
+### 2.4 Sidebar de histórico
+
+Criar `src/components/ai/ChatHistorySidebar.tsx`:
+
+- Lista conversas do `assistant` atual ordenadas por `updated_at desc`.
+- Botão "+ Nova conversa" no topo (cria conversa, navega para `/assistente/:newId`).
+- Cada item: título + data relativa; click navega para a thread.
+- Ações por item (menu de 3 pontos ou hover): **Renomear** (input inline) e **Excluir** (confirmação leve). Sem botões aninhados — usar elementos `<button>` irmãos dentro de um `<div>` clicável.
+- Estética glassmorphism dark do projeto, com destaque na conversa ativa.
+
+Adicionar hook `useChatConversations(assistant)` para CRUD (list/create/rename/delete) com realtime opcional (não obrigatório nesta fase).
+
+### 2.5 Layout da página do assistente
+
+Em `AssistenteGeral` (e `AssistenteVendas`, `AssistenteFundador` se ainda forem usadas como rotas separadas — verificar):
+
+- Layout em duas colunas: sidebar (~260px) + área de chat (`AIChatPage`).
+- Sidebar oculta em mobile, acessível via botão (drawer existente já tem padrão similar).
+- Passar `threadId` para `AIChatPage` → `useAIChat`.
+
+### 2.6 Comportamento de "começar do zero"
+
+- Novas conversas começam vazias; não puxar contexto de threads anteriores (já natural com a separação por `conversation_id`).
+- Dentro da conversa ativa, todo o histórico daquela thread é enviado ao modelo em cada turno (comportamento atual do `useChat` preservado).
+
+---
 
 ## Fora de escopo
 
-- Não alterar tools, schemas, RLS nem UI do chat.
-- Não renomear o assistente na interface (`AssistenteVendas`, `AssistenteFundador`, `AssistenteGeral`) — a persona "Nexus" vive no system prompt; renomear UI seria uma iteração futura se você quiser.
-- Não tocar nas mensagens já persistidas; a nova persona vale para próximas respostas.
+- Não mexer em tools, RLS de outras tabelas, ou UI fora do assistente.
+- Não persistir título via IA (apenas heurística client-side por enquanto).
+- Não implementar busca dentro do histórico nesta fase.
+
+---
 
 ## Verificação
 
-1. Após deploy automático, abrir `/assistente` (qualquer um dos 3) e perguntar: "Qual tipo de lead devo prospectar agora?" — esperar diagnóstico + top 3 ações + justificativa.
-2. Pedir "Separa os deals sem contato há 60 dias e mostra preview antes de mover" — esperar listagem com links clicáveis + pedido de confirmação.
-3. Confirmar que tabelas continuam com `[Título](/crm/deal/{id})` clicável.
+1. Criar duas conversas, mandar mensagens em cada, recarregar `/assistente/<id1>` e `/assistente/<id2>` — cada uma deve restaurar suas próprias mensagens, sem vazamento.
+2. Renomear uma conversa → título atualizado na sidebar.
+3. Excluir uma conversa → some da sidebar e suas mensagens vão junto (cascade).
+4. Perguntar "move todos os deals da reciclagem pra qualificação" — agente deve listar pipelines/etapas reais e pedir seleção antes de mover.
+5. Confirmar que clicar em `[Título](/crm/deal/{id})` continua navegando para o deal.
 
-## Pergunta opcional
+---
 
-Quer que eu também renomeie a UI dos 3 assistentes para "Nexus — Vendas / Fundador / Geral", ou prefere manter os títulos atuais e só mudar a personalidade interna?
+## Pergunta para você
+
+Antes de implementar, confirma:
+
+**As 3 páginas (`/assistente` Geral, mais Vendas/Fundador se ainda existirem) compartilham a mesma sidebar de histórico filtrada por `assistant`, ou você quer um histórico unificado (mistura os 3 papéis em uma lista só)?**
+
+Recomendo: **filtrado por assistant** (cada papel tem seu próprio histórico), igual ao padrão atual de `chat_messages.assistant`. Confirmas?
