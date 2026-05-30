@@ -285,11 +285,11 @@ export default function Estrategias() {
 const ImportSchema = z.object({
   month: z.string().regex(/^\d{4}-\d{2}$/, "month deve ser YYYY-MM"),
   monthly_strategy: z.object({
-    cash_target: z.number({ invalid_type_error: "cash_target deve ser número" }),
+    cash_target: z.number({ message: "cash_target deve ser número" }),
     operational_minimum: z.number().optional(),
     key_priorities: z.array(z.string()).optional(),
     strategic_focus: z.string().optional(),
-    allocation: z.record(z.any()).optional(),
+    allocation: z.record(z.string(), z.any()).optional(),
     session_notes: z.string().optional(),
   }),
   campaigns: z.array(z.object({
@@ -300,9 +300,9 @@ const ImportSchema = z.object({
     end_date: z.string().optional(),
     playbook_type: z.enum(["cadence_2_0", "reactivation", "custom"]).optional(),
     target_description: z.string().optional(),
-    kpis: z.record(z.any()).optional(),
+    kpis: z.record(z.string(), z.any()).optional(),
     current_day_in_flow: z.number().optional(),
-    custom_templates: z.record(z.any()).optional(),
+    custom_templates: z.record(z.string(), z.any()).optional(),
     leads: z.array(z.object({
       pipedrive_deal_id: z.union([z.number(), z.string()]).optional(),
       lead_name: z.string().optional(),
