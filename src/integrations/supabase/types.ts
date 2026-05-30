@@ -3495,6 +3495,227 @@ export type Database = {
           },
         ]
       }
+      whatsapp_instances: {
+        Row: {
+          created_at: string
+          id: string
+          instance_name: string
+          last_connected_at: string | null
+          last_disconnected_at: string | null
+          metadata: Json
+          phone_number: string | null
+          profile_name: string | null
+          profile_picture_url: string | null
+          qr_code: string | null
+          qr_updated_at: string | null
+          status: Database["public"]["Enums"]["whatsapp_instance_status"]
+          updated_at: string
+          user_id: string
+          webhook_configured: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          instance_name: string
+          last_connected_at?: string | null
+          last_disconnected_at?: string | null
+          metadata?: Json
+          phone_number?: string | null
+          profile_name?: string | null
+          profile_picture_url?: string | null
+          qr_code?: string | null
+          qr_updated_at?: string | null
+          status?: Database["public"]["Enums"]["whatsapp_instance_status"]
+          updated_at?: string
+          user_id: string
+          webhook_configured?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          instance_name?: string
+          last_connected_at?: string | null
+          last_disconnected_at?: string | null
+          metadata?: Json
+          phone_number?: string | null
+          profile_name?: string | null
+          profile_picture_url?: string | null
+          qr_code?: string | null
+          qr_updated_at?: string | null
+          status?: Database["public"]["Enums"]["whatsapp_instance_status"]
+          updated_at?: string
+          user_id?: string
+          webhook_configured?: boolean
+        }
+        Relationships: []
+      }
+      whatsapp_messages: {
+        Row: {
+          content: string | null
+          created_at: string
+          deal_id: string | null
+          direction: Database["public"]["Enums"]["whatsapp_msg_direction"]
+          error_message: string | null
+          id: string
+          instance_id: string
+          media_type: string | null
+          media_url: string | null
+          message_id: string | null
+          person_id: string | null
+          raw: Json
+          received_at: string | null
+          remote_jid: string
+          sent_at: string | null
+          status: Database["public"]["Enums"]["whatsapp_msg_status"]
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          deal_id?: string | null
+          direction: Database["public"]["Enums"]["whatsapp_msg_direction"]
+          error_message?: string | null
+          id?: string
+          instance_id: string
+          media_type?: string | null
+          media_url?: string | null
+          message_id?: string | null
+          person_id?: string | null
+          raw?: Json
+          received_at?: string | null
+          remote_jid: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["whatsapp_msg_status"]
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          deal_id?: string | null
+          direction?: Database["public"]["Enums"]["whatsapp_msg_direction"]
+          error_message?: string | null
+          id?: string
+          instance_id?: string
+          media_type?: string | null
+          media_url?: string | null
+          message_id?: string | null
+          person_id?: string | null
+          raw?: Json
+          received_at?: string | null
+          remote_jid?: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["whatsapp_msg_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_messages_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_instances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_scheduled_messages: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string
+          deal_id: string | null
+          error_message: string | null
+          id: string
+          instance_id: string
+          media_type: string | null
+          media_url: string | null
+          person_id: string | null
+          scheduled_for: string
+          sent_at: string | null
+          sent_message_id: string | null
+          status: Database["public"]["Enums"]["whatsapp_sched_status"]
+          to_number: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by: string
+          deal_id?: string | null
+          error_message?: string | null
+          id?: string
+          instance_id: string
+          media_type?: string | null
+          media_url?: string | null
+          person_id?: string | null
+          scheduled_for: string
+          sent_at?: string | null
+          sent_message_id?: string | null
+          status?: Database["public"]["Enums"]["whatsapp_sched_status"]
+          to_number: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string
+          deal_id?: string | null
+          error_message?: string | null
+          id?: string
+          instance_id?: string
+          media_type?: string | null
+          media_url?: string | null
+          person_id?: string | null
+          scheduled_for?: string
+          sent_at?: string | null
+          sent_message_id?: string | null
+          status?: Database["public"]["Enums"]["whatsapp_sched_status"]
+          to_number?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_scheduled_messages_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_instances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_scheduled_messages_sent_message_id_fkey"
+            columns: ["sent_message_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_webhook_events: {
+        Row: {
+          created_at: string
+          error: string | null
+          event_type: string | null
+          id: string
+          instance_name: string | null
+          payload: Json
+          processed: boolean
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          event_type?: string | null
+          id?: string
+          instance_name?: string | null
+          payload: Json
+          processed?: boolean
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          event_type?: string | null
+          id?: string
+          instance_name?: string | null
+          payload?: Json
+          processed?: boolean
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -3572,6 +3793,14 @@ export type Database = {
         | "custom"
       strategy_source: "manual" | "claude_session"
       vendedor_sub_role: "sdr" | "ldr"
+      whatsapp_instance_status:
+        | "disconnected"
+        | "connecting"
+        | "connected"
+        | "error"
+      whatsapp_msg_direction: "in" | "out"
+      whatsapp_msg_status: "pending" | "sent" | "delivered" | "read" | "failed"
+      whatsapp_sched_status: "pending" | "sent" | "failed" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3752,6 +3981,15 @@ export const Constants = {
       ],
       strategy_source: ["manual", "claude_session"],
       vendedor_sub_role: ["sdr", "ldr"],
+      whatsapp_instance_status: [
+        "disconnected",
+        "connecting",
+        "connected",
+        "error",
+      ],
+      whatsapp_msg_direction: ["in", "out"],
+      whatsapp_msg_status: ["pending", "sent", "delivered", "read", "failed"],
+      whatsapp_sched_status: ["pending", "sent", "failed", "cancelled"],
     },
   },
 } as const
