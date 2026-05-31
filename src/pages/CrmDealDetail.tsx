@@ -24,6 +24,7 @@ import {
   useDealHistory,
 } from "@/hooks/useCrm";
 import { Composer } from "@/components/crm/email/Composer";
+import { MoveToPipelineDialog } from "@/components/crm/MoveToPipelineDialog";
 
 const fmt = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
