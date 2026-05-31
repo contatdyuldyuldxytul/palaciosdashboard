@@ -48,6 +48,9 @@ export default function CrmDealDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const [movePipelineOpen, setMovePipelineOpen] = useState(false);
+
+
 
   const { data: deal, isLoading } = useQuery({
     queryKey: ["crm", "deal", id],
