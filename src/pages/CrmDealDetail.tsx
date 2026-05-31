@@ -476,6 +476,16 @@ export default function CrmDealDetail() {
           </SectionCard>
         </div>
       </div>
+
+      <MoveToPipelineDialog
+        dealId={movePipelineOpen ? deal.id : null}
+        currentPipelineId={deal.pipeline_id}
+        onClose={() => setMovePipelineOpen(false)}
+        onMoved={() => {
+          refresh();
+          qc.invalidateQueries({ queryKey: ["crm", "stages"] });
+        }}
+      />
     </div>
   );
 }
