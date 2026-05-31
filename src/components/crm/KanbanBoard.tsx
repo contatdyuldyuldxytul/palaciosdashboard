@@ -1,19 +1,17 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   DndContext, DragEndEvent, DragOverlay, DragStartEvent,
   PointerSensor, useSensor, useSensors,
 } from "@dnd-kit/core";
 import { useDroppable, useDraggable } from "@dnd-kit/core";
-import { Calendar, Building2, Trash2, XCircle, Trophy, ArrowRightLeft } from "lucide-react";
-import { CrmDeal, CrmStage, CrmLabel, useMoveDealStage, useCrmPipelines, useCrmStages, useCrmLabels } from "@/hooks/useCrm";
+import { Calendar, Building2, Trash2, XCircle, Trophy, ArrowRightLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { CrmDeal, CrmStage, CrmLabel, useMoveDealStage, useCrmLabels } from "@/hooks/useCrm";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
 import { MotivoPerdaModal } from "@/components/crm/atividades/MotivoPerdaModal";
+import { MoveToPipelineDialog } from "@/components/crm/MoveToPipelineDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SwipeableKanban } from "@/components/mobile/SwipeableKanban";
 
