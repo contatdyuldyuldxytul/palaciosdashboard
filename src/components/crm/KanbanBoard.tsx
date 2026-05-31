@@ -352,3 +352,63 @@ export function KanbanBoard({ stages, deals }: { stages: CrmStage[]; deals: CrmD
   );
 }
 
+function KanbanColumnsRow({
+  stages, dealsByStage, labelMap, onOpen,
+}: {
+  stages: CrmStage[];
+  dealsByStage: Map<string, CrmDeal[]>;
+  labelMap: Map<string, CrmLabel>;
+  onOpen: (id: string) => void;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const isCompact = stages.length <= 7;
+
+  const scrollBy = (dir: 1 | -1) => {
+    scrollRef.current?.scrollBy({ left: dir * 280, behavior: "smooth" });
+  };
+
+  return (
+    <div className="relative">
+      <div
+        ref={scrollRef}
+        className={`flex gap-3 pb-6 -mx-1 px-1 w-full ${isCompact ? "" : "overflow-x-auto scroll-smooth"}`}
+      >
+        {stages.map((s) => (
+          <StageColumn
+            key={s.id}
+            stage={s}
+            deals={dealsByStage.get(s.id) || []}
+            onOpen={onOpen}
+            labelMap={labelMap}
+            compact={isCompact}
+          />
+        ))}
+      </div>
+
+      {!isCompact && (
+        <>
+          <button
+            type="button"
+            onClick={() => scrollBy(-1)}
+            aria-label="Rolar para esquerda"
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-background/80 backdrop-blur-xl border border-white/15 flex items-center justify-center text-foreground hover:bg-background hover:border-primary/40 transition-all shadow-lg"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollBy(1)}
+            aria-label="Rolar para direita"
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-background/80 backdrop-blur-xl border border-white/15 flex items-center justify-center text-foreground hover:bg-background hover:border-primary/40 transition-all shadow-lg"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+          <div className="pointer-events-none absolute left-0 top-0 bottom-6 w-10 bg-gradient-to-r from-background/60 to-transparent z-10" />
+          <div className="pointer-events-none absolute right-0 top-0 bottom-6 w-10 bg-gradient-to-l from-background/60 to-transparent z-10" />
+        </>
+      )}
+    </div>
+  );
+}
+
+
