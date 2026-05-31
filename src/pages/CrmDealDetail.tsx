@@ -183,7 +183,15 @@ export default function CrmDealDetail() {
       <div className="glass-card rounded-2xl p-5 space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-1 min-w-0 flex-1">
-            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{(deal as any).pipeline?.nome}</div>
+            <button
+              onClick={() => setMovePipelineOpen(true)}
+              className="group inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+              title="Mover deal para outro pipeline"
+            >
+              <span>{(deal as any).pipeline?.nome || "Pipeline"}</span>
+              <ArrowRightLeft className="w-3 h-3 opacity-60 group-hover:opacity-100" />
+              <span className="text-primary normal-case tracking-normal opacity-0 group-hover:opacity-100 transition-opacity">mudar</span>
+            </button>
             <InlineText
               value={deal.titulo}
               onSave={(v) => handlePatchDeal({ titulo: v })}
