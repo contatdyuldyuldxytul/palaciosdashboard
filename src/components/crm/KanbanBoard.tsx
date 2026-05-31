@@ -391,7 +391,7 @@ function KanbanColumnsRow({
             type="button"
             onClick={() => scrollBy(-1)}
             aria-label="Rolar para esquerda"
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-background/80 backdrop-blur-xl border border-white/15 flex items-center justify-center text-foreground hover:bg-background hover:border-primary/40 transition-all shadow-lg"
+            className="sticky left-0 top-24 z-30 w-10 h-10 -mr-10 self-start rounded-full bg-background/90 backdrop-blur-xl border border-white/20 flex items-center justify-center text-foreground hover:bg-background hover:border-primary/50 transition-all shadow-xl"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
