@@ -3,7 +3,7 @@ import {
   LayoutDashboard, TrendingUp, Users, MessageSquare, Target, Kanban,
   ChevronLeft, ChevronRight, ChevronDown, LogOut, Crown, User, Sun, Moon,
   DollarSign, ClipboardList, Calendar, Mail, Instagram, TrendingUp as TrendUp,
-  Sparkles, Settings, Radar, LucideIcon
+  Sparkles, Settings, Radar, MessageCircle, LucideIcon
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,6 +18,7 @@ const navItems = [
   { title: "Projects", url: "/crm/projects", icon: ClipboardList, requireRole: "fundador" as const },
   { title: "Atividades", url: "/crm/atividades", icon: Calendar },
   { title: "E-mail", url: "/crm/email", icon: Mail },
+  { title: "WhatsApp", url: "/whatsapp", icon: MessageCircle },
   { title: "Geração de Leads", url: "/crm/geracao-leads", icon: Radar },
   { title: "Contatos", url: "/crm/contatos", icon: Users },
   { title: "Insights & Forecast", url: "/crm/insights", icon: TrendUp },

@@ -27,6 +27,7 @@ const Metas = lazy(() => import("@/pages/Metas"));
 const Scripts = lazy(() => import("@/pages/Scripts"));
 const AssistenteVendas = lazy(() => import("@/pages/AssistenteVendas"));
 const AssistenteGeral = lazy(() => import("@/pages/AssistenteGeral"));
+const WhatsApp = lazy(() => import("@/pages/WhatsApp"));
 const ClientesAtivos = lazy(() => import("@/pages/ClientesAtivos"));
 const HunterNegocios = lazy(() => import("@/pages/HunterNegocios"));
 const Comissoes = lazy(() => import("@/pages/Comissoes"));
@@ -131,8 +132,13 @@ const App = () => (
               </Route>
 
               {/* Assistente IA */}
+              {/* Assistente IA */}
               <Route path="/assistente" element={<AssistenteGeral />} />
               <Route path="/assistente/:threadId" element={<AssistenteGeral />} />
+
+              {/* WhatsApp (Evolution API) */}
+              <Route path="/whatsapp" element={<WhatsApp />} />
+
 
 
               {/* Hunter de Negócios — redirect para nova localização */}
