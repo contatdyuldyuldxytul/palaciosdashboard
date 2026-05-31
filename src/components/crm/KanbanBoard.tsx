@@ -121,16 +121,16 @@ function DealCard({ deal, isDragging = false, onOpen, labelMap }: { deal: CrmDea
   );
 }
 
-function StageColumn({ stage, deals, onOpen, labelMap }: { stage: CrmStage; deals: CrmDeal[]; onOpen: (id: string) => void; labelMap: Map<string, CrmLabel> }) {
+function StageColumn({ stage, deals, onOpen, labelMap, compact = true }: { stage: CrmStage; deals: CrmDeal[]; onOpen: (id: string) => void; labelMap: Map<string, CrmLabel>; compact?: boolean }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
   const total = deals.reduce((s, d) => s + (Number(d.valor) || 0), 0);
   const color = stage.cor || "#3b82f6";
 
   return (
     <div
-      className={`flex flex-col flex-1 min-w-0 rounded-2xl border backdrop-blur-xl transition-all overflow-hidden ${
-        isOver ? "border-primary/60 ring-2 ring-primary/30" : "border-white/10"
-      }`}
+      className={`flex flex-col rounded-2xl border backdrop-blur-xl transition-all overflow-hidden ${
+        compact ? "flex-1 min-w-0" : "w-[260px] flex-shrink-0"
+      } ${isOver ? "border-primary/60 ring-2 ring-primary/30" : "border-white/10"}`}
       style={{
         background: `linear-gradient(180deg, ${color}10 0%, rgba(255,255,255,0.02) 30%, rgba(255,255,255,0.02) 100%)`,
         boxShadow: `inset 0 3px 0 0 ${color}, 0 4px 24px -8px ${color}25`,
