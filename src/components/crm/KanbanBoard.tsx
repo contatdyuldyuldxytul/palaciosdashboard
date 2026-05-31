@@ -290,17 +290,12 @@ export function KanbanBoard({ stages, deals }: { stages: CrmStage[]; deals: CrmD
           }}
         />
       ) : (
-        <div className="flex gap-3 pb-6 -mx-1 px-1 w-full overflow-x-auto">
-          {stages.map(s => (
-            <StageColumn
-              key={s.id}
-              stage={s}
-              deals={dealsByStage.get(s.id) || []}
-              onOpen={(id) => navigate(`/crm/deal/${id}`)}
-              labelMap={labelMap}
-            />
-          ))}
-        </div>
+        <KanbanColumnsRow
+          stages={stages}
+          dealsByStage={dealsByStage}
+          labelMap={labelMap}
+          onOpen={(id) => navigate(`/crm/deal/${id}`)}
+        />
       )}
 
       {/* Bottom action drop bar — only during drag */}
