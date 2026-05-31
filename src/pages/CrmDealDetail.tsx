@@ -6,7 +6,7 @@ import {
   ArrowLeft, Building2, Mail, Phone, Calendar as CalendarIcon, User, Trophy, X, Edit,
   Plus, Check, Tag, Phone as PhoneIcon, Mail as MailIcon, ClipboardList, Users,
   Clock, MessageSquare, History, Linkedin, Instagram, MapPin, Globe, DollarSign,
-  Briefcase, ChevronDown,
+  Briefcase, ChevronDown, ArrowRightLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,6 +24,7 @@ import {
   useDealHistory,
 } from "@/hooks/useCrm";
 import { Composer } from "@/components/crm/email/Composer";
+import { MoveToPipelineDialog } from "@/components/crm/MoveToPipelineDialog";
 
 const fmt = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
@@ -47,6 +48,9 @@ export default function CrmDealDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const [movePipelineOpen, setMovePipelineOpen] = useState(false);
+
+
 
   const { data: deal, isLoading } = useQuery({
     queryKey: ["crm", "deal", id],
@@ -183,7 +187,15 @@ export default function CrmDealDetail() {
       <div className="glass-card rounded-2xl p-5 space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-1 min-w-0 flex-1">
-            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{(deal as any).pipeline?.nome}</div>
+            <button
+              onClick={() => setMovePipelineOpen(true)}
+              className="group inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+              title="Mover deal para outro pipeline"
+            >
+              <span>{(deal as any).pipeline?.nome || "Pipeline"}</span>
+              <ArrowRightLeft className="w-3 h-3 opacity-60 group-hover:opacity-100" />
+              <span className="text-primary normal-case tracking-normal opacity-0 group-hover:opacity-100 transition-opacity">mudar</span>
+            </button>
             <InlineText
               value={deal.titulo}
               onSave={(v) => handlePatchDeal({ titulo: v })}
@@ -464,6 +476,16 @@ export default function CrmDealDetail() {
           </SectionCard>
         </div>
       </div>
+
+      <MoveToPipelineDialog
+        dealId={movePipelineOpen ? deal.id : null}
+        currentPipelineId={deal.pipeline_id}
+        onClose={() => setMovePipelineOpen(false)}
+        onMoved={() => {
+          refresh();
+          qc.invalidateQueries({ queryKey: ["crm", "stages"] });
+        }}
+      />
     </div>
   );
 }

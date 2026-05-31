@@ -1,19 +1,17 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   DndContext, DragEndEvent, DragOverlay, DragStartEvent,
   PointerSensor, useSensor, useSensors,
 } from "@dnd-kit/core";
 import { useDroppable, useDraggable } from "@dnd-kit/core";
-import { Calendar, Building2, Trash2, XCircle, Trophy, ArrowRightLeft } from "lucide-react";
-import { CrmDeal, CrmStage, CrmLabel, useMoveDealStage, useCrmPipelines, useCrmStages, useCrmLabels } from "@/hooks/useCrm";
+import { Calendar, Building2, Trash2, XCircle, Trophy, ArrowRightLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { CrmDeal, CrmStage, CrmLabel, useMoveDealStage, useCrmLabels } from "@/hooks/useCrm";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
 import { MotivoPerdaModal } from "@/components/crm/atividades/MotivoPerdaModal";
+import { MoveToPipelineDialog } from "@/components/crm/MoveToPipelineDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SwipeableKanban } from "@/components/mobile/SwipeableKanban";
 
@@ -123,16 +121,16 @@ function DealCard({ deal, isDragging = false, onOpen, labelMap }: { deal: CrmDea
   );
 }
 
-function StageColumn({ stage, deals, onOpen, labelMap }: { stage: CrmStage; deals: CrmDeal[]; onOpen: (id: string) => void; labelMap: Map<string, CrmLabel> }) {
+function StageColumn({ stage, deals, onOpen, labelMap, compact = true }: { stage: CrmStage; deals: CrmDeal[]; onOpen: (id: string) => void; labelMap: Map<string, CrmLabel>; compact?: boolean }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
   const total = deals.reduce((s, d) => s + (Number(d.valor) || 0), 0);
   const color = stage.cor || "#3b82f6";
 
   return (
     <div
-      className={`flex flex-col flex-1 min-w-0 rounded-2xl border backdrop-blur-xl transition-all overflow-hidden ${
-        isOver ? "border-primary/60 ring-2 ring-primary/30" : "border-white/10"
-      }`}
+      className={`flex flex-col rounded-2xl border backdrop-blur-xl transition-all overflow-hidden ${
+        compact ? "flex-1 min-w-0" : "w-[260px] flex-shrink-0"
+      } ${isOver ? "border-primary/60 ring-2 ring-primary/30" : "border-white/10"}`}
       style={{
         background: `linear-gradient(180deg, ${color}10 0%, rgba(255,255,255,0.02) 30%, rgba(255,255,255,0.02) 100%)`,
         boxShadow: `inset 0 3px 0 0 ${color}, 0 4px 24px -8px ${color}25`,
@@ -292,17 +290,12 @@ export function KanbanBoard({ stages, deals }: { stages: CrmStage[]; deals: CrmD
           }}
         />
       ) : (
-        <div className="flex gap-3 pb-6 -mx-1 px-1 w-full overflow-x-auto">
-          {stages.map(s => (
-            <StageColumn
-              key={s.id}
-              stage={s}
-              deals={dealsByStage.get(s.id) || []}
-              onOpen={(id) => navigate(`/crm/deal/${id}`)}
-              labelMap={labelMap}
-            />
-          ))}
-        </div>
+        <KanbanColumnsRow
+          stages={stages}
+          dealsByStage={dealsByStage}
+          labelMap={labelMap}
+          onOpen={(id) => navigate(`/crm/deal/${id}`)}
+        />
       )}
 
       {/* Bottom action drop bar — only during drag */}
@@ -359,94 +352,63 @@ export function KanbanBoard({ stages, deals }: { stages: CrmStage[]; deals: CrmD
   );
 }
 
-function MoveToPipelineDialog({ dealId, onClose }: { dealId: string | null; onClose: () => void }) {
-  const { data: pipelines = [] } = useCrmPipelines();
-  const [targetPipelineId, setTargetPipelineId] = useState<string | null>(null);
-  const { data: targetStages = [] } = useCrmStages(targetPipelineId || undefined);
-  const qc = useQueryClient();
+function KanbanColumnsRow({
+  stages, dealsByStage, labelMap, onOpen,
+}: {
+  stages: CrmStage[];
+  dealsByStage: Map<string, CrmDeal[]>;
+  labelMap: Map<string, CrmLabel>;
+  onOpen: (id: string) => void;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const isCompact = stages.length <= 7;
 
-  const handleMove = async (stageId: string, pipelineName: string, stageName: string) => {
-    if (!dealId) return;
-    try {
-      const { error } = await supabase
-        .from("crm_deals")
-        .update({ pipeline_id: targetPipelineId, stage_id: stageId, stage_entered_at: new Date().toISOString() })
-        .eq("id", dealId);
-      if (error) throw error;
-      toast({ title: `Movido para ${pipelineName} · ${stageName}` });
-      qc.invalidateQueries({ queryKey: ["crm"] });
-    } catch (err: any) {
-      toast({ title: "Erro", description: err.message, variant: "destructive" });
-    } finally {
-      setTargetPipelineId(null);
-      onClose();
-    }
+  const scrollBy = (dir: 1 | -1) => {
+    scrollRef.current?.scrollBy({ left: dir * 280, behavior: "smooth" });
   };
 
   return (
-    <Dialog
-      open={!!dealId}
-      onOpenChange={(o) => {
-        if (!o) {
-          setTargetPipelineId(null);
-          onClose();
-        }
-      }}
-    >
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>
-            {targetPipelineId ? "Escolher etapa…" : "Mover para qual pipeline?"}
-          </DialogTitle>
-        </DialogHeader>
+    <div className="relative">
+      <div
+        ref={scrollRef}
+        className={`flex gap-3 pb-6 -mx-1 px-1 w-full ${isCompact ? "" : "overflow-x-auto scroll-smooth"}`}
+      >
+        {stages.map((s) => (
+          <StageColumn
+            key={s.id}
+            stage={s}
+            deals={dealsByStage.get(s.id) || []}
+            onOpen={onOpen}
+            labelMap={labelMap}
+            compact={isCompact}
+          />
+        ))}
+      </div>
 
-        {!targetPipelineId ? (
-          <div className="grid grid-cols-1 gap-1.5 mt-2">
-            {pipelines.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => setTargetPipelineId(p.id)}
-                className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors text-left text-sm border border-white/5"
-              >
-                <span className="text-foreground font-medium">{p.nome}</span>
-                {p.owner_label && (
-                  <span className="text-[10px] text-muted-foreground">{p.owner_label}</span>
-                )}
-              </button>
-            ))}
-            {pipelines.length === 0 && (
-              <div className="text-xs text-muted-foreground py-4 text-center">Nenhum pipeline disponível.</div>
-            )}
-          </div>
-        ) : (
-          <>
-            <button
-              onClick={() => setTargetPipelineId(null)}
-              className="text-[11px] text-muted-foreground hover:text-foreground transition-colors mb-1"
-            >
-              ← Voltar aos pipelines
-            </button>
-            <div className="grid grid-cols-1 gap-1.5">
-              {targetStages.map((s) => {
-                const pipelineName = pipelines.find((p) => p.id === targetPipelineId)?.nome || "";
-                return (
-                  <button
-                    key={s.id}
-                    onClick={() => handleMove(s.id, pipelineName, s.nome)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors text-left text-sm"
-                  >
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ background: s.cor || "#3b82f6" }} />
-                    <span className="text-foreground">{s.nome}</span>
-                  </button>
-                );
-              })}
-              {targetStages.length === 0 && (
-                <div className="text-xs text-muted-foreground py-4 text-center">Carregando etapas…</div>
-              )}
-            </div>
-          </>
-        )}
-      </DialogContent>
-    </Dialog>
+      {!isCompact && (
+        <>
+          <button
+            type="button"
+            onClick={() => scrollBy(-1)}
+            aria-label="Rolar para esquerda"
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-background/80 backdrop-blur-xl border border-white/15 flex items-center justify-center text-foreground hover:bg-background hover:border-primary/40 transition-all shadow-lg"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollBy(1)}
+            aria-label="Rolar para direita"
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-background/80 backdrop-blur-xl border border-white/15 flex items-center justify-center text-foreground hover:bg-background hover:border-primary/40 transition-all shadow-lg"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+          <div className="pointer-events-none absolute left-0 top-0 bottom-6 w-10 bg-gradient-to-r from-background/60 to-transparent z-10" />
+          <div className="pointer-events-none absolute right-0 top-0 bottom-6 w-10 bg-gradient-to-l from-background/60 to-transparent z-10" />
+        </>
+      )}
+    </div>
   );
 }
+
+
