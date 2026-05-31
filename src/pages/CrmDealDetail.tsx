@@ -6,7 +6,7 @@ import {
   ArrowLeft, Building2, Mail, Phone, Calendar as CalendarIcon, User, Trophy, X, Edit,
   Plus, Check, Tag, Phone as PhoneIcon, Mail as MailIcon, ClipboardList, Users,
   Clock, MessageSquare, History, Linkedin, Instagram, MapPin, Globe, DollarSign,
-  Briefcase, ChevronDown,
+  Briefcase, ChevronDown, ArrowRightLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
