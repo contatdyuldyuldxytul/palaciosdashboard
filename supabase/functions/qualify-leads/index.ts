@@ -68,6 +68,8 @@ Retorne APENAS JSON válido:
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const authFail = await requireAuth(req);
+  if (authFail) return authFail;
 
   try {
     const { data } = await req.json();

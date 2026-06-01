@@ -21,6 +21,8 @@ async function requireAuth(req: Request): Promise<Response | null> {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const authFail = await requireAuth(req);
+  if (authFail) return authFail;
 
   try {
     const { mes_ano, leads_milena, leads_contatados_aline, demos_aline, contratos } = await req.json();
