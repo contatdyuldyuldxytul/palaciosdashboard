@@ -498,25 +498,63 @@ export default function PlanoSemanalClaude() {
             />
           </label>
         </div>
-        <span
-          className="text-[11px] px-2.5 py-1 rounded-full font-medium"
-          style={
-            aprovado
-              ? {
-                  background: "rgba(0,200,150,0.15)",
-                  color: "hsl(160,100%,55%)",
-                  border: "1px solid rgba(0,200,150,0.3)",
-                }
-              : {
-                  background: "rgba(234,179,8,0.15)",
-                  color: "hsl(45,100%,60%)",
-                  border: "1px solid rgba(234,179,8,0.3)",
-                }
-          }
-        >
-          {aprovado ? "Aprovado" : "Aguardando aprovação"}
-        </span>
+        <div className="flex items-center gap-2 flex-wrap">
+          {plan.week_end && plan.week_end < getMondayISO() && (
+            <button
+              onClick={criarProximaSemana}
+              disabled={creating}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all hover:opacity-90 disabled:opacity-50"
+              style={{
+                background: "rgba(0,200,150,0.15)",
+                color: "hsl(160,100%,55%)",
+                border: "1px solid rgba(0,200,150,0.3)",
+              }}
+              title="Cria um novo plano para a semana atual copiando esta cadência"
+            >
+              <Plus className="w-3 h-3" />
+              {creating ? "Criando…" : "Nova semana"}
+            </button>
+          )}
+          <span
+            className="text-[11px] px-2.5 py-1 rounded-full font-medium"
+            style={
+              aprovado
+                ? {
+                    background: "rgba(0,200,150,0.15)",
+                    color: "hsl(160,100%,55%)",
+                    border: "1px solid rgba(0,200,150,0.3)",
+                  }
+                : {
+                    background: "rgba(234,179,8,0.15)",
+                    color: "hsl(45,100%,60%)",
+                    border: "1px solid rgba(234,179,8,0.3)",
+                  }
+            }
+          >
+            {aprovado ? "Aprovado" : "Aguardando aprovação"}
+          </span>
+        </div>
       </div>
+
+      {/* Aviso de plano fora da semana atual */}
+      {plan.week_end && plan.week_end < getMondayISO() && (
+        <div
+          className="flex items-start gap-2 rounded-xl px-4 py-3 text-xs"
+          style={{
+            background: "rgba(234,179,8,0.08)",
+            border: "1px solid rgba(234,179,8,0.25)",
+            color: "hsl(45,100%,75%)",
+          }}
+        >
+          <CalendarIcon className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="font-medium">Este plano é de uma semana passada ({fmtDate(plan.week_start)}–{fmtDate(plan.week_end)}).</p>
+            <p className="text-muted-foreground mt-0.5">
+              Clique em <b>Reaprovar e Redistribuir</b> para movê-lo automaticamente para a semana atual, ou em <b>Nova semana</b> para criar um plano novo.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Estratégia */}
       <Field label="Estratégia da semana">
