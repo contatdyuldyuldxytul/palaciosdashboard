@@ -64,6 +64,9 @@ function normalize(str: string): string {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const authFail = await requireAuth(req);
+  if (authFail) return authFail;
+
   try {
     const SERVICE_ACCOUNT = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
     const SHEET_ID = Deno.env.get("GOOGLE_SHEETS_ID");
