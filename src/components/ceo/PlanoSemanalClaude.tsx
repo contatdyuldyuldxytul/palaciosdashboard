@@ -417,8 +417,12 @@ export default function PlanoSemanalClaude() {
         if (insErr) throw insErr;
       }
 
-      setPlan({ ...plan, status: "aprovado" });
-      toast.success("Plano aprovado e atividades distribuídas");
+      setPlan({ ...plan, week_start: weekStart, week_end: weekEnd, status: "aprovado" });
+      if (realigned) {
+        toast.success(`Plano realocado para ${fmtDate(weekStart)}–${fmtDate(weekEnd)} e atividades distribuídas`);
+      } else {
+        toast.success("Plano aprovado e atividades distribuídas");
+      }
     } catch (e: any) {
       toast.error(e?.message || "Erro ao aprovar plano");
     } finally {
