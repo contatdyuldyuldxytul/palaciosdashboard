@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Composer } from "./Composer";
 import { toast } from "sonner";
+import DOMPurify from "dompurify";
 
 const FOLDERS: Array<{ key: InboxFilter; label: string; icon: any }> = [
   { key: "all", label: "Todos", icon: Inbox },
