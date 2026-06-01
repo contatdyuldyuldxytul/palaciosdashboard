@@ -1,125 +1,40 @@
+## Diagnóstico
 
-# WhatsApp 2.0 — Inbox + Disparos (estilo Umbler)
+A distribuição **já funciona** — o botão "Reaprovar e Redistribuir" insere uma linha em `daily_activities` para cada tarefa de cadência, por pessoa (Aline → `user_pipedrive_id 24578358`, Felipe → `26351800`, Milena → `assignee_label='Milena'`) e por dia (`scheduled_date = week_start + i`). O painel **Núcleo Operacional → Checklist** (DailyTasksPanel) lê exatamente essa tabela filtrando por `user_pipedrive_id` / `assignee_label='Milena'` e `scheduled_date = hoje`.
 
-Vou reconstruir a aba `/whatsapp` em uma experiência completa de vendas com dois módulos principais e suporte transversal de templates e contatos do CRM.
+O motivo de "Sem tarefas para hoje" no print é simples: o único `weekly_plan` aprovado tem `week_start = 25/05/2026` e `week_end = 29/05/2026`. Hoje é **01/06/2026** — a redistribuição gravou as atividades nos dias 25–29/05, então no checklist de hoje aparece vazio. Não há plano para a semana atual.
 
-## Estrutura da nova página
+Há também um segundo papercut: criar um novo plano só aparece quando não existe nenhum (`plan === null`); como já existe o plano de maio, o CEO não consegue criar o da semana corrente pela UI.
 
-```text
-/whatsapp
-├── 💬 Conversas     (inbox em tempo real)
-├── 📢 Disparos      (campanhas em massa com cadência)
-├── ✨ Templates     (respostas rápidas com variáveis)
-└── ⚙️ Conexão       (QR code / status — card atual, enxuto)
-```
+## O que vou implementar
 
-Tabs no topo, mantendo o visual glass dark. Fundador vê seletor de "Conta" para alternar entre instâncias dos colaboradores.
+Tudo em `src/components/ceo/PlanoSemanalClaude.tsx` (frontend apenas — a lógica de insert em `daily_activities` já está certa).
 
----
+1. **Auto-realinhar a semana na hora de redistribuir**
+   - Em `approveAndDistribute`, se `plan.week_start` for anterior à segunda-feira atual (TZ São Paulo), atualizar automaticamente `week_start` para a segunda atual e `week_end` para a sexta correspondente antes do `update` + `insert`. Assim o clique no botão "Reaprovar e Redistribuir" sempre joga as tarefas para a semana corrente, mantendo a cadência editada.
+   - Toast informando: "Plano realocado para a semana de DD/MM a DD/MM e atividades distribuídas".
 
-## 1. Inbox de Conversas (estilo Umbler)
+2. **Botão "Nova semana" no header do plano**
+   - Adicionar um botão discreto ao lado do badge de status que cria um novo `weekly_plan` (`week_start = segunda atual`, `status='draft'`) copiando a cadência do último plano (sem `extras_*`). Assim o CEO mantém histórico e gera a semana nova com 1 clique.
+   - Reaproveitar `criarPlanoManual` extraído para `criarProximaSemana` com pré-preenchimento da cadência.
 
-Layout em 3 colunas (responsivo: vira drawer no mobile):
+3. **Banner de aviso quando o plano está fora da semana corrente**
+   - Acima da seção "Cadência da Semana", se `week_end < hoje`, mostrar pílula amarela: "Este plano é de uma semana passada. Clique em 'Reaprovar e Redistribuir' para movê-lo para a semana atual, ou crie um novo plano."
 
-```text
-┌──────────────┬──────────────────────┬────────────────┐
-│ Conversas    │ Chat                 │ Contexto       │
-│ [busca]      │ ┌──────────────────┐ │ Nome           │
-│ ● Não lidas  │ │ msgs in/out      │ │ Telefone       │
-│ ─────────    │ │ bolhas estilo WA │ │ Vinculado a:   │
-│ • João Silva │ │                  │ │  → Deal "X"    │
-│   "Pode ser..│ │                  │ │  [Vincular]    │
-│   há 5 min   │ │                  │ │ Templates ▾    │
-│ • Maria      │ ├──────────────────┤ │ Notas internas │
-│ • +55...     │ │ [composer + ⚡]   │ │                │
-└──────────────┴──────────────────────┴────────────────┘
-```
+4. **Garantir ordem por período no checklist**
+   - Ao montar `rows` no `approveAndDistribute`, gravar `notes` com `"manha"` ou `"tarde"` e usar `priority` decrescente (manhã=6, tarde=5) para a ordenação atual do DailyTasksPanel (`order priority desc`) refletir manhã antes de tarde. Mantém compat com os filtros existentes.
 
-**Recursos:**
-- Lista de conversas agrupada por `remote_jid`, com último preview, hora, contador de não lidas e badge se vinculado a deal/lead.
-- Filtros: Todas / Não lidas / Vinculadas a CRM / Sem deal.
-- Busca por nome, telefone ou conteúdo.
-- Chat com bolhas (in/out), realtime via Supabase Realtime já configurado em `whatsapp_messages`.
-- Composer com botão ⚡ para inserir **template rápido** (com substituição de `{{nome}}`, `{{empresa}}`).
-- Painel direito: vincular conversa a lead/deal (busca em `crm_persons` por telefone/nome) e marcar como lido.
-- Marcar lido = adicionar coluna `is_read` em `whatsapp_messages` e atualizar via mutation.
+5. **Limpar duplicatas antigas com mesma janela**
+   - A função já deleta `source='claude_briefing'` entre `week_start` e `week_start+4`. Estender para também deletar a janela antiga do plano (antes do realinhamento) usando os valores prévios de `week_start`/`week_end`, evitando linhas órfãs na semana passada.
 
----
+## Detalhes técnicos
 
-## 2. Disparos em massa
+- TZ: usar a helper existente `getMondayISO()` (já considera UTC-3 São Paulo).
+- Não mexer em `daily_activities` schema, RLS, ou na edge function — verificado via `psql` que os inserts atuais funcionam (30 linhas presentes para 25–29/05).
+- Não tocar em `AIDailyChecklist` / `metas_distribuidas` (esse é outro fluxo: CeoGoalSetting).
+- Nenhum backend novo; apenas mudanças em `PlanoSemanalClaude.tsx`.
 
-Fluxo em 4 passos dentro de um wizard:
+## Resultado esperado
 
-**Passo 1 — Origem dos contatos**
-- Aba "Do CRM": busca/filtra `crm_persons` com checkboxes (filtrar por pipeline/stage, dono, tag).
-- Aba "Importar/Colar": textarea para colar números (um por linha) ou upload CSV simples (`nome,telefone`).
-- Mostra lista consolidada com chips removíveis e contador "X contatos selecionados".
-
-**Passo 2 — Mensagem**
-- Editor com variáveis (`{{nome}}`, `{{primeiro_nome}}`, `{{empresa}}`).
-- Botão "Carregar template" da biblioteca.
-- Preview ao vivo com substituição usando o 1º contato.
-
-**Passo 3 — Cadência anti-bloqueio**
-- Intervalo aleatório entre envios: padrão 30–60s, ajustável (slider 15–120s).
-- Janela horária permitida (ex: 09:00–18:00, dias úteis) — fora da janela, fila pausa.
-- Limite diário por instância (padrão 80 msgs/dia).
-- Estimativa: "≈ X mensagens, terminará em ~Y horas".
-
-**Passo 4 — Revisar & disparar**
-- Resumo + botão "Iniciar campanha".
-- Cria 1 linha em `whatsapp_campaigns` + N em `whatsapp_scheduled_messages` com `scheduled_for` espaçado aleatoriamente respeitando janela e limite diário.
-
-**Tela de campanha em andamento:**
-- Lista de campanhas com progresso (enviadas / pendentes / falhadas), botão Pausar/Retomar/Cancelar.
-- Drill-down mostra cada destinatário, status, hora, erro.
-
-A função `evolution-scheduler` (já existente) continua processando `whatsapp_scheduled_messages` pendentes — só precisa respeitar `paused` em `whatsapp_campaigns`.
-
----
-
-## 3. Templates rápidos
-
-CRUD simples (nome, conteúdo, variáveis detectadas automaticamente). Tabela `whatsapp_templates` por usuário. Usados no inbox (botão ⚡) e no wizard de disparo.
-
----
-
-## 4. Conexão
-
-Mantém o `InstanceCard` atual (QR, status, desconectar) reposicionado na aba "Conexão" — enxuto.
-
----
-
-## Mudanças técnicas
-
-**Banco (1 migration):**
-- `whatsapp_messages`: + `is_read boolean default false`.
-- `whatsapp_campaigns` (nova): `id, instance_id, created_by, nome, message_template, total, sent, failed, status (draft|running|paused|completed|cancelled), settings jsonb (interval_min, interval_max, daily_limit, window_start, window_end, weekdays), created_at, updated_at`.
-- `whatsapp_scheduled_messages`: + `campaign_id uuid`, + `variables jsonb` (para render por destinatário).
-- `whatsapp_templates` (nova): `id, owner_user_id, nome, conteudo, created_at, updated_at` — RLS: dono + fundador.
-- GRANTs e RLS em todas.
-- Habilitar realtime na nova `whatsapp_campaigns`.
-
-**Edge functions:**
-- `evolution-scheduler`: respeitar `whatsapp_campaigns.status = 'paused'/'cancelled'`, renderizar `content` aplicando `variables`, atualizar contadores da campanha.
-- `evolution-send`: aceitar `variables` opcionais para render server-side.
-- Nova `whatsapp-campaign-create`: recebe `{ instance_id, nome, template, recipients[], settings }`, gera todas as `scheduled_messages` com `scheduled_for` calculado (cadência aleatória + janela).
-
-**Frontend (novos arquivos):**
-- `src/pages/WhatsApp.tsx` — reescrito com tabs.
-- `src/components/whatsapp/Inbox.tsx`
-- `src/components/whatsapp/ConversationList.tsx`
-- `src/components/whatsapp/ChatPanel.tsx`
-- `src/components/whatsapp/ContextPanel.tsx`
-- `src/components/whatsapp/CampaignsView.tsx`
-- `src/components/whatsapp/CampaignWizard.tsx` (4 passos)
-- `src/components/whatsapp/TemplatesView.tsx`
-- `src/components/whatsapp/ConnectionTab.tsx` (extrai InstanceCard atual)
-- `src/hooks/useWhatsApp.ts` — adiciona hooks para conversations (group by jid), campaigns, templates, mark-as-read.
-
----
-
-## Fora de escopo (próxima fase, posso adicionar depois)
-- Envio/recebimento de mídia (áudio/imagem/PDF) — fica para v2.
-- Atribuição de conversa entre vendedores.
-- Segmentos salvos avançados.
+- CEO clica em "Reaprovar e Redistribuir" no plano de 25/05 → plano é movido para a semana de 01/06 a 05/06, e as tarefas aparecem em Atividades → Núcleo Operacional → Aline / Felipe / Milena no dia certo (segunda = `d0`, terça = `d1`, …).
+- Atividades já presentes (5×7 tarefas/dia da Aline e Felipe + meta Milena) passam a aparecer no painel "Checklist" do colaborador correspondente para o dia atual da semana.
