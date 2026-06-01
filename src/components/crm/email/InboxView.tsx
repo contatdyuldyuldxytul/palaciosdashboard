@@ -171,7 +171,12 @@ export function InboxView() {
                     {m.body_html ? (
                       <div
                         className="prose dark:prose-invert prose-sm max-w-none text-foreground/80"
-                        dangerouslySetInnerHTML={{ __html: m.body_html }}
+                        dangerouslySetInnerHTML={{
+                          __html: DOMPurify.sanitize(m.body_html, {
+                            FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form'],
+                            FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur', 'formaction'],
+                          }),
+                        }}
                       />
                     ) : (
                       <pre className="text-sm text-foreground/80 whitespace-pre-wrap font-sans">{m.body_text}</pre>
