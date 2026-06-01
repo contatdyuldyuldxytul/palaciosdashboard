@@ -252,15 +252,58 @@ export default function PlanoSemanalClaude() {
     [plan?.meta_milena_dia],
   );
 
+  const criarProximaSemana = async () => {
+    setCreating(true);
+    try {
+      const week_start = getMondayISO();
+      const week_end = addDaysISO(week_start, 4);
+      const cadenciaSrc = plan?.cadencia_semana || EMPTY_CADENCIA;
+      const { error } = await (supabase as any).from("weekly_plans").insert({
+        week_start,
+        week_end,
+        status: "draft",
+        estrategia_semana: "",
+        prioridades: [],
+        extras_aline: [],
+        extras_felipe: [],
+        extras_milena: [],
+        estrategias_fora_da_caixa: [],
+        meta_milena_dia: Number(plan?.meta_milena_dia) || 15,
+        cadencia_semana: cadenciaSrc,
+      });
+      if (error) throw error;
+      toast.success("Plano criado para a semana atual");
+      setPlan(undefined);
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message || "Erro ao criar plano");
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const approveAndDistribute = async () => {
     if (!plan) return;
     setSaving(true);
     try {
+      // Auto-realinhar para a semana atual se o plano for de uma semana passada
+      const todayMonday = getMondayISO();
+      const originalStart = plan.week_start;
+      const originalEnd = plan.week_end;
+      let weekStart = plan.week_start;
+      let weekEnd = plan.week_end;
+      let realigned = false;
+      if (weekStart < todayMonday) {
+        weekStart = todayMonday;
+        weekEnd = addDaysISO(todayMonday, 4);
+        realigned = true;
+      }
+
       const { error: upErr } = await (supabase as any)
         .from("weekly_plans")
         .update({
-          week_start: plan.week_start,
-          week_end: plan.week_end,
+          week_start: weekStart,
+          week_end: weekEnd,
           estrategia_semana: plan.estrategia_semana || "",
           prioridades: plan.prioridades || [],
           estrategias_fora_da_caixa: plan.estrategias_fora_da_caixa || [],
@@ -276,23 +319,27 @@ export default function PlanoSemanalClaude() {
       if (upErr) throw upErr;
 
       // Idempotência: apaga atividades 'claude_briefing' já distribuídas para a janela
-      // do plano antes de re-inserir, evitando duplicação ao re-aprovar.
+      // do plano (antiga + nova) antes de re-inserir, evitando duplicação ao re-aprovar
+      // ou linhas órfãs em semanas passadas após realinhamento.
+      const delStart = originalStart < weekStart ? originalStart : weekStart;
+      const delEnd =
+        addDaysISO(originalEnd, 0) > addDaysISO(weekEnd, 0) ? originalEnd : weekEnd;
       await (supabase as any)
         .from("daily_activities")
         .delete()
         .eq("source", "claude_briefing")
-        .gte("scheduled_date", plan.week_start)
-        .lte("scheduled_date", addDaysISO(plan.week_start, 4))
+        .gte("scheduled_date", delStart)
+        .lte("scheduled_date", delEnd)
         .in("assignee_label", ["Aline", "Felipe", "Milena"]);
 
       const rows: any[] = [];
       const metaMilena = Number(plan.meta_milena_dia) || 0;
 
       for (let i = 0; i < 5; i++) {
-        const dayISO = addDaysISO(plan.week_start, i);
+        const dayISO = addDaysISO(weekStart, i);
         const dia = plan.cadencia_semana?.[`d${i}`] || emptyDia();
 
-        const pushFor = (pessoaId: number, pessoaLabel: string, tasks: string[]) => {
+        const pushFor = (pessoaId: number, pessoaLabel: string, tasks: string[], per: Periodo) => {
           tasks
             .filter((t) => t?.trim())
             .forEach((task) =>
@@ -303,13 +350,17 @@ export default function PlanoSemanalClaude() {
                 task_type: "cadence",
                 task_description: task,
                 source: "claude_briefing",
-                priority: 5,
+                // Manhã (6) ordena antes de Tarde (5) no DailyTasksPanel
+                priority: per === "manha" ? 6 : 5,
+                notes: per,
               }),
             );
         };
 
-        pushFor(ALINE_ID, "Aline", [...dia.aline.manha, ...dia.aline.tarde]);
-        pushFor(FELIPE_ID, "Felipe", [...dia.felipe.manha, ...dia.felipe.tarde]);
+        pushFor(ALINE_ID, "Aline", dia.aline.manha, "manha");
+        pushFor(ALINE_ID, "Aline", dia.aline.tarde, "tarde");
+        pushFor(FELIPE_ID, "Felipe", dia.felipe.manha, "manha");
+        pushFor(FELIPE_ID, "Felipe", dia.felipe.tarde, "tarde");
 
         if (metaMilena > 0) {
           rows.push({
@@ -319,12 +370,12 @@ export default function PlanoSemanalClaude() {
             task_type: "custom",
             task_description: `Gerar ${metaMilena} leads qualificados`,
             source: "claude_briefing",
-            priority: 6,
+            priority: 7,
           });
         }
       }
 
-      const extrasDate = plan.week_start;
+      const extrasDate = weekStart;
       (plan.extras_aline || []).filter((s: string) => s?.trim()).forEach((s: string) =>
         rows.push({
           user_pipedrive_id: ALINE_ID,
