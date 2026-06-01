@@ -73,29 +73,51 @@ export function AIDailyChecklist({ colaborador, accentColor = "hsl(160,100%,39%)
     }
   }, [colaborador]);
 
-  // Generate on first load and cache for the day
+  // Cache key tracks the latest CEO distribution timestamp so a redistribute invalidates it
+  const [cacheKey, setCacheKey] = useState<string | null>(null);
+
   useEffect(() => {
-    const cacheKey = `checklist_${colaborador}_${new Date().toISOString().split("T")[0]}`;
-    const cached = localStorage.getItem(cacheKey);
-    if (cached) {
-      try {
-        setTasks(JSON.parse(cached));
-        setLoading(false);
-        return;
-      } catch { /* ignore */ }
-    }
-    fetchChecklist().then(() => {
-      // Cache after load
-    });
+    let cancelled = false;
+    (async () => {
+      const today = new Date().toISOString().split("T")[0];
+      const now = new Date();
+      const mesAno = `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+
+      const { data: metaRow } = await supabase
+        .from("metas_distribuidas" as any)
+        .select("criado_em")
+        .eq("mes_ano", mesAno)
+        .eq("data", today)
+        .maybeSingle();
+      const version = (metaRow as any)?.criado_em || "no-dist";
+      const key = `checklist_${colaborador}_${today}_${version}`;
+      if (cancelled) return;
+      setCacheKey(key);
+
+      // Clear stale caches for this colaborador (other days / older versions)
+      Object.keys(localStorage)
+        .filter(k => k.startsWith(`checklist_${colaborador}_`) && k !== key)
+        .forEach(k => localStorage.removeItem(k));
+
+      const cached = localStorage.getItem(key);
+      if (cached) {
+        try {
+          setTasks(JSON.parse(cached));
+          setLoading(false);
+          return;
+        } catch { /* ignore */ }
+      }
+      await fetchChecklist();
+    })();
+    return () => { cancelled = true; };
   }, [colaborador, fetchChecklist]);
 
   // Cache tasks when they change
   useEffect(() => {
-    if (tasks.length > 0) {
-      const cacheKey = `checklist_${colaborador}_${new Date().toISOString().split("T")[0]}`;
+    if (tasks.length > 0 && cacheKey) {
       localStorage.setItem(cacheKey, JSON.stringify(tasks));
     }
-  }, [tasks, colaborador]);
+  }, [tasks, cacheKey]);
 
   const isChecked = (taskId: string) => checks.some(c => c.tarefa_id === taskId && c.concluido);
   const completedCount = tasks.filter((_, i) => isChecked(`task_${i}`)).length;
