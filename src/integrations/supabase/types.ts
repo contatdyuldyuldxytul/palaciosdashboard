@@ -3495,6 +3495,59 @@ export type Database = {
           },
         ]
       }
+      whatsapp_campaigns: {
+        Row: {
+          created_at: string
+          created_by: string
+          failed: number
+          id: string
+          instance_id: string
+          message_template: string
+          nome: string
+          sent: number
+          settings: Json
+          status: Database["public"]["Enums"]["whatsapp_campaign_status"]
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          failed?: number
+          id?: string
+          instance_id: string
+          message_template: string
+          nome: string
+          sent?: number
+          settings?: Json
+          status?: Database["public"]["Enums"]["whatsapp_campaign_status"]
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          failed?: number
+          id?: string
+          instance_id?: string
+          message_template?: string
+          nome?: string
+          sent?: number
+          settings?: Json
+          status?: Database["public"]["Enums"]["whatsapp_campaign_status"]
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_campaigns_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_instances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_instances: {
         Row: {
           created_at: string
@@ -3558,6 +3611,7 @@ export type Database = {
           error_message: string | null
           id: string
           instance_id: string
+          is_read: boolean
           media_type: string | null
           media_url: string | null
           message_id: string | null
@@ -3576,6 +3630,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           instance_id: string
+          is_read?: boolean
           media_type?: string | null
           media_url?: string | null
           message_id?: string | null
@@ -3594,6 +3649,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           instance_id?: string
+          is_read?: boolean
           media_type?: string | null
           media_url?: string | null
           message_id?: string | null
@@ -3616,6 +3672,7 @@ export type Database = {
       }
       whatsapp_scheduled_messages: {
         Row: {
+          campaign_id: string | null
           content: string
           created_at: string
           created_by: string
@@ -3626,14 +3683,17 @@ export type Database = {
           media_type: string | null
           media_url: string | null
           person_id: string | null
+          recipient_name: string | null
           scheduled_for: string
           sent_at: string | null
           sent_message_id: string | null
           status: Database["public"]["Enums"]["whatsapp_sched_status"]
           to_number: string
           updated_at: string
+          variables: Json
         }
         Insert: {
+          campaign_id?: string | null
           content: string
           created_at?: string
           created_by: string
@@ -3644,14 +3704,17 @@ export type Database = {
           media_type?: string | null
           media_url?: string | null
           person_id?: string | null
+          recipient_name?: string | null
           scheduled_for: string
           sent_at?: string | null
           sent_message_id?: string | null
           status?: Database["public"]["Enums"]["whatsapp_sched_status"]
           to_number: string
           updated_at?: string
+          variables?: Json
         }
         Update: {
+          campaign_id?: string | null
           content?: string
           created_at?: string
           created_by?: string
@@ -3662,14 +3725,23 @@ export type Database = {
           media_type?: string | null
           media_url?: string | null
           person_id?: string | null
+          recipient_name?: string | null
           scheduled_for?: string
           sent_at?: string | null
           sent_message_id?: string | null
           status?: Database["public"]["Enums"]["whatsapp_sched_status"]
           to_number?: string
           updated_at?: string
+          variables?: Json
         }
         Relationships: [
+          {
+            foreignKeyName: "whatsapp_scheduled_messages_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_campaigns"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "whatsapp_scheduled_messages_instance_id_fkey"
             columns: ["instance_id"]
@@ -3685,6 +3757,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      whatsapp_templates: {
+        Row: {
+          conteudo: string
+          created_at: string
+          id: string
+          nome: string
+          owner_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          conteudo: string
+          created_at?: string
+          id?: string
+          nome: string
+          owner_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          conteudo?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          owner_user_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       whatsapp_webhook_events: {
         Row: {
@@ -3793,6 +3892,12 @@ export type Database = {
         | "custom"
       strategy_source: "manual" | "claude_session"
       vendedor_sub_role: "sdr" | "ldr"
+      whatsapp_campaign_status:
+        | "draft"
+        | "running"
+        | "paused"
+        | "completed"
+        | "cancelled"
       whatsapp_instance_status:
         | "disconnected"
         | "connecting"
@@ -3981,6 +4086,13 @@ export const Constants = {
       ],
       strategy_source: ["manual", "claude_session"],
       vendedor_sub_role: ["sdr", "ldr"],
+      whatsapp_campaign_status: [
+        "draft",
+        "running",
+        "paused",
+        "completed",
+        "cancelled",
+      ],
       whatsapp_instance_status: [
         "disconnected",
         "connecting",
