@@ -11,6 +11,18 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
+  // Verify shared webhook secret (configure in Resend dashboard headers, store as RESEND_WEBHOOK_SECRET)
+  const expected = Deno.env.get('RESEND_WEBHOOK_SECRET');
+  if (!expected) {
+    console.error('RESEND_WEBHOOK_SECRET not configured');
+    return new Response(JSON.stringify({ error: 'Webhook not configured' }), { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+  const provided = req.headers.get('x-resend-webhook-secret') || req.headers.get('svix-signature') || '';
+  // Constant-time-ish compare
+  if (provided.length < 8 || !provided.includes(expected)) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+
   try {
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,

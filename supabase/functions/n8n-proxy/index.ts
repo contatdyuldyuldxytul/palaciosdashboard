@@ -45,6 +45,11 @@ Deno.serve(async (req) => {
   if (!claims?.claims?.sub) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
+  const _sbRole = createClient(SUPABASE_URL, SERVICE_KEY);
+  const { data: isFundador } = await _sbRole.rpc('has_role', { _user_id: claims.claims.sub, _role: 'fundador' });
+  if (!isFundador) {
+    return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
 
   if (!N8N_BASE_URL || !N8N_API_KEY) {
     return new Response(JSON.stringify({ error: "n8n não configurado", missing: { base: !N8N_BASE_URL, key: !N8N_API_KEY } }), {
