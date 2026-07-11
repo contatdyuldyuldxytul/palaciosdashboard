@@ -48,20 +48,7 @@ function chunks<T>(arr: T[], size: number): T[][] {
   return out;
 }
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-
-  try {
-    const API_KEY = Deno.env.get("PIPEDRIVE_API_KEY");
-    if (!API_KEY) throw new Error("PIPEDRIVE_API_KEY não configurada");
-
-    const sb = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    const url = new URL(req.url);
-    const phase = url.searchParams.get("phase") || "all";
+async function runImport(phase: string, API_KEY: string, sb: any, runId: string | undefined) {
     const summary: Record<string, any> = { phase };
 
     // ── Helpers for custom fields ──
