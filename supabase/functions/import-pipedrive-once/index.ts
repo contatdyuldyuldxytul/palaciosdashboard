@@ -48,20 +48,7 @@ function chunks<T>(arr: T[], size: number): T[][] {
   return out;
 }
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-
-  try {
-    const API_KEY = Deno.env.get("PIPEDRIVE_API_KEY");
-    if (!API_KEY) throw new Error("PIPEDRIVE_API_KEY não configurada");
-
-    const sb = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    const url = new URL(req.url);
-    const phase = url.searchParams.get("phase") || "all";
+async function runImport(phase: string, API_KEY: string, sb: any, runId: string | undefined) {
     const summary: Record<string, any> = { phase };
 
     // ── Helpers for custom fields ──
@@ -119,13 +106,6 @@ Deno.serve(async (req) => {
     }
     const t0 = Date.now();
 
-    // log: cria registro de run
-    const { data: runRow } = await sb
-      .from("pipedrive_import_runs")
-      .insert({ phase })
-      .select("id")
-      .single();
-    const runId = runRow?.id;
 
     // helper: maps from DB
     async function buildMap(table: string, key: string): Promise<Map<number, string>> {
@@ -561,24 +541,64 @@ Deno.serve(async (req) => {
         .update({ finished_at: new Date().toISOString(), success: true, summary })
         .eq("id", runId);
     }
-    return new Response(JSON.stringify({ success: true, summary }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return summary;
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  try {
+    const API_KEY = Deno.env.get("PIPEDRIVE_API_KEY");
+    if (!API_KEY) throw new Error("PIPEDRIVE_API_KEY não configurada");
+
+    const sb = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    const phase = new URL(req.url).searchParams.get("phase") || "all";
+
+    // cria o registro de run imediatamente para o cliente poder acompanhar
+    const { data: runRow } = await sb
+      .from("pipedrive_import_runs")
+      .insert({ phase })
+      .select("id")
+      .single();
+    const runId = runRow?.id as string | undefined;
+
+    // executa em background para não estourar o CPU limit do request
+    // @ts-ignore - EdgeRuntime é injetado pelo runtime Deno da Supabase
+    EdgeRuntime.waitUntil(
+      runImport(phase, API_KEY, sb, runId).catch(async (e) => {
+        console.error("import-pipedrive-once background error:", e);
+        const errMsg = e instanceof Error ? e.message : "Unknown";
+        if (runId) {
+          try {
+            await sb.from("pipedrive_import_runs")
+              .update({ finished_at: new Date().toISOString(), success: false, error: errMsg })
+              .eq("id", runId);
+          } catch {}
+        }
+      })
+    );
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        started: true,
+        run_id: runId,
+        phase,
+        message: "Import iniciado em background. Consulte pipedrive_import_runs pelo run_id para acompanhar.",
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (e) {
     console.error("import-pipedrive-once error:", e);
     const errMsg = e instanceof Error ? e.message : "Unknown";
-    try {
-      const sb2 = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-      await sb2.from("pipedrive_import_runs").insert({
-        phase: new URL(req.url).searchParams.get("phase") || "all",
-        finished_at: new Date().toISOString(),
-        success: false,
-        error: errMsg,
-      });
-    } catch {}
     return new Response(
       JSON.stringify({ success: false, error: errMsg }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
+
