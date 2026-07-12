@@ -1,40 +1,56 @@
-## Diagnóstico
 
-A distribuição **já funciona** — o botão "Reaprovar e Redistribuir" insere uma linha em `daily_activities` para cada tarefa de cadência, por pessoa (Aline → `user_pipedrive_id 24578358`, Felipe → `26351800`, Milena → `assignee_label='Milena'`) e por dia (`scheduled_date = week_start + i`). O painel **Núcleo Operacional → Checklist** (DailyTasksPanel) lê exatamente essa tabela filtrando por `user_pipedrive_id` / `assignee_label='Milena'` e `scheduled_date = hoje`.
+## 1. Check-up da plataforma (respostas rápidas)
 
-O motivo de "Sem tarefas para hoje" no print é simples: o único `weekly_plan` aprovado tem `week_start = 25/05/2026` e `week_end = 29/05/2026`. Hoje é **01/06/2026** — a redistribuição gravou as atividades nos dias 25–29/05, então no checklist de hoje aparece vazio. Não há plano para a semana atual.
+**WhatsApp — disparos**
+Infraestrutura pronta: Evolution API conectada (`EVOLUTION_API_KEY`/`EVOLUTION_API_URL` configurados), tabelas `whatsapp_instances`, `whatsapp_campaigns`, `whatsapp_scheduled_messages` e `whatsapp_messages` populadas, edge functions `evolution-send`, `evolution-scheduler` (rodando a cada minuto — logs mostram boots normais) e `whatsapp-campaign-create` deployadas. **Funciona desde que a instância esteja conectada (QR pareado na aba Conexão).** Recomendo checar a aba Conexão do WhatsApp antes de disparar. Risco: se a instância cair, mensagens ficam presas em `scheduled` — hoje não há alerta visual disso.
 
-Há também um segundo papercut: criar um novo plano só aparece quando não existe nenhum (`plan === null`); como já existe o plano de maio, o CEO não consegue criar o da semana corrente pela UI.
+**E-mail — campanhas**
+Provider: Resend (connector conectado, `RESEND_API_KEY` presente) via `resend-send-campaign` / `resend-send-single`. Webhook `resend-webhook` grava bounces/complaints em `email_suppressions` e o remetente respeita `email_suppressions` antes de enviar. Domínio de envio precisa estar verificado no Resend — sem domínio próprio verificado, cai em spam ou é bloqueado. **Riscos de spam hoje:**
+- Não há rate-limit próprio; disparo em massa vai na velocidade do Resend.
+- Não há aquecimento (warm-up) de domínio configurado.
+- Unsubscribe existe (`email-unsubscribe` + tokens), mas o link precisa estar no template.
 
-## O que vou implementar
+**Pipedrive — geração de leads**
+Sync roda ok (`sync-pipedrive` retornou 200 com pipelines). `import-pipedrive-once` foi refatorada pra rodar em background (evita CPU limit). Seleção de leads na aba "Geração de Leads" grava em `leads_raw`/`leads_qualified` via `milena-leads-sheets` — **atenção: os logs mostram erro `sb.auth.getClaims is not a function` nessa função**, o que quebra a autenticação hoje.
 
-Tudo em `src/components/ceo/PlanoSemanalClaude.tsx` (frontend apenas — a lógica de insert em `daily_activities` já está certa).
+**Aba Deals**
+CRUD, kanban, lista, KPIs, importação (CSV/Sheets/Pipedrive) e drag-and-drop entre stages funcionam. Limitação atual: **busca só filtra o pipeline selecionado** (query traz só 500 deals de 1 pipeline) — é isso que você pediu pra corrigir.
 
-1. **Auto-realinhar a semana na hora de redistribuir**
-   - Em `approveAndDistribute`, se `plan.week_start` for anterior à segunda-feira atual (TZ São Paulo), atualizar automaticamente `week_start` para a segunda atual e `week_end` para a sexta correspondente antes do `update` + `insert`. Assim o clique no botão "Reaprovar e Redistribuir" sempre joga as tarefas para a semana corrente, mantendo a cadência editada.
-   - Toast informando: "Plano realocado para a semana de DD/MM a DD/MM e atividades distribuídas".
+---
 
-2. **Botão "Nova semana" no header do plano**
-   - Adicionar um botão discreto ao lado do badge de status que cria um novo `weekly_plan` (`week_start = segunda atual`, `status='draft'`) copiando a cadência do último plano (sem `extras_*`). Assim o CEO mantém histórico e gera a semana nova com 1 clique.
-   - Reaproveitar `criarPlanoManual` extraído para `criarProximaSemana` com pré-preenchimento da cadência.
+## 2. Mudanças pedidas (aba Deals)
 
-3. **Banner de aviso quando o plano está fora da semana corrente**
-   - Acima da seção "Cadência da Semana", se `week_end < hoje`, mostrar pílula amarela: "Este plano é de uma semana passada. Clique em 'Reaprovar e Redistribuir' para movê-lo para a semana atual, ou crie um novo plano."
+### 2.1 Remover a sub-aba "Automações N8N"
+Em `src/pages/Crm.tsx`:
+- Remover botão da sub-aba `fluxos` (linhas 201-208).
+- Remover branch `tab === "fluxos" ? <N8nAutomations />` (linha 263-264).
+- Remover imports `N8nAutomations`, `Workflow`.
+- Tipo `tab` passa a ser `"deals" | "campanhas"`.
+- **Não deletar** o arquivo `N8nAutomations.tsx` nem as tabelas n8n — ainda são usados em `src/pages/crm/Projects.tsx` (aba Projects/Automações N8N continua existindo lá).
 
-4. **Garantir ordem por período no checklist**
-   - Ao montar `rows` no `approveAndDistribute`, gravar `notes` com `"manha"` ou `"tarde"` e usar `priority` decrescente (manhã=6, tarde=5) para a ordenação atual do DailyTasksPanel (`order priority desc`) refletir manhã antes de tarde. Mantém compat com os filtros existentes.
+### 2.2 Mover a busca "para cima"
+Hoje a busca já está no header (linhas 149-160), à direita, junto com Importar/Novo Deal. Vou movê-la para **uma linha própria acima do header de sub-tabs**, ocupando largura maior (full width em mobile, `max-w-2xl` em desktop), com label "Buscar em todos os deals" para deixar claro que é global.
 
-5. **Limpar duplicatas antigas com mesma janela**
-   - A função já deleta `source='claude_briefing'` entre `week_start` e `week_start+4`. Estender para também deletar a janela antiga do plano (antes do realinhamento) usando os valores prévios de `week_start`/`week_end`, evitando linhas órfãs na semana passada.
+### 2.3 Busca global (todos os pipelines / contatos)
+Trocar a fonte da busca de `deals` (do pipeline atual) para uma consulta global quando há texto digitado:
+
+- Criar hook `useCrmDealsSearch(query: string)` em `src/hooks/useCrm.ts` que, quando `query.length >= 2`:
+  - Faz `supabase.from("crm_deals").select("*, organization:crm_organizations(*), person:crm_persons(*)").or("titulo.ilike.%q%")` **sem** filtro por `pipeline_id`, limit 200.
+  - Em paralelo, busca `crm_persons` e `crm_organizations` que dão match em nome/email/telefone e depois busca os `crm_deals` desses `person_id`/`organization_id` (une resultados, dedup por `id`).
+  - Retorna também o `pipeline` de cada deal (join `crm_pipelines(nome)`) pra mostrar de qual pipeline veio.
+- Em `Crm.tsx`: quando `search.trim().length >= 2`, renderiza uma **lista de resultados globais** (usando `DealListView` ou uma variação simples) no lugar do kanban/lista do pipeline, com badge do pipeline em cada linha e clique abrindo o deal (`/crm/deals/:id`). Quando busca está vazia, volta ao comportamento atual (kanban/lista do pipeline selecionado).
+
+### 2.4 Toggle Kanban/Lista
+Fica escondido enquanto houver busca ativa (não faz sentido kanban em resultado multi-pipeline).
+
+---
+
+## 3. Fora de escopo (posso fazer em seguida se quiser)
+- Corrigir `sb.auth.getClaims` na `milena-leads-sheets` (bug real que está nos logs).
+- Adicionar alerta visual quando instância WhatsApp cair.
+- Configurar rate-limit / warm-up de e-mail.
 
 ## Detalhes técnicos
-
-- TZ: usar a helper existente `getMondayISO()` (já considera UTC-3 São Paulo).
-- Não mexer em `daily_activities` schema, RLS, ou na edge function — verificado via `psql` que os inserts atuais funcionam (30 linhas presentes para 25–29/05).
-- Não tocar em `AIDailyChecklist` / `metas_distribuidas` (esse é outro fluxo: CeoGoalSetting).
-- Nenhum backend novo; apenas mudanças em `PlanoSemanalClaude.tsx`.
-
-## Resultado esperado
-
-- CEO clica em "Reaprovar e Redistribuir" no plano de 25/05 → plano é movido para a semana de 01/06 a 05/06, e as tarefas aparecem em Atividades → Núcleo Operacional → Aline / Felipe / Milena no dia certo (segunda = `d0`, terça = `d1`, …).
-- Atividades já presentes (5×7 tarefas/dia da Aline e Felipe + meta Milena) passam a aparecer no painel "Checklist" do colaborador correspondente para o dia atual da semana.
+- Arquivos alterados: `src/pages/Crm.tsx`, `src/hooks/useCrm.ts`.
+- Sem migração de banco. Sem mudança de RLS (deals já têm policies).
+- N8N (tabelas, edge function `n8n-proxy`, componente) permanece intacto — só sai da navegação da aba Deals; continua acessível em Projects.
