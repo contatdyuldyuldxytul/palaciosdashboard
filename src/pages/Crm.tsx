@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { LayoutGrid, List, Plus, Download, TrendingUp, Target, CheckCircle2, Search, Upload, FileSpreadsheet, ChevronDown, Workflow, Mail } from "lucide-react";
+import { LayoutGrid, List, Plus, Download, TrendingUp, Target, CheckCircle2, Search, Upload, FileSpreadsheet, ChevronDown, Mail } from "lucide-react";
 import { CampanhasView } from "@/components/crm/CampanhasView";
-import { FlowsList } from "@/components/crm/projects/FlowsList";
-import { N8nAutomations } from "@/components/crm/projects/N8nAutomations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useCrmPipelines, useCrmStages, useCrmDeals, useImportPipedrive, FLOW_TYPE_LABELS } from "@/hooks/useCrm";
+import { useCrmPipelines, useCrmStages, useCrmDeals, useImportPipedrive, useCrmDealsGlobalSearch, FLOW_TYPE_LABELS } from "@/hooks/useCrm";
 import { KanbanBoard } from "@/components/crm/KanbanBoard";
 import { DealListView } from "@/components/crm/DealListView";
 import { NewDealModal } from "@/components/crm/NewDealModal";
@@ -30,7 +29,7 @@ export default function Crm() {
     setPipelineIdState(id);
     try { sessionStorage.setItem("crm:lastPipelineId", id); } catch {}
   };
-  const [tab, setTab] = useState<"deals" | "fluxos" | "campanhas">("deals");
+  const [tab, setTab] = useState<"deals" | "campanhas">("deals");
   const [view, setView] = useState<"kanban" | "list">("kanban");
   const [newOpen, setNewOpen] = useState(false);
   const [editor, setEditor] = useState<{ mode: "new" | "edit"; pipelineId?: string } | null>(null);
@@ -49,26 +48,31 @@ export default function Crm() {
   const importPd = useImportPipedrive();
 
   const currentPipeline = pipelines.find((p) => p.id === pipelineId);
+  const pipelineMap = useMemo(() => Object.fromEntries(pipelines.map(p => [p.id, p])), [pipelines]);
 
-  const filteredDeals = useMemo(() => {
-    if (!search.trim()) return deals;
-    const q = search.toLowerCase();
-    return deals.filter((d) =>
-      d.titulo.toLowerCase().includes(q) ||
-      d.organization?.nome?.toLowerCase().includes(q) ||
-      d.person?.nome?.toLowerCase().includes(q) ||
-      d.person?.email?.toLowerCase().includes(q) ||
-      String(d.valor).includes(q),
-    );
-  }, [deals, search]);
+  // Busca GLOBAL (todos os pipelines) ao digitar 2+ chars
+  const globalSearch = useCrmDealsGlobalSearch(search);
+  const searchActive = globalSearch.enabled;
+  const globalDeals = globalSearch.data || [];
+
+  // Deals mostrados: se busca ativa, resultados globais; senão, pipeline atual
+  const shownDeals = searchActive ? globalDeals : deals;
+
+  // Stages "virtuais" para exibição na lista global (agrega stages de todos os pipelines encontrados)
+  const globalStages = useMemo(() => {
+    if (!searchActive) return stages;
+    // Não temos todos os stages aqui — a DealListView usa stage_id só para mostrar nome; passamos array vazio
+    // e o próprio nome fica "—". Como badge de pipeline é mostrado abaixo, é suficiente.
+    return [];
+  }, [searchActive, stages]);
 
   const kpis = useMemo(() => {
-    const open = filteredDeals.filter(d => d.status === "open");
-    const won = filteredDeals.filter(d => d.status === "won");
-    const openValue = open.reduce((s, d) => s + Number(d.valor || 0), 0);
-    const wonValue = won.reduce((s, d) => s + Number(d.valor || 0), 0);
+    const open = shownDeals.filter((d: any) => d.status === "open");
+    const won = shownDeals.filter((d: any) => d.status === "won");
+    const openValue = open.reduce((s: number, d: any) => s + Number(d.valor || 0), 0);
+    const wonValue = won.reduce((s: number, d: any) => s + Number(d.valor || 0), 0);
     return { open: open.length, openValue, won: won.length, wonValue, ticket: open.length ? openValue / open.length : 0 };
-  }, [filteredDeals]);
+  }, [shownDeals]);
 
   const doImport = async () => {
     try {
@@ -146,48 +150,53 @@ export default function Crm() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          {tab === "deals" && (
-            <div className="relative w-64 hidden md:block">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar deals…"
-                className="h-9 pl-9 bg-white/5 border-white/10 text-sm"
-              />
-            </div>
-          )}
-          <div className="flex items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-xs">
-                  <Upload className="w-3.5 h-3.5 mr-1.5" /> Importar <ChevronDown className="w-3 h-3 ml-1" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-background border-white/10">
-                <DropdownMenuItem onClick={() => setCsvOpen(true)}>
-                  <FileSpreadsheet className="w-3.5 h-3.5 mr-2" /> Arquivo CSV
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="text-xs">
+                <Upload className="w-3.5 h-3.5 mr-1.5" /> Importar <ChevronDown className="w-3 h-3 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-background border-white/10">
+              <DropdownMenuItem onClick={() => setCsvOpen(true)}>
+                <FileSpreadsheet className="w-3.5 h-3.5 mr-2" /> Arquivo CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSheetsOpen(true)}>
+                <FileSpreadsheet className="w-3.5 h-3.5 mr-2" /> Google Sheets
+              </DropdownMenuItem>
+              {isFundador && (
+                <DropdownMenuItem onClick={doImport} disabled={importPd.isPending}>
+                  <Download className="w-3.5 h-3.5 mr-2" /> {importPd.isPending ? "Importando…" : "Pipedrive"}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSheetsOpen(true)}>
-                  <FileSpreadsheet className="w-3.5 h-3.5 mr-2" /> Google Sheets
-                </DropdownMenuItem>
-                {isFundador && (
-                  <DropdownMenuItem onClick={doImport} disabled={importPd.isPending}>
-                    <Download className="w-3.5 h-3.5 mr-2" /> {importPd.isPending ? "Importando…" : "Pipedrive"}
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-            <Button size="sm" onClick={() => setNewOpen(true)} className="shadow-lg shadow-primary/20">
-              <Plus className="w-3.5 h-3.5 mr-1.5" /> Novo Deal
-            </Button>
-          </div>
+          <Button size="sm" onClick={() => setNewOpen(true)} className="shadow-lg shadow-primary/20">
+            <Plus className="w-3.5 h-3.5 mr-1.5" /> Novo Deal
+          </Button>
         </div>
       </div>
 
-      {/* Sub-tabs: Deals / Fluxos + view toggle */}
+      {/* Busca GLOBAL — linha própria acima das sub-abas */}
+      {tab === "deals" && (
+        <div className="relative w-full max-w-2xl">
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar em TODOS os pipelines — empresa, contato, e-mail, título…"
+            className="h-11 pl-10 bg-white/5 border-white/10 text-sm"
+          />
+          {searchActive && (
+            <div className="text-[10px] text-muted-foreground mt-1 pl-1">
+              {globalSearch.isFetching ? "Buscando…" : `${globalDeals.length} resultado(s) em todos os pipelines`}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Sub-tabs: Deals / Campanhas + view toggle */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex rounded-full border border-white/10 overflow-hidden glass-card p-0.5 w-fit">
           <button
@@ -199,14 +208,6 @@ export default function Crm() {
             <LayoutGrid className="w-3 h-3" /> Deals
           </button>
           <button
-            onClick={() => setTab("fluxos")}
-            className={`px-3.5 py-1.5 rounded-full text-xs flex items-center gap-1.5 transition-colors ${
-              tab === "fluxos" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Workflow className="w-3 h-3" /> Automações N8N
-          </button>
-          <button
             onClick={() => setTab("campanhas")}
             className={`px-3.5 py-1.5 rounded-full text-xs flex items-center gap-1.5 transition-colors ${
               tab === "campanhas" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
@@ -216,7 +217,7 @@ export default function Crm() {
           </button>
         </div>
 
-        {tab === "deals" && (
+        {tab === "deals" && !searchActive && (
           <div className="flex rounded-full border border-white/10 overflow-hidden glass-card p-0.5">
             <button
               onClick={() => setView("kanban")}
@@ -240,32 +241,81 @@ export default function Crm() {
 
       {tab === "deals" ? (
         <>
-
-
           {/* KPI strip */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <KpiCard icon={<Target className="w-4 h-4" />} label="Deals Abertos" value={String(kpis.open)} accent="primary" />
+            <KpiCard icon={<Target className="w-4 h-4" />} label={searchActive ? "Resultados (Abertos)" : "Deals Abertos"} value={String(kpis.open)} accent="primary" />
             <KpiCard icon={<TrendingUp className="w-4 h-4" />} label="Pipeline Total" value={fmt(kpis.openValue)} accent="primary" />
             <KpiCard icon={<TrendingUp className="w-4 h-4" />} label="Ticket Médio" value={fmt(kpis.ticket)} accent="info" />
             <KpiCard icon={<CheckCircle2 className="w-4 h-4" />} label="Ganhos (R$)" value={fmt(kpis.wonValue)} accent="success" />
           </div>
 
-          {dLoading ? (
+          {searchActive ? (
+            globalSearch.isLoading ? (
+              <div className="glass-card rounded-xl p-8 text-center text-sm text-muted-foreground">Buscando em todos os pipelines…</div>
+            ) : globalDeals.length === 0 ? (
+              <div className="glass-card rounded-xl p-8 text-center text-sm text-muted-foreground">Nenhum deal encontrado para "{search}".</div>
+            ) : (
+              <div className="glass-card rounded-xl overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-xs text-muted-foreground border-b border-white/10">
+                      <th className="text-left px-3 py-2 font-medium">Empresa / Título</th>
+                      <th className="text-left px-3 py-2 font-medium">Contato</th>
+                      <th className="text-left px-3 py-2 font-medium">Pipeline</th>
+                      <th className="text-left px-3 py-2 font-medium">Resp.</th>
+                      <th className="text-left px-3 py-2 font-medium">Status</th>
+                      <th className="text-right px-3 py-2 font-medium">Valor</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {globalDeals.map((d: any) => {
+                      const p = pipelineMap[d.pipeline_id];
+                      return (
+                        <tr
+                          key={d.id}
+                          className="border-b border-white/5 hover:bg-white/[0.03] cursor-pointer"
+                          onClick={() => { if (p) { setPipelineId(p.id); setSearch(""); } }}
+                        >
+                          <td className="px-3 py-2">
+                            <div className="text-foreground font-medium">{d.organization?.nome || d.titulo}</div>
+                            {d.organization && <div className="text-[10px] text-muted-foreground">{d.titulo}</div>}
+                          </td>
+                          <td className="px-3 py-2 text-muted-foreground">
+                            <div>{d.person?.nome || "—"}</div>
+                            {d.person?.email && <div className="text-[10px]">{d.person.email}</div>}
+                          </td>
+                          <td className="px-3 py-2">
+                            <Badge variant="outline" className="text-[10px]">{p?.nome || "—"}</Badge>
+                          </td>
+                          <td className="px-3 py-2 text-muted-foreground">{d.owner_label || "—"}</td>
+                          <td className="px-3 py-2">
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                              d.status === "won" ? "bg-emerald-500/15 text-emerald-400" :
+                              d.status === "lost" ? "bg-red-500/15 text-red-400" :
+                              "bg-primary/15 text-primary"
+                            }`}>{d.status}</span>
+                          </td>
+                          <td className="px-3 py-2 text-right text-primary font-medium">{fmt(Number(d.valor || 0))}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )
+          ) : dLoading ? (
             <div className="flex gap-3 overflow-hidden">
               {[1,2,3,4,5].map(i => <div key={i} className="w-[280px] h-96 glass-card rounded-xl animate-pulse flex-shrink-0" />)}
             </div>
           ) : view === "kanban" ? (
-            <KanbanBoard stages={stages} deals={filteredDeals} />
+            <KanbanBoard stages={stages} deals={deals} />
           ) : (
-            <DealListView stages={stages} deals={filteredDeals} />
+            <DealListView stages={stages} deals={deals} />
           )}
         </>
-      ) : tab === "fluxos" ? (
-        <N8nAutomations />
       ) : (
         <CampanhasView />
       )}
-
 
       <NewDealModal open={newOpen} onOpenChange={setNewOpen} pipelineId={pipelineId} stages={stages} />
       {editor && (
