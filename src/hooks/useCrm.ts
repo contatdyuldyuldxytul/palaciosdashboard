@@ -152,6 +152,51 @@ export function useCrmDeals(pipelineId?: string) {
   return { ...query, data: deals };
 }
 
+/** Busca global em TODOS os pipelines (título, empresa, contato, e-mail). Ativa apenas quando query tem 2+ chars. */
+export function useCrmDealsGlobalSearch(query: string) {
+  const enabled = query.trim().length >= 2;
+  const orgsQ = useCrmOrganizations();
+  const personsQ = useCrmPersons();
+
+  const q = query.trim().toLowerCase();
+
+  const dealsQuery = useQuery({
+    queryKey: ["crm", "deals", "global-search", q],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("crm_deals")
+        .select("*")
+        .order("updated_at", { ascending: false })
+        .limit(1000);
+      if (error) throw error;
+      return (data || []) as CrmDeal[];
+    },
+    enabled,
+    staleTime: 30_000,
+  });
+
+  const deals = useMemo(() => {
+    if (!enabled) return [];
+    const orgMap = new Map((orgsQ.data || []).map((o: any) => [o.id, o]));
+    const personMap = new Map((personsQ.data || []).map((p: any) => [p.id, p]));
+    const enriched = (dealsQuery.data || []).map((d) => ({
+      ...d,
+      organization: d.organization_id ? (orgMap.get(d.organization_id) as any) || null : null,
+      person: d.person_id ? (personMap.get(d.person_id) as any) || null : null,
+    })) as CrmDeal[];
+    return enriched.filter((d) =>
+      d.titulo?.toLowerCase().includes(q) ||
+      (d as any).organization?.nome?.toLowerCase().includes(q) ||
+      (d as any).person?.nome?.toLowerCase().includes(q) ||
+      (d as any).person?.email?.toLowerCase().includes(q) ||
+      (d as any).person?.telefone?.toLowerCase?.().includes(q) ||
+      String(d.valor).includes(q),
+    );
+  }, [dealsQuery.data, orgsQ.data, personsQ.data, q, enabled]);
+
+  return { ...dealsQuery, data: deals, enabled };
+}
+
 export function useMoveDealStage() {
   const qc = useQueryClient();
   return useMutation({
