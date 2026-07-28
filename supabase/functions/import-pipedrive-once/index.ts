@@ -298,6 +298,8 @@ async function runImport(phase: string, API_KEY: string, sb: any, runId: string 
         else console.warn("persons batch err:", error.message);
       }
       summary.persons = imported;
+      summary.persons_from_pipedrive = persons.length;
+
     }
 
 
