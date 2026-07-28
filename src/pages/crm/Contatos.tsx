@@ -287,8 +287,8 @@ export default function Contatos() {
         ) : filtered.length === 0 ? (
           <div className="p-10 text-center text-sm text-muted-foreground">Nenhum contato encontrado.</div>
         ) : (
-          <div className="divide-y divide-white/5 max-h-[calc(100vh-280px)] overflow-y-auto">
-            {filtered.map((c) => {
+          <div className="divide-y divide-white/5 max-h-[calc(100vh-320px)] overflow-y-auto">
+            {pageRows.map((c) => {
               const checked = selectedIds.has(c.id);
               return (
                 <div
