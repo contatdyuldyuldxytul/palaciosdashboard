@@ -146,12 +146,15 @@ export function useEnrollDeal() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { sequence_id: string; deal_id: string; person_id?: string | null }) => {
+      const { data: u } = await supabase.auth.getUser();
       const { error } = await supabase.from("email_sequence_enrollments" as any).insert({
         sequence_id: payload.sequence_id,
         deal_id: payload.deal_id,
         person_id: payload.person_id || null,
+        owner_user_id: u?.user?.id ?? null,
       });
       if (error) throw error;
+
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["sequence_enrollments"] }),
   });
