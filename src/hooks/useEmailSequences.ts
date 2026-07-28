@@ -63,10 +63,13 @@ export function useCreateSequence() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { nome: string; descricao?: string }) => {
+      const { data: u } = await supabase.auth.getUser();
       const { data, error } = await supabase.from("email_sequences" as any).insert({
         nome: payload.nome, descricao: payload.descricao || null, ativo: false, trigger_type: "manual",
+        owner_user_id: u?.user?.id ?? null,
       }).select("*").single();
       if (error) throw error;
+
       // seed one default step
       await supabase.from("email_sequence_steps" as any).insert({
         sequence_id: (data as any).id, ordem: 0, dia_offset: 0,
