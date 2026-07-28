@@ -70,11 +70,21 @@ export default function Contatos() {
     });
   }, [contatos, search, statusFilter, empresaFilter, cargoFilter]);
 
+  const PAGE_SIZE = 100;
+  const [page, setPage] = useState(1);
+  useEffect(() => { setPage(1); }, [search, statusFilter, empresaFilter, cargoFilter]);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageRows = useMemo(
+    () => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filtered, page],
+  );
+
   const counts = useMemo(() => {
     const c: Record<ContatoStatus, number> = { cliente_ativo: 0, ex_cliente: 0, lead: 0, frio: 0 };
     for (const x of contatos) c[x.status] += 1;
     return c;
   }, [contatos]);
+
 
   const selectedContatos = useMemo(
     () => contatos.filter((c) => selectedIds.has(c.id)),
