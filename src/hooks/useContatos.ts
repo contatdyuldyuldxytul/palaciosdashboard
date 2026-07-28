@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAll } from "@/lib/fetchAll";
 
 export type ContatoStatus = "cliente_ativo" | "ex_cliente" | "lead" | "frio";
 
