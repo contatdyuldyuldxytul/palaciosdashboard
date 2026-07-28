@@ -15,6 +15,9 @@ import { ImportCsvModal } from "@/components/crm/ImportCsvModal";
 import { ImportSheetsModal } from "@/components/crm/ImportSheetsModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+
 
 const fmt = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
@@ -74,17 +77,55 @@ export default function Crm() {
     return { open: open.length, openValue, won: won.length, wonValue, ticket: open.length ? openValue / open.length : 0 };
   }, [shownDeals]);
 
+  const [importing, setImporting] = useState(false);
+
   const doImport = async () => {
+    setImporting(true);
     try {
       const r: any = await importPd.mutateAsync();
-      if (r?.success) {
-        const s = r.summary;
-        toast({ title: "Importação concluída", description: `${s.deals} deals · ${s.persons} pessoas · ${s.organizations} empresas` });
-      } else throw new Error(r?.error || "Falha");
+      if (!r?.success) throw new Error(r?.error || "Falha ao iniciar a importação");
+
+      const runId: string | undefined = r.run_id;
+      if (!runId) {
+        toast({ title: "Importação iniciada", description: "Os dados aparecerão em instantes." });
+        return;
+      }
+
+      toast({ title: "Importação iniciada", description: "Rodando em segundo plano. Avisaremos ao concluir." });
+
+      // Acompanha o run em background (até ~10 min)
+      const deadline = Date.now() + 10 * 60 * 1000;
+      while (Date.now() < deadline) {
+        await new Promise((res) => setTimeout(res, 5000));
+        const { data: run } = await supabase
+          .from("pipedrive_import_runs")
+          .select("finished_at, success, error, summary")
+          .eq("id", runId)
+          .maybeSingle();
+        if (!run?.finished_at) continue;
+
+        if (run.success) {
+          const s: any = run.summary || {};
+          const parts = [
+            s.deals != null ? `${s.deals} deals` : null,
+            s.persons != null ? `${s.persons} pessoas` : null,
+            s.orgs != null ? `${s.orgs} empresas` : null,
+          ].filter(Boolean);
+          toast({ title: "Importação concluída", description: parts.join(" · ") || "Dados atualizados." });
+          qc.invalidateQueries({ queryKey: ["crm"] });
+        } else {
+          toast({ title: "Erro ao importar", description: run.error || "Falha desconhecida", variant: "destructive" });
+        }
+        return;
+      }
+      toast({ title: "Importação ainda em andamento", description: "Recarregue a página em alguns minutos." });
     } catch (e: any) {
-      toast({ title: "Erro ao importar", description: e.message, variant: "destructive" });
+      toast({ title: "Erro ao importar", description: e?.message || "Erro desconhecido", variant: "destructive" });
+    } finally {
+      setImporting(false);
     }
   };
+
 
   if (pLoading) {
     return (
