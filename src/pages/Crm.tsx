@@ -153,9 +153,9 @@ export default function Crm() {
               <Plus className="w-4 h-4 mr-2" /> Criar Pipeline
             </Button>
             {isFundador && (
-              <Button variant="outline" onClick={doImport} disabled={importPd.isPending}>
+              <Button variant="outline" onClick={doImport} disabled={(importPd.isPending || importing)}>
                 <Download className="w-4 h-4 mr-2" />
-                {importPd.isPending ? "Importando…" : "Importar Pipedrive"}
+                {(importPd.isPending || importing) ? "Importando…" : "Importar Pipedrive"}
               </Button>
             )}
           </div>
@@ -208,8 +208,8 @@ export default function Crm() {
                 <FileSpreadsheet className="w-3.5 h-3.5 mr-2" /> Google Sheets
               </DropdownMenuItem>
               {isFundador && (
-                <DropdownMenuItem onClick={doImport} disabled={importPd.isPending}>
-                  <Download className="w-3.5 h-3.5 mr-2" /> {importPd.isPending ? "Importando…" : "Pipedrive"}
+                <DropdownMenuItem onClick={doImport} disabled={(importPd.isPending || importing)}>
+                  <Download className="w-3.5 h-3.5 mr-2" /> {(importPd.isPending || importing) ? "Importando…" : "Pipedrive"}
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
