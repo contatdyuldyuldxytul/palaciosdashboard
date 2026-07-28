@@ -151,13 +151,9 @@ export function useCrmDealsGlobalSearch(query: string) {
   const dealsQuery = useQuery({
     queryKey: ["crm", "deals", "global-search", q],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("crm_deals")
-        .select("*")
-        .order("updated_at", { ascending: false })
-        .limit(1000);
-      if (error) throw error;
-      return (data || []) as CrmDeal[];
+      return await fetchAll<CrmDeal>("crm_deals", "*", (qb) =>
+        qb.order("updated_at", { ascending: false }),
+      );
     },
     enabled,
     staleTime: 30_000,
