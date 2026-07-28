@@ -258,6 +258,8 @@ async function runImport(phase: string, API_KEY: string, sb: any, runId: string 
         else console.warn("orgs batch err:", error.message);
       }
       summary.orgs = imported;
+      summary.orgs_from_pipedrive = orgs.length;
+
     }
 
 
