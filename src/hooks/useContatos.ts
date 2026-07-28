@@ -23,17 +23,17 @@ export function useContatos() {
   return useQuery({
     queryKey: ["contatos", "unified"],
     queryFn: async (): Promise<Contato[]> => {
-      const [personsRes, orgsRes, dealsRes, clientesRes] = await Promise.all([
-        supabase.from("crm_persons").select("id, nome, cargo, email, telefone, organization_id"),
-        supabase.from("crm_organizations").select("id, nome"),
-        supabase.from("crm_deals").select("id, person_id, status"),
-        supabase.from("clientes_ativos").select("id, empresa, contato, email, telefone, status"),
+      const [persons, orgs, deals, clientes] = await Promise.all([
+        fetchAll<any>("crm_persons", "id, nome, cargo, email, telefone, organization_id"),
+        fetchAll<any>("crm_organizations", "id, nome"),
+        fetchAll<any>("crm_deals", "id, person_id, status"),
+        fetchAll<any>("clientes_ativos", "id, empresa, contato, email, telefone, status"),
       ]);
+      const personsRes = { data: persons };
+      const orgsRes = { data: orgs };
+      const dealsRes = { data: deals };
+      const clientesRes = { data: clientes };
 
-      if (personsRes.error) throw personsRes.error;
-      if (orgsRes.error) throw orgsRes.error;
-      if (dealsRes.error) throw dealsRes.error;
-      if (clientesRes.error) throw clientesRes.error;
 
       const orgMap = new Map((orgsRes.data || []).map((o: any) => [o.id, o.nome]));
       const dealsByPerson = new Map<string, { open: number; won: number; total: number }>();
