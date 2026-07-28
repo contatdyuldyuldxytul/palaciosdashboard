@@ -24,6 +24,8 @@ const fmt = (v: number) =>
 
 export default function Crm() {
   const { isFundador } = useAuth();
+  const qc = useQueryClient();
+
   const { data: pipelines = [], isLoading: pLoading } = useCrmPipelines();
   const [pipelineId, setPipelineIdState] = useState<string>(() => {
     try { return sessionStorage.getItem("crm:lastPipelineId") || ""; } catch { return ""; }
