@@ -327,7 +327,33 @@ export default function Contatos() {
             })}
           </div>
         )}
+
+        {!isLoading && filtered.length > 0 && (
+          <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-white/5 text-xs text-muted-foreground">
+            <span>
+              Mostrando {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} de{" "}
+              {filtered.length} contatos
+            </span>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+                Anterior
+              </Button>
+              <span>
+                {page} / {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Próxima
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
+
 
       <ContactDetailSheet contato={selected} open={!!selected} onOpenChange={(v) => !v && setSelected(null)} />
 
