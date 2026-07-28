@@ -63,10 +63,13 @@ export function useCreateSequence() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { nome: string; descricao?: string }) => {
+      const { data: u } = await supabase.auth.getUser();
       const { data, error } = await supabase.from("email_sequences" as any).insert({
         nome: payload.nome, descricao: payload.descricao || null, ativo: false, trigger_type: "manual",
+        owner_user_id: u?.user?.id ?? null,
       }).select("*").single();
       if (error) throw error;
+
       // seed one default step
       await supabase.from("email_sequence_steps" as any).insert({
         sequence_id: (data as any).id, ordem: 0, dia_offset: 0,
@@ -143,12 +146,15 @@ export function useEnrollDeal() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { sequence_id: string; deal_id: string; person_id?: string | null }) => {
+      const { data: u } = await supabase.auth.getUser();
       const { error } = await supabase.from("email_sequence_enrollments" as any).insert({
         sequence_id: payload.sequence_id,
         deal_id: payload.deal_id,
         person_id: payload.person_id || null,
+        owner_user_id: u?.user?.id ?? null,
       });
       if (error) throw error;
+
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["sequence_enrollments"] }),
   });
