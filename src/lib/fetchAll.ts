@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const PAGE = 1000;
 
-type Table = Parameters<typeof supabase.from>[0];
+type Table = string;
 
 /**
  * Busca TODAS as linhas de uma tabela, contornando o limite de 1000 linhas do PostgREST.
