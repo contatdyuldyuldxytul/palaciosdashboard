@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search, Users, Mail, Trash2, X, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -70,11 +70,21 @@ export default function Contatos() {
     });
   }, [contatos, search, statusFilter, empresaFilter, cargoFilter]);
 
+  const PAGE_SIZE = 100;
+  const [page, setPage] = useState(1);
+  useEffect(() => { setPage(1); }, [search, statusFilter, empresaFilter, cargoFilter]);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageRows = useMemo(
+    () => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filtered, page],
+  );
+
   const counts = useMemo(() => {
     const c: Record<ContatoStatus, number> = { cliente_ativo: 0, ex_cliente: 0, lead: 0, frio: 0 };
     for (const x of contatos) c[x.status] += 1;
     return c;
   }, [contatos]);
+
 
   const selectedContatos = useMemo(
     () => contatos.filter((c) => selectedIds.has(c.id)),
@@ -277,8 +287,8 @@ export default function Contatos() {
         ) : filtered.length === 0 ? (
           <div className="p-10 text-center text-sm text-muted-foreground">Nenhum contato encontrado.</div>
         ) : (
-          <div className="divide-y divide-white/5 max-h-[calc(100vh-280px)] overflow-y-auto">
-            {filtered.map((c) => {
+          <div className="divide-y divide-white/5 max-h-[calc(100vh-320px)] overflow-y-auto">
+            {pageRows.map((c) => {
               const checked = selectedIds.has(c.id);
               return (
                 <div
@@ -317,7 +327,33 @@ export default function Contatos() {
             })}
           </div>
         )}
+
+        {!isLoading && filtered.length > 0 && (
+          <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-white/5 text-xs text-muted-foreground">
+            <span>
+              Mostrando {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} de{" "}
+              {filtered.length} contatos
+            </span>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+                Anterior
+              </Button>
+              <span>
+                {page} / {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Próxima
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
+
 
       <ContactDetailSheet contato={selected} open={!!selected} onOpenChange={(v) => !v && setSelected(null)} />
 

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAll } from "@/lib/fetchAll";
 import { useMemo } from "react";
 
 export type PipelineFlowType = "cadencia_10_dias" | "nutricao" | "vendas" | "personalizado";
@@ -92,12 +93,7 @@ export function useCrmOrganizations() {
   return useQuery({
     queryKey: ["crm", "organizations"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("crm_organizations")
-        .select("id,nome")
-        .limit(5000);
-      if (error) throw error;
-      return data || [];
+      return await fetchAll<any>("crm_organizations", "id,nome");
     },
     staleTime: 10 * 60 * 1000,
   });
@@ -107,12 +103,7 @@ export function useCrmPersons() {
   return useQuery({
     queryKey: ["crm", "persons"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("crm_persons")
-        .select("id,nome,email,telefone")
-        .limit(5000);
-      if (error) throw error;
-      return data || [];
+      return await fetchAll<any>("crm_persons", "id,nome,email,telefone");
     },
     staleTime: 10 * 60 * 1000,
   });
@@ -126,18 +117,15 @@ export function useCrmDeals(pipelineId?: string) {
     queryKey: ["crm", "deals", pipelineId],
     queryFn: async () => {
       if (!pipelineId) return [];
-      const { data, error } = await supabase
-        .from("crm_deals")
-        .select("*")
-        .eq("pipeline_id", pipelineId)
-        .order("updated_at", { ascending: false })
-        .limit(500);
-      if (error) throw error;
-      return (data || []) as CrmDeal[];
+      const rows = await fetchAll<CrmDeal>("crm_deals", "*", (q) =>
+        q.eq("pipeline_id", pipelineId).order("updated_at", { ascending: false }),
+      );
+      return rows;
     },
     enabled: !!pipelineId,
     staleTime: 60_000,
   });
+
 
   const deals = useMemo(() => {
     const orgMap = new Map((orgsQ.data || []).map((o: any) => [o.id, o]));
@@ -163,13 +151,9 @@ export function useCrmDealsGlobalSearch(query: string) {
   const dealsQuery = useQuery({
     queryKey: ["crm", "deals", "global-search", q],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("crm_deals")
-        .select("*")
-        .order("updated_at", { ascending: false })
-        .limit(1000);
-      if (error) throw error;
-      return (data || []) as CrmDeal[];
+      return await fetchAll<CrmDeal>("crm_deals", "*", (qb) =>
+        qb.order("updated_at", { ascending: false }),
+      );
     },
     enabled,
     staleTime: 30_000,

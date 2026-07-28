@@ -1,56 +1,29 @@
+## O que eu verifiquei no banco agora
 
-## 1. Check-up da plataforma (respostas rápidas)
+- Contatos (pessoas) vindos do Pipedrive já gravados: **6.610** (+54 criados manualmente)
+- Organizações: **3.520** | Negócios: **3.303** (1.149 marcados como deletados no Pipedrive)
+- Nomes distintos entre as pessoas: **5.668** (ou seja, existem duplicidades de nome)
 
-**WhatsApp — disparos**
-Infraestrutura pronta: Evolution API conectada (`EVOLUTION_API_KEY`/`EVOLUTION_API_URL` configurados), tabelas `whatsapp_instances`, `whatsapp_campaigns`, `whatsapp_scheduled_messages` e `whatsapp_messages` populadas, edge functions `evolution-send`, `evolution-scheduler` (rodando a cada minuto — logs mostram boots normais) e `whatsapp-campaign-create` deployadas. **Funciona desde que a instância esteja conectada (QR pareado na aba Conexão).** Recomendo checar a aba Conexão do WhatsApp antes de disparar. Risco: se a instância cair, mensagens ficam presas em `scheduled` — hoje não há alerta visual disso.
+Ou seja: os dados **já estão no banco** — inclusive mais do que os 2.144 que você espera ver. O problema está na **leitura**: as telas pedem os registros sem paginação, e o backend devolve no máximo 1.000 linhas por consulta. Por isso a lista de contatos/deals aparece cortada e "faltando gente".
 
-**E-mail — campanhas**
-Provider: Resend (connector conectado, `RESEND_API_KEY` presente) via `resend-send-campaign` / `resend-send-single`. Webhook `resend-webhook` grava bounces/complaints em `email_suppressions` e o remetente respeita `email_suppressions` antes de enviar. Domínio de envio precisa estar verificado no Resend — sem domínio próprio verificado, cai em spam ou é bloqueado. **Riscos de spam hoje:**
-- Não há rate-limit próprio; disparo em massa vai na velocidade do Resend.
-- Não há aquecimento (warm-up) de domínio configurado.
-- Unsubscribe existe (`email-unsubscribe` + tokens), mas o link precisa estar no template.
+## O que fazer
 
-**Pipedrive — geração de leads**
-Sync roda ok (`sync-pipedrive` retornou 200 com pipelines). `import-pipedrive-once` foi refatorada pra rodar em background (evita CPU limit). Seleção de leads na aba "Geração de Leads" grava em `leads_raw`/`leads_qualified` via `milena-leads-sheets` — **atenção: os logs mostram erro `sb.auth.getClaims is not a function` nessa função**, o que quebra a autenticação hoje.
+### 1. Corrigir a leitura truncada (causa principal)
+- Criar um utilitário de busca paginada (`fetchAll`) que percorre a tabela em blocos de 1.000 até trazer tudo.
+- Aplicar em:
+  - `src/hooks/useContatos.ts` — pessoas, organizações, negócios e clientes ativos (hoje todos sem paginação)
+  - `src/hooks/useCrm.ts` — `useCrmOrganizations`, `useCrmPersons` (limit 5000, na prática 1000), `useCrmDeals` (limit 500) e a busca global `useCrmDealsGlobalSearch` (limit 1000)
+- Ajustar a tela de Contatos para exibir a contagem real e paginar/virtualizar a lista, evitando travar com milhares de linhas.
 
-**Aba Deals**
-CRUD, kanban, lista, KPIs, importação (CSV/Sheets/Pipedrive) e drag-and-drop entre stages funcionam. Limitação atual: **busca só filtra o pipeline selecionado** (query traz só 500 deals de 1 pipeline) — é isso que você pediu pra corrigir.
+### 2. Validar a importação de fato (auditoria)
+- Adicionar ao resumo do import (`import-pipedrive-once`) a contagem retornada pelo Pipedrive vs. a contagem gravada, por entidade (pessoas, organizações, negócios), para provar 100% de cobertura.
+- Corrigir um ponto que hoje descarta dados em silêncio: negócios cujo estágio não está mapeado são ignorados. Existem **44 estágios sem `pipedrive_stage_id`** — vou rodar a fase `stages` primeiro e registrar no resumo quantos negócios foram descartados por falta de estágio.
+- Rodar o import por fases (`fields` → `pipelines` → `stages` → `orgs` → `persons` → `deals`) e comparar os totais.
 
----
-
-## 2. Mudanças pedidas (aba Deals)
-
-### 2.1 Remover a sub-aba "Automações N8N"
-Em `src/pages/Crm.tsx`:
-- Remover botão da sub-aba `fluxos` (linhas 201-208).
-- Remover branch `tab === "fluxos" ? <N8nAutomations />` (linha 263-264).
-- Remover imports `N8nAutomations`, `Workflow`.
-- Tipo `tab` passa a ser `"deals" | "campanhas"`.
-- **Não deletar** o arquivo `N8nAutomations.tsx` nem as tabelas n8n — ainda são usados em `src/pages/crm/Projects.tsx` (aba Projects/Automações N8N continua existindo lá).
-
-### 2.2 Mover a busca "para cima"
-Hoje a busca já está no header (linhas 149-160), à direita, junto com Importar/Novo Deal. Vou movê-la para **uma linha própria acima do header de sub-tabs**, ocupando largura maior (full width em mobile, `max-w-2xl` em desktop), com label "Buscar em todos os deals" para deixar claro que é global.
-
-### 2.3 Busca global (todos os pipelines / contatos)
-Trocar a fonte da busca de `deals` (do pipeline atual) para uma consulta global quando há texto digitado:
-
-- Criar hook `useCrmDealsSearch(query: string)` em `src/hooks/useCrm.ts` que, quando `query.length >= 2`:
-  - Faz `supabase.from("crm_deals").select("*, organization:crm_organizations(*), person:crm_persons(*)").or("titulo.ilike.%q%")` **sem** filtro por `pipeline_id`, limit 200.
-  - Em paralelo, busca `crm_persons` e `crm_organizations` que dão match em nome/email/telefone e depois busca os `crm_deals` desses `person_id`/`organization_id` (une resultados, dedup por `id`).
-  - Retorna também o `pipeline` de cada deal (join `crm_pipelines(nome)`) pra mostrar de qual pipeline veio.
-- Em `Crm.tsx`: quando `search.trim().length >= 2`, renderiza uma **lista de resultados globais** (usando `DealListView` ou uma variação simples) no lugar do kanban/lista do pipeline, com badge do pipeline em cada linha e clique abrindo o deal (`/crm/deals/:id`). Quando busca está vazia, volta ao comportamento atual (kanban/lista do pipeline selecionado).
-
-### 2.4 Toggle Kanban/Lista
-Fica escondido enquanto houver busca ativa (não faz sentido kanban em resultado multi-pipeline).
-
----
-
-## 3. Fora de escopo (posso fazer em seguida se quiser)
-- Corrigir `sb.auth.getClaims` na `milena-leads-sheets` (bug real que está nos logs).
-- Adicionar alerta visual quando instância WhatsApp cair.
-- Configurar rate-limit / warm-up de e-mail.
+### 3. Limpeza de duplicados (opcional, confirmo antes de executar)
+Há indícios de contatos repetidos (5.668 nomes distintos para 6.664 registros). Depois da auditoria eu te mostro a lista de duplicados por e-mail/nome e só faço a fusão com sua aprovação.
 
 ## Detalhes técnicos
-- Arquivos alterados: `src/pages/Crm.tsx`, `src/hooks/useCrm.ts`.
-- Sem migração de banco. Sem mudança de RLS (deals já têm policies).
-- N8N (tabelas, edge function `n8n-proxy`, componente) permanece intacto — só sai da navegação da aba Deals; continua acessível em Projects.
+- O limite de 1.000 linhas é do PostgREST; a solução é `.range(from, from+999)` em laço, não aumentar `limit`.
+- Nada de mudança de schema é necessário nesta etapa.
+- A tela de Contatos passará a receber ~6.6k linhas: aplicar filtro/paginação no cliente para manter a performance.

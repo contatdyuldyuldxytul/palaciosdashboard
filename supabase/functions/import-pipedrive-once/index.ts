@@ -258,6 +258,8 @@ async function runImport(phase: string, API_KEY: string, sb: any, runId: string 
         else console.warn("orgs batch err:", error.message);
       }
       summary.orgs = imported;
+      summary.orgs_from_pipedrive = orgs.length;
+
     }
 
 
@@ -296,6 +298,8 @@ async function runImport(phase: string, API_KEY: string, sb: any, runId: string 
         else console.warn("persons batch err:", error.message);
       }
       summary.persons = imported;
+      summary.persons_from_pipedrive = persons.length;
+
     }
 
 
@@ -328,11 +332,12 @@ async function runImport(phase: string, API_KEY: string, sb: any, runId: string 
         ...open.map((d: any) => ({ ...d, _deleted: false })),
         ...deleted.map((d: any) => ({ ...d, _deleted: true })),
       ];
+      let skippedNoStage = 0;
       const rows = all.map((d: any) => {
         const stageUuid = stageMap.get(d.stage_id);
-        if (!stageUuid) return null;
+        if (!stageUuid) { skippedNoStage++; return null; }
         const pipelineUuid = stageToPipeline.get(stageUuid);
-        if (!pipelineUuid) return null;
+        if (!pipelineUuid) { skippedNoStage++; return null; }
         let orgUuid = d.org_id?.value ? orgMap.get(d.org_id.value) : null;
         const personUuid = d.person_id?.value ? personMap.get(d.person_id.value) : null;
         // Fallback: usar org da pessoa vinculada se o deal não trouxer org
@@ -363,7 +368,10 @@ async function runImport(phase: string, API_KEY: string, sb: any, runId: string 
         else console.warn("deal batch err:", error.message);
       }
       summary.deals = imported;
+      summary.deals_from_pipedrive = all.length;
+      summary.deals_skipped_no_stage = skippedNoStage;
       summary.deleted_deals = deleted.length;
+
     }
 
     // ─── ACTIVITIES ───
