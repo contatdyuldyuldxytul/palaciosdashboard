@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAll } from "@/lib/fetchAll";
 import { useMemo } from "react";
 
 export type PipelineFlowType = "cadencia_10_dias" | "nutricao" | "vendas" | "personalizado";
